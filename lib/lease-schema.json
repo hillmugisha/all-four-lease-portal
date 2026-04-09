@@ -1,0 +1,124 @@
+{
+  "_comment": "Example data matching the Emerald Companies / RAM 3500 lease (lease date 7/10/2025). Use this as the reference for all field mappings.",
+  "lease": {
+    "lease_date": "2025-07-10",
+    "is_business_purpose": true
+  },
+  "lessor": {
+    "name": "All Four, LLC",
+    "address": "1 TeamQuest Way",
+    "po_box": "P.O. Box 147",
+    "city": "Clear Lake",
+    "state": "IA",
+    "zip": "50428"
+  },
+  "lessee": {
+    "name": "Emerald Companies, Inc.",
+    "address": "6939 30th St. NE",
+    "city": "Sauk Rapids",
+    "state": "MN",
+    "zip": "56379",
+    "phone": "320-241-5296",
+    "email": "joel@myemeraldlawn.com",
+    "signer_name": "Joel Wollum",
+    "co_signer_name": null,
+    "entity_type": "LLC"
+  },
+  "vehicle": {
+    "condition": "NEW",
+    "year": "2025",
+    "make": "RAM",
+    "model": "3500 LARAMIE",
+    "body_style": "TRUCK",
+    "vin": "3C63R3EL6SG573322",
+    "odometer": 40
+  },
+  "financials": {
+    "vehicle_agreed_value": 61719.00,
+    "gross_cap_cost": 64090.28,
+    "cap_cost_reduction": null,
+    "adjusted_cap_cost": 64090.28,
+    "residual_value": 45566.52,
+    "depreciation": 18523.76,
+    "rent_charge": 10516.24,
+    "total_base_monthly_payments": 29040.00,
+    "num_payments": 24,
+    "base_monthly_payment": 1210.00,
+    "monthly_sales_tax": 0,
+    "total_monthly_payment": 1210.00,
+    "total_of_payments": 29040.00,
+    "miles_per_year": 35000,
+    "excess_mileage_rate": 0.25,
+    "disposition_fee": 195.00,
+    "early_termination_fee": 0,
+    "purchase_option_price": 45566.52,
+    "purchase_option_fee": 0,
+    "official_fees_taxes": 1596.28
+  },
+  "signing": {
+    "first_payment_date": "2025-07-21",
+    "payment_day": 21,
+    "amount_due_at_signing": 1210.00,
+    "cap_cost_reduction": null,
+    "first_monthly_payment": 1210.00,
+    "security_deposit": null,
+    "reconditioning_reserve": null,
+    "title_fees": null,
+    "registration_fees": null,
+    "other_1_label": null,
+    "other_1_amount": null,
+    "other_2_label": null,
+    "other_2_amount": null,
+    "net_tradein_allowance": null,
+    "rebates_noncash": null,
+    "amount_paid_in_cash": 1210.00
+  },
+  "tradein": {
+    "has_tradein": false,
+    "year": null,
+    "make": null,
+    "model": null,
+    "gross_allowance": null,
+    "prior_balance": null,
+    "net_allowance": 0
+  },
+  "cap_items": {
+    "taxes": 1356.28,
+    "title_reg_fees": 240.00,
+    "acquisition_fee": 595.00,
+    "doc_fee": 180.00,
+    "prior_lease_balance": null,
+    "other_1_label": null,
+    "other_1_amount": null,
+    "mbp_amount": null,
+    "service_contract": null,
+    "gap_amount": null,
+    "optional_other_1_label": null,
+    "optional_other_1_amount": null,
+    "optional_other_2_label": null,
+    "optional_other_2_amount": null
+  },
+  "optional": {
+    "mbp": {
+      "amount_or_period": null,
+      "price": null,
+      "term": null,
+      "provider": null,
+      "lessee_initials": null
+    },
+    "gap": {
+      "amount_or_period": null,
+      "price": null,
+      "term": null,
+      "provider": null,
+      "lessee_initials": null
+    }
+  },
+  "signatures": {
+    "lessee_signer_name": "Joel Wollum",
+    "co_lessee_signer_name": null,
+    "lessor_name": "All Four, LLC",
+    "lessor_signer_name": "Madison Wellik",
+    "lessor_signer_title": "Lease Sales Consultant"
+  }
+}

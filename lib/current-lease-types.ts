@@ -1,0 +1,82 @@
+export interface CurrentLeaseRecord {
+  id: string
+  created_at: string
+
+  new_swap_addition: string | null
+  company: string | null
+  customer_type: string | null
+  customer_name: string | null
+  location_driver: string | null
+  payment_method: string | null
+  billing_address: string | null
+  billing_city: string | null
+  billing_state: string | null
+  billing_zip_code: string | null
+  phone: string | null
+  email_address: string | null
+  year: string | null
+  make: string | null
+  model: string | null
+  color: string | null
+  vin: string | null
+  comments: string | null
+  ndvr_delivery_date: string | null
+  odometer: number | null
+  odometer_date: string | null
+  lease_start_date: string | null
+  term: number | null
+  lease_end_date: string | null
+  net_cap_cost: number | null
+  mon_dep: number | null
+  mon_interest: number | null
+  monthly_tax: string | null
+  mon_payment: number | null
+  residual_resale_quote: number | null
+  annual_miles: number | null
+  lease_end_mile_fee: number | null
+  ttl_state: string | null
+  ttl_mo: number | null
+  plate_number: string | null
+  lease_depreciation_months: number | null
+  insurance_expiration_date: string | null
+  upfront_tax_paid: number | null
+  lender_lessor: string | null
+  loan_lease_number: string | null
+  loan_lease_start_date: string | null
+  loan_lease_end_date: string | null
+  monthly_payment: number | null
+  lender_net_cap_cost: number | null
+  balloon_residual: number | null
+  monthly_depreciation_lender: number | null
+  lender_int_rate_pct: number | null
+  lender_term: string | null
+  in_service_date: string | null
+  internal_book_value: number | null
+  lender_mo_dep_pct: number | null
+  am: string | null
+  prorate_pd: number | null
+  prorate_rcvd: number | null
+  col_x1: string | null
+  gps_serial_number: string | null
+  monthly_cash_flow_delta: number | null
+  account_manager: string | null
+  col_x2: string | null
+  col_x3: string | null
+  location: string | null
+  mmr: number | null
+  balance_sheet_mar_2026: number | null
+  bal_sheet_delta: number | null
+  nbv_apr_2026: number | null
+  nbv_delta: number | null
+  additional_comments: string | null
+  disposal_comments_90_day: string | null
+  days_to_sell: number | null
+  invoice_to_retail: number | null
+  payoff_quoted_paid: number | null
+  payoff_proceeds_sent: number | null
+  balance_sheet_apr_09_2026: number | null
+  customer_lease_depreciated_book_value: number | null
+  vin_2: string | null
+
+  lease_status: string
+}

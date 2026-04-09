@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Closed End Motor Vehicle Lease — Emerald Companies, Inc.</title>
+  <style>
+    /* ── Reset & base ───────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 7.5pt;
+      color: #000;
+      background: #fff;
+      line-height: 1.3;
+    }
+
+    /* ── Page geometry ──────────────────────────────────────────────── */
+    @page {
+      size: letter portrait;
+      margin: 0.45in 0.45in 0.45in 0.45in;
+    }
+
+    .page {
+      width: 100%;
+      page-break-after: always;
+    }
+    .page:last-child { page-break-after: avoid; }
+
+    /* ── Typography ─────────────────────────────────────────────────── */
+    .doc-title {
+      text-align: center;
+      font-size: 10pt;
+      font-weight: bold;
+      letter-spacing: 0.04em;
+      margin-bottom: 3px;
+    }
+
+    b, strong { font-weight: bold; }
+    .u { text-decoration: underline; }
+    .italic { font-style: italic; }
+    .small { font-size: 6.5pt; }
+    .mono { font-family: 'Courier New', Courier, monospace; letter-spacing: 0.05em; }
+    .center { text-align: center; }
+    .right  { text-align: right; }
+
+    /* ── Universal table rules ──────────────────────────────────────── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+    td, th {
+      border: 0.75pt solid #000;
+      padding: 2px 4px;
+      vertical-align: top;
+    }
+    th {
+      font-weight: bold;
+      background: #fff;
+    }
+    .no-border { border: none !important; }
+    .border-top    { border-top: 0.75pt solid #000 !important; }
+    .border-bottom { border-bottom: 0.75pt solid #000 !important; }
+    .border-left   { border-left: 0.75pt solid #000 !important; }
+    .border-right  { border-right: 0.75pt solid #000 !important; }
+    .bb { border-bottom: 0.75pt solid #000 !important; }
+
+    /* ── Section headers ────────────────────────────────────────────── */
+    .section-header {
+      text-align: center;
+      font-weight: bold;
+      font-size: 8pt;
+      padding: 2px;
+      border: 0.75pt solid #000;
+    }
+
+    /* ── Boilerplate paragraph ──────────────────────────────────────── */
+    .boilerplate {
+      font-size: 7pt;
+      padding: 3px 2px;
+      border: 0.75pt solid #000;
+      border-top: none;
+      line-height: 1.35;
+    }
+    .section-legal {
+      font-size: 7pt;
+      padding: 4px 6px;
+      line-height: 1.4;
+    }
+
+    /* ── Helpers ────────────────────────────────────────────────────── */
+    .val { /* wraps a data value — no special style, just semantic */ }
+    .blank-line {
+      display: inline-block;
+      min-width: 80px;
+      border-bottom: 0.75pt solid #000;
+    }
+    .sig-line {
+      display: block;
+      width: 100%;
+      border-bottom: 0.75pt solid #000;
+      min-height: 18px;
+      margin-top: 4px;
+    }
+    .sig-block { padding: 4px 6px; }
+
+    /* ── Column widths (percentages) ────────────────────────────────── */
+    .w20  { width: 20%; }
+    .w25  { width: 25%; }
+    .w30  { width: 30%; }
+    .w33  { width: 33.33%; }
+    .w40  { width: 40%; }
+    .w50  { width: 50%; }
+    .w60  { width: 60%; }
+    .w65  { width: 65%; }
+    .w70  { width: 70%; }
+    .w75  { width: 75%; }
+    .w100 { width: 100%; }
+
+    /* ── Vertical alignment ─────────────────────────────────────────── */
+    .vtop   { vertical-align: top; }
+    .vmid   { vertical-align: middle; }
+    .vbot   { vertical-align: bottom; }
+
+    /* ── Amount rows (calculation waterfall) ────────────────────────── */
+    .calc-row td { border: none; padding: 1px 4px; }
+    .calc-label   { width: 78%; font-size: 7pt; }
+    .calc-prefix  { width: 4%;  text-align: center; font-size: 7pt; }
+    .calc-amount  { width: 18%; text-align: right;  border-bottom: 0.75pt solid #000; font-size: 7pt; }
+    .calc-total   { font-weight: bold; }
+
+    /* ── Page footer ────────────────────────────────────────────────── */
+    .page-footer {
+      text-align: center;
+      font-size: 7pt;
+      margin-top: 6px;
+      border-top: 0.75pt solid #000;
+      padding-top: 2px;
+    }
+
+    /* ── Print-specific ─────────────────────────────────────────────── */
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     PAGE 1
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-1">
+
+  <h1 class="doc-title">CLOSED END MOTOR VEHICLE LEASE</h1>
+
+  <!-- ── Header row: Lease Date + Business Purpose ── -->
+  <table>
+    <tr>
+      <td class="w50" style="border-bottom:none;">Lease Date:&nbsp; <strong>7/10/2025</strong></td>
+      <td class="w50 right" style="border-bottom:none; border-left:none;">
+        [ X ]
+        Business, Commercial, or Agricultural Purpose Lease.
+      </td>
+    </tr>
+  </table>
+
+  <!-- ── Parties ── -->
+  <table>
+    <tr>
+      <th class="w50" style="border-top:none;">Lessor Name and Business Address</th>
+      <th class="w50" style="border-top:none; border-left:none;">Lessee(s) Name(s) and Residence Address(es)</th>
+    </tr>
+    <tr>
+      <td class="w50" style="padding: 3px 4px; height:52px;">
+        All Four, LLC<br>
+        1 TeamQuest Way<br>
+        P.O. Box 147<br>
+        Clear Lake, IA 50428
+      </td>
+      <td class="w50" style="padding: 3px 4px; border-left:none;">
+        Emerald Companies, Inc.<br>
+        6939 30th St. NE<br>
+        Sauk Rapids, MN 56379<br>
+        PH: 320-241-5296&nbsp;&nbsp;
+        Email: <span class="u">joel@myemeraldlawn.com</span>
+      </td>
+    </tr>
+  </table>
+
+  <!-- ── Section 1: Parties and Agreement (boilerplate) ── -->
+  <p class="boilerplate">
+    <strong>1. Parties and Agreement to Lease.</strong> In this Lease, "you" and "your" mean the lessee. "We," "us" and "our" meant the original lessor
+    and the party to who the original lessor intends to assign the Lease. These terms, conditions and disclosures govern your lease with
+    us and after assignment, with the party to whom we have assigned the Lease (the "Assignee"). Disclosures in this Lease are made on
+    behalf of the lessor, and after assignment, on behalf of the Assignee shown below. Each of you who signs the Lease is individually
+    liable to us for all Lease obligations. You are leasing the Vehicle described below (the "Vehicle") from us. You agree to pay all
+    amounts due under the Lease and fulfill all your obligations under the Lease. You intend to use the Vehicle primarily for personal,
+    family or household purposes unless the "Business, Commercial or Agricultural Purpose Lease" box above is checked. In this Lease,
+    "e" means and estimate. The Consumer Leasing Act Disclosures shown below are also terms of this Lease.
+  </p>
+
+  <!-- ── Section 2: Vehicle Description ── -->
+  <table style="margin-top:0;">
+    <tr><th colspan="8" class="section-header">2. Description of the Leased Property (The "Vehicle")</th></tr>
+    <tr>
+      <th class="center" style="width:11%;">New/Used</th>
+      <th class="center" style="width:8%;">Year</th>
+      <th class="center" style="width:11%;">Make</th>
+      <th class="center" style="width:20%;" colspan="2">Model</th>
+      <th class="center" style="width:13%;">Body Style</th>
+      <th class="center" style="width:28%;">Vehicle ID#</th>
+      <th class="center" style="width:9%;">Odometer</th>
+    </tr>
+    <tr>
+      <td class="center">NEW</td>
+      <td class="center">2025</td>
+      <td class="center">RAM</td>
+      <td class="center" colspan="2">3500 LARAMIE</td>
+      <td class="center">TRUCK</td>
+      <td class="center mono" style="font-size:7pt;">3C63R3EL6SG573322</td>
+      <td class="center">40</td>
+    </tr>
+  </table>
+
+  <!-- ── Section 3: CLA Disclosures — Top 4-column block ── -->
+  <table>
+    <tr><th colspan="4" class="section-header">3. CONSUMER LEASING ACT DISCLOSURES</th></tr>
+    <tr>
+      <!-- Col 1: Amount Due at Signing -->
+      <td style="width:18%; vertical-align:top; padding:3px 4px;">
+        <div><strong>Amount Due at Lease<br>Signing or Delivery</strong></div>
+        <div style="margin-top:4px;">(Itemized below)*</div>
+        <div style="margin-top:6px; font-size:9pt; font-weight:bold;">
+          $&nbsp;<span class="val">$1,210.00</span>
+        </div>
+      </td>
+      <!-- Col 2: Monthly Payments -->
+      <td style="width:34%; vertical-align:top; padding:3px 4px; border-left:none;">
+        <div><strong>Monthly Payments</strong></div>
+        <div style="margin-top:3px;">
+          Your first monthly payment of <strong>$1,210.00</strong><br>
+          is due on <strong>July 21, 2025</strong><br>
+          followed by <strong>23</strong> payments of
+          <strong>$1,210.00</strong><br>
+          $<strong>$1,210.00</strong> due on the <strong>21</strong>
+          of each month. The total of your monthly<br>
+          payments is $&nbsp;<strong>$29,040.00</strong>&nbsp;.
+        </div>
+      </td>
+      <!-- Col 3: Other Charges -->
+      <td style="width:26%; vertical-align:top; padding:3px 4px; border-left:none;">
+        <div><strong>Other Charges</strong> (not part of your monthly payment)</div>
+        <table style="margin-top:3px; border:none;">
+          <tr>
+            <td style="border:none; font-size:6.5pt; padding:1px 0;">
+              Disposition fee (if you do not purchase the Vehicle)
+            </td>
+            <td style="border:none; text-align:right; padding:1px 0; white-space:nowrap;">
+              $&nbsp;<span class="val">$195.00</span>
+            </td>
+          </tr>
+          <tr>
+            <td style="border:none; padding:1px 0;">&nbsp;</td>
+            <td style="border:none; text-align:right; padding:1px 0;">$&nbsp;N/A</td>
+          </tr>
+          <tr>
+            <td style="border:none; padding:1px 0;">&nbsp;</td>
+            <td style="border:none; text-align:right; padding:1px 0;">$&nbsp;N/A</td>
+          </tr>
+          <tr>
+            <td style="border:none; font-weight:bold; padding:1px 0;">Total</td>
+            <td style="border:none; text-align:right; font-weight:bold; border-top:0.75pt solid #000; padding:1px 0;">
+              $&nbsp;$195.00
+            </td>
+          </tr>
+        </table>
+      </td>
+      <!-- Col 4: Total of Payments -->
+      <td style="width:22%; vertical-align:top; padding:3px 4px; border-left:none;">
+        <div><strong>Total of Payments</strong><br>
+          <span class="small">(The amount you will have paid by the end of the Lease)</span>
+        </div>
+        <div style="margin-top:8px; font-size:9pt; font-weight:bold; text-align:right;">
+          $&nbsp;$29,040.00
+        </div>
+      </td>
+    </tr>
+  </table>
+
+  <!-- ── Itemization Header ── -->
+  <table style="margin-top:0;">
+    <tr><th colspan="4" class="section-header" style="font-size:7.5pt;">*Itemization of Amount Due at Lease Signing or Delivery</th></tr>
+  </table>
+
+  <!-- ── Itemization Body — 2 columns ── -->
+  <table style="margin-top:0;">
+    <tr>
+      <!-- Left: Line items -->
+      <td class="w50 vtop" style="padding:3px 4px;">
+        <div><strong>Amount Due at Lease Signing or Delivery:</strong></div>
+        <table style="margin-top:2px; border:none; width:100%;">
+          <tr>
+            <td style="border:none; padding:1px 0; width:70%;">Capitalized cost reduction</td>
+            <td style="border:none; padding:1px 0; width:6%; text-align:right;">$</td>
+            <td style="border:none; padding:1px 0; width:24%; text-align:right; border-bottom:0.75pt solid #000;">
+              N/A
+            </td>
+          </tr>
+          <tr>
+            <td style="border:none; padding:1px 0;">First monthly payment</td>
+            <td style="border:none; padding:1px 0; text-align:right;">$</td>
+            <td style="border:none; padding:1px 0; text-align:right; border-bottom:0.75pt solid #000;">
+              $1,210.00
+            </td>
+          </tr>
+          <tr>
+            <td style="border:none; padding:1px 0;">Refundable security deposit</td>
+            <td style="border:none; padding:1px 0; text-align:right;">$</td>
+            <td style="border:none; padding:1px 0; text-align:right; border-bottom:0.75pt solid #000;">
+              N/A
+            </td>
+          </tr>
+          <tr>
+            <td style="border:none; padding:1px 0;">Refundable reconditioning reserve</td>
+            <td style="border:none; padding:1px 0; text-align:right;">$</td>
+            <td style="border:none; padding:1px 0; text-align:right; border-bottom:0.75pt solid #000;">
+              N/A
+            </td>
+          </tr>
+          <tr>
+            <td style="border:none; padding:1px 0;">Title fees</td>
+            <td style="border:none; padding:1px 0; text-align:right;">$</td>
+            <td style="border:none; padding:1px 0; text-align:right; border-bottom:0.75pt solid #000;">
+              N/A
+            </td>
+          </tr>
+          <tr>
+            <td style="border:none; padding:1px 0;">Registration fees</td>
+            <td style="border:none; padding:1px 0; text-align:right;">$</td>
+            <td style="border:none; padding:1px 0; text-align:right; border-bottom:0.75pt solid #000;">
+              N/A
+            </td>
+          </tr>
+          <tr>
+            <td style="border:none; padding:1px 0;">
+              <span class="blank-line">N/A</span>
+            </td>
+            <td style="border:none; padding:1px 0; text-align:right;">$</td>
+            <td style="border:none; padding:1px 0; text-align:right; border-bottom:0.75pt solid #000;">
+              N/A
+            </td>
+          </tr>
+          <tr>
+            <td style="border:none; padding:1px 0;">
+              <span class="blank-line">N/A</span>
+            </td>
+            <td style="border:none; padding:1px 0; text-align:right;">$</td>
+            <td style="border:none; padding:1px 0; text-align:right; border-bottom:0.75pt solid #000;">
+              N/A
+            </td>
+          </tr>
+          <tr>
+            <td style="border:none; padding:2px 0; font-weight:bold;">Total</td>
+            <td style="border:none; padding:2px 0; text-align:right; font-weight:bold;">$</td>
+            <td style="border:none; padding:2px 0; text-align:right; border-bottom:0.75pt solid #000; font-weight:bold;">
+              $1,210.00
+            </td>
+          </tr>
+        </table>
+      </td>
+      <!-- Right: How paid -->
+      <td class="w50 vtop" style="padding:3px 4px; border-left:none;">
+        <div><strong>How the Amount Due at Lease Signing or Delivery will be paid:</strong></div>
+        <table style="margin-top:2px; border:none; width:100%;">
+          <tr>
+            <td style="border:none; padding:1px 0; width:70%;">Net trade-in** allowance</td>
+            <td style="border:none; padding:1px 0; width:6%; text-align:right;">$</td>
+            <td style="border:none; padding:1px 0; width:24%; text-align:right; border-bottom:0.75pt solid #000;">
+              N/A
+            </td>
+          </tr>
+          <tr>
+            <td style="border:none; padding:1px 0;">Rebates and noncash credits</td>
+            <td style="border:none; padding:1px 0; text-align:right;">$</td>
+            <td style="border:none; padding:1px 0; text-align:right; border-bottom:0.75pt solid #000;">
+              N/A
+            </td>
+          </tr>
+          <tr>
+            <td style="border:none; padding:1px 0;">Amount to be paid in cash</td>
+            <td style="border:none; padding:1px 0; text-align:right;">$</td>
+            <td style="border:none; padding:1px 0; text-align:right; border-bottom:0.75pt solid #000;">
+              $1,210.00
+            </td>
+          </tr>
+          <tr>
+            <td style="border:none; padding:2px 0; font-weight:bold;">Total</td>
+            <td style="border:none; padding:2px 0; text-align:right; font-weight:bold;">$</td>
+            <td style="border:none; padding:2px 0; text-align:right; border-bottom:0.75pt solid #000; font-weight:bold;">
+              $1,210.00
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <!-- ── Monthly Payment Waterfall ── -->
+  <table style="margin-top:0; border-top:none;">
+    <tr>
+      <th colspan="3" class="section-header" style="border-top:none; font-weight:normal; font-style:italic;">
+        Your monthly payment is determined as shown below:
+      </th>
+    </tr>
+  </table>
+
+  <table style="margin-top:0; border-top:none;">
+    <!-- Gross Cap Cost -->
+    <tr>
+      <td style="width:78%; border:none; padding:1.5px 4px; font-size:7pt;">
+        <strong>Gross capitalized cost.</strong> The agreed upon value of the Vehicle
+        ($&nbsp;<strong>$61,719.00</strong>) and any items you pay over
+        the Lease term (such as service contracts, insurance, and any outstanding prior credit or lease balance).
+      </td>
+      <td style="width:4%; border:none; text-align:center; padding:1.5px 2px; font-size:7pt;">&nbsp;</td>
+      <td style="width:18%; border:none; border-bottom:0.75pt solid #000; text-align:right; padding:1.5px 4px; font-size:7pt;">
+        $&nbsp;$64,090.28
+      </td>
+    </tr>
+    <!-- Cap Cost Reduction -->
+    <tr>
+      <td style="border:none; padding:1.5px 4px; font-size:7pt;">
+        <strong>Capitalized cost reduction.</strong> The amount of any net trade-in allowance, rebate, noncash credit, or cash
+        you pay that reduced the gross capitalized cost.
+      </td>
+      <td style="border:none; text-align:center; padding:1.5px 2px; font-size:7pt;">-</td>
+      <td style="border:none; border-bottom:0.75pt solid #000; text-align:right; padding:1.5px 4px; font-size:7pt;">
+        $&nbsp;N/A
+      </td>
+    </tr>
+    <!-- Adjusted Cap Cost -->
+    <tr>
+      <td style="border:none; padding:1.5px 4px; font-size:7pt;">
+        <strong>Adjusted capitalized cost.</strong> The amount used in calculating your base monthly payment.
+      </td>
+      <td style="border:none; text-align:center; padding:1.5px 2px; font-size:7pt;">=</td>
+      <td style="border:none; border-bottom:0.75pt solid #000; text-align:right; padding:1.5px 4px; font-size:7pt;">
+        $&nbsp;$64,090.28
+      </td>
+    </tr>
+    <!-- Residual Value -->
+    <tr>
+      <td style="border:none; padding:1.5px 4px; font-size:7pt;">
+        <strong>Residual Value.</strong> The value of the Vehicle at the end of the Lease used in calculating your base monthly payment.
+      </td>
+      <td style="border:none; text-align:center; padding:1.5px 2px; font-size:7pt;">-</td>
+      <td style="border:none; border-bottom:0.75pt solid #000; text-align:right; padding:1.5px 4px; font-size:7pt;">
+        $&nbsp;$45,566.52
+      </td>
+    </tr>
+    <!-- Depreciation -->
+    <tr>
+      <td style="border:none; padding:1.5px 4px; font-size:7pt;">
+        <strong>Depreciation and any amortized amounts.</strong> The amount charged for the Vehicle's decline in value through normal use and
+        for other items paid over the Lease term.
+      </td>
+      <td style="border:none; text-align:center; padding:1.5px 2px; font-size:7pt;">=</td>
+      <td style="border:none; border-bottom:0.75pt solid #000; text-align:right; padding:1.5px 4px; font-size:7pt;">
+        $&nbsp;$18,523.76
+      </td>
+    </tr>
+    <!-- Rent Charge -->
+    <tr>
+      <td style="border:none; padding:1.5px 4px; font-size:7pt;">
+        <strong>Rent charge.</strong> The amount charged in addition to the depreciation and any amortized amounts.
+      </td>
+      <td style="border:none; text-align:center; padding:1.5px 2px; font-size:7pt;">+</td>
+      <td style="border:none; border-bottom:0.75pt solid #000; text-align:right; padding:1.5px 4px; font-size:7pt;">
+        $&nbsp;$10,516.24
+      </td>
+    </tr>
+    <!-- Total Base -->
+    <tr>
+      <td style="border:none; padding:1.5px 4px; font-size:7pt;">
+        <strong>Total of base monthly payments.</strong> The depreciation and any amortized amounts plus the rent charge.
+      </td>
+      <td style="border:none; text-align:center; padding:1.5px 2px; font-size:7pt;">=</td>
+      <td style="border:none; border-bottom:0.75pt solid #000; text-align:right; padding:1.5px 4px; font-size:7pt;">
+        $&nbsp;$29,040.00
+      </td>
+    </tr>
+    <!-- Lease Payments (term) -->
+    <tr>
+      <td style="border:none; padding:1.5px 4px; font-size:7pt;">
+        <strong>Lease payments.</strong> The number of payment in your Lease (This is also the number of months in your Lease).
+      </td>
+      <td style="border:none; text-align:center; padding:1.5px 2px; font-size:7pt;">÷</td>
+      <td style="border:none; border-bottom:0.75pt solid #000; text-align:right; padding:1.5px 4px; font-size:7pt;">
+        24
+      </td>
+    </tr>
+    <!-- Base Monthly -->
+    <tr>
+      <td style="border:none; padding:1.5px 4px; font-size:7pt; font-weight:bold;">
+        Base monthly payment.
+      </td>
+      <td style="border:none; text-align:center; padding:1.5px 2px; font-size:7pt;">=</td>
+      <td style="border:none; border-bottom:0.75pt solid #000; text-align:right; padding:1.5px 4px; font-size:7pt;">
+        $&nbsp;$1,210.00
+      </td>
+    </tr>
+    <!-- Monthly Tax -->
+    <tr>
+      <td style="border:none; padding:1.5px 4px; font-size:7pt;">
+        Monthly sales / use tax.
+      </td>
+      <td style="border:none; text-align:center; padding:1.5px 2px; font-size:7pt;">+</td>
+      <td style="border:none; border-bottom:0.75pt solid #000; text-align:right; padding:1.5px 4px; font-size:7pt;">
+        $&nbsp;$0.00
+      </td>
+    </tr>
+    <!-- Optional add-on line (N/A by default) -->
+    <tr>
+      <td style="border:none; padding:1.5px 4px; font-size:7pt;">N/A</td>
+      <td style="border:none; text-align:center; padding:1.5px 2px; font-size:7pt;">+</td>
+      <td style="border:none; border-bottom:0.75pt solid #000; text-align:right; padding:1.5px 4px; font-size:7pt;">$&nbsp;N/A</td>
+    </tr>
+    <!-- Total Monthly -->
+    <tr>
+      <td style="border:none; padding:1.5px 4px; font-size:7pt; font-weight:bold;">
+        Total monthly payment.
+      </td>
+      <td style="border:none; text-align:center; padding:1.5px 2px; font-size:7pt; font-weight:bold;">=</td>
+      <td style="border:none; border-bottom:0.75pt solid #000; border-top:0.75pt solid #000; text-align:right; padding:1.5px 4px; font-size:7pt; font-weight:bold;">
+        $&nbsp;$1,210.00
+      </td>
+    </tr>
+  </table>
+
+  <!-- ── Boilerplate disclosures ── -->
+  <table style="margin-top:2px;">
+    <tr>
+      <td style="font-size:7pt; padding:2px 4px; border-left:none; border-right:none; border-top:none;">
+        <strong>Early Termination:</strong> You may have to pay a substantial charge if you end this Lease early.
+        <span class="u">The charge may be up to several thousand dollars.</span>
+        The actual charge will depend on when the Lease is terminated. The earlier you end the lease, the greater this charge is likely to be.
+      </td>
+    </tr>
+    <tr>
+      <td style="font-size:7pt; padding:2px 4px; border-left:none; border-right:none; border-top:none;">
+        <strong>Excessive Wear and Use:</strong> You may be charged for excessive wear based on our standards of normal use and for mileage in excess of&nbsp;
+        <strong>35,000</strong> miles per year at a rate of
+        $<strong>0.25</strong> cents per mile.
+      </td>
+    </tr>
+    <tr>
+      <td style="font-size:7pt; padding:2px 4px; border-left:none; border-right:none; border-top:none;">
+        <strong>Purchase Option at End of Lease Term:</strong> You have an option to purchase the Vehicle at the end of the Lease term for
+        <strong>$45,566.52</strong> and a purchase option fee of $&nbsp;<strong>$0.00</strong>.
+        The purchase option price does not include official fees such as those for taxes, tags, licenses and registration.
+      </td>
+    </tr>
+    <tr>
+      <td style="font-size:7pt; padding:2px 4px; border-left:none; border-right:none; border-top:none;">
+        Other Important Terms. See your lease documents for additional information on early termination, purchase options, maintenance
+        responsibilities, warranties, late and default charges, insurance, and any security interest, if applicable.
+      </td>
+    </tr>
+    <tr>
+      <td style="font-size:7pt; padding:2px 4px; border-left:none; border-right:none; border-top:none; border-bottom:none;">
+        Extension: At the end of the initial term as specified herein, the lease shall continue on a month-to-month basis if vehicle is not returned
+        to Lessor and the Lessee is not otherwise in default of the Lease Agreement. All previous terms and conditions shall apply.
+      </td>
+    </tr>
+  </table>
+
+  <div class="page-footer">Page 1 of 5</div>
+</div><!-- /page-1 -->
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     PAGE 2
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-2">
+
+  <!-- ── Section 4: Trade-In Vehicle ── -->
+  <table>
+    <tr><th colspan="6" class="section-header">4. **Description of the Trade-In Vehicle</th></tr>
+    <tr>
+      <td style="width:8%; font-weight:bold; border-bottom:none;">Year</td>
+      <td style="width:22%; border-bottom:none;">N/A</td>
+      <td style="width:38%; border-bottom:none; border-left:none;">&nbsp;</td>
+      <td style="width:22%; font-size:7pt; border-bottom:none;">Gross Amount of Trade-In Allowance</td>
+      <td style="width:4%; text-align:right; border-bottom:none;">$</td>
+      <td style="width:6%; text-align:right; border-bottom:0.75pt solid #000;">N/A</td>
+    </tr>
+    <tr>
+      <td style="font-weight:bold; border-top:none; border-bottom:none;">Make</td>
+      <td style="border-top:none; border-bottom:none;">N/A</td>
+      <td style="font-weight:bold; border-top:none; border-bottom:none; border-left:none;">
+        &nbsp;&nbsp;Model&nbsp;&nbsp;<span style="font-weight:normal;">N/A</span>
+      </td>
+      <td style="font-size:7pt; border-top:none; border-bottom:none;">Prior Credit or Lease Balance</td>
+      <td style="text-align:right; border-top:none; border-bottom:none;">-&nbsp;$</td>
+      <td style="text-align:right; border-top:none; border-bottom:0.75pt solid #000;">N/A</td>
+    </tr>
+    <tr>
+      <td colspan="3" style="border-top:none;">&nbsp;</td>
+      <td style="font-size:7pt; border-top:none;">Net Trade-In Allowance (If less than 0 then enter 0)</td>
+      <td style="text-align:right; border-top:none;">=&nbsp;$</td>
+      <td style="text-align:right; border-top:none; border-bottom:0.75pt solid #000;">$0.00</td>
+    </tr>
+  </table>
+
+  <!-- ── Section 5: Itemization of Gross Capitalized Cost ── -->
+  <table style="margin-top:2px;">
+    <tr><th colspan="4" class="section-header">5. Itemization of Gross Capitalized Cost</th></tr>
+    <tr>
+      <!-- Left: cost inputs -->
+      <td class="w50 vtop" style="padding:3px 4px;">
+        <table style="border:none; width:100%;">
+          <tr>
+            <td style="border:none; width:70%; padding:1px 0;">Agreed upon value of the Vehicle:</td>
+            <td style="border:none; width:6%; text-align:right; padding:1px 0;">$</td>
+            <td style="border:none; width:24%; text-align:right; border-bottom:0.75pt solid #000; padding:1px 0;">
+              $61,719.00
+            </td>
+          </tr>
+          <tr>
+            <td colspan="3" style="border:none; padding:1px 0; font-style:italic; font-size:6.5pt;">
+              Other amounts included in the gross capitalized cost:
+            </td>
+          </tr>
+          <tr>
+            <td style="border:none; padding:1px 0;">Taxes</td>
+            <td style="border:none; text-align:right; padding:1px 0;">$</td>
+            <td style="border:none; text-align:right; border-bottom:0.75pt solid #000; padding:1px 0;">$1,356.28</td>
+          </tr>
+          <tr>
+            <td style="border:none; padding:1px 0;">Title and Registration fees</td>
+            <td style="border:none; text-align:right; padding:1px 0;">$</td>
+            <td style="border:none; text-align:right; border-bottom:0.75pt solid #000; padding:1px 0;">$240.00</td>
+          </tr>
+          <tr>
+            <td style="border:none; padding:1px 0;">Lease acquisition fee</td>
+            <td style="border:none; text-align:right; padding:1px 0;">$</td>
+            <td style="border:none; text-align:right; border-bottom:0.75pt solid #000; padding:1px 0;">$595.00</td>
+          </tr>
+          <tr>
+            <td style="border:none; padding:1px 0;">Documentation fee</td>
+            <td style="border:none; text-align:right; padding:1px 0;">$</td>
+            <td style="border:none; text-align:right; border-bottom:0.75pt solid #000; padding:1px 0;">$180.00</td>
+          </tr>
+          <tr>
+            <td style="border:none; padding:1px 0; font-size:6.5pt;">Prior credit or lease balance on trade-in vehicle**</td>
+            <td style="border:none; text-align:right; padding:1px 0;">$</td>
+            <td style="border:none; text-align:right; border-bottom:0.75pt solid #000; padding:1px 0;">N/A</td>
+          </tr>
+          <tr>
+            <td style="border:none; padding:1px 0;">
+              <span class="blank-line">N/A</span>
+            </td>
+            <td style="border:none; text-align:right; padding:1px 0;">$</td>
+            <td style="border:none; text-align:right; border-bottom:0.75pt solid #000; padding:1px 0;">N/A</td>
+          </tr>
+        </table>
+        <div style="font-size:6pt; margin-top:2px;">** No add permitted unless lessor has paid prior credit or lease balance.</div>
+      </td>
+      <!-- Right: optional products -->
+      <td class="w50 vtop" style="padding:3px 4px; border-left:none;">
+        <div style="font-style:italic; font-size:7pt;">Optional Products and Services:</div>
+        <table style="border:none; width:100%; margin-top:2px;">
+          <tr>
+            <td style="border:none; width:70%; padding:1px 0;">Mechanical Breakdown Protection</td>
+            <td style="border:none; width:6%; text-align:right; padding:1px 0;">$</td>
+            <td style="border:none; width:24%; text-align:right; border-bottom:0.75pt solid #000; padding:1px 0;">N/A</td>
+          </tr>
+          <tr>
+            <td style="border:none; padding:1px 0;">Service Contract</td>
+            <td style="border:none; text-align:right; padding:1px 0;">$</td>
+            <td style="border:none; text-align:right; border-bottom:0.75pt solid #000; padding:1px 0;">N/A</td>
+          </tr>
+          <tr>
+            <td style="border:none; padding:1px 0;">Gap Contract or Coverage or Waiver</td>
+            <td style="border:none; text-align:right; padding:1px 0;">$</td>
+            <td style="border:none; text-align:right; border-bottom:0.75pt solid #000; padding:1px 0;">N/A</td>
+          </tr>
+          <tr>
+            <td style="border:none; padding:1px 0;">
+              <span class="blank-line">N/A</span>
+            </td>
+            <td style="border:none; text-align:right; padding:1px 0;">$</td>
+            <td style="border:none; text-align:right; border-bottom:0.75pt solid #000; padding:1px 0;">N/A</td>
+          </tr>
+          <tr>
+            <td style="border:none; padding:1px 0;">
+              <span class="blank-line">N/A</span>
+            </td>
+            <td style="border:none; text-align:right; padding:1px 0;">$</td>
+            <td style="border:none; text-align:right; border-bottom:0.75pt solid #000; padding:1px 0;">N/A</td>
+          </tr>
+          <tr>
+            <td style="border:none; padding:2px 0; font-weight:bold;">Total Gross Capitalized Cost:</td>
+            <td style="border:none; text-align:right; padding:2px 0; font-weight:bold;">$</td>
+            <td style="border:none; text-align:right; border-bottom:0.75pt solid #000; padding:2px 0; font-weight:bold;">
+              $64,090.28
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <!-- ── Repossession warning ── -->
+  <table style="margin-top:2px;">
+    <tr>
+      <td colspan="2" style="text-align:center; font-weight:bold; font-size:7.5pt; padding:3px 4px; border:0.75pt solid #000;">
+        IF YOU DO NOT MEET YOUR OBLIGATION UNDER THIS LEASE, WE MAY REPOSSESS THE VEHICLE.
+      </td>
+    </tr>
+  </table>
+
+  <!-- ── Sections 6-9: two-column ── -->
+  <table style="margin-top:2px;">
+    <tr>
+      <!-- Left: 6 & 7 -->
+      <td class="w50 vtop" style="padding:3px 4px;">
+        <p style="font-size:7pt; margin-bottom:4px;">
+          <strong>6. Official Fees and Taxes.</strong> The total amount you will pay for official
+          license fees, registration, title, and taxes of the term of your
+          lease, whether included in your monthly payments or assessed
+          otherwise:&nbsp;<strong>$1,596.28</strong>&nbsp;. <em>(e)</em>&nbsp;
+          <span style="font-size:6.5pt;">The actual total of fees and taxes may be
+          higher or lower depending on the tax rates in
+          effect or the value of the Vehicle at the time a
+          fee or tax is assessed.</span>
+        </p>
+        <p style="font-size:7pt;">
+          <strong>7. Warranties.</strong> The Vehicle is subject to the following express warranties: If the
+          Vehicle is new, the Vehicle is subject to the manufacturer's standard new car
+          warranty. &#x2610; If this box is checked, the Vehicle is subject to the following express
+          warranty or guarantee:
+          <span class="blank-line" style="min-width:120px;">&nbsp;N/A&nbsp;</span><br>
+          <span class="blank-line" style="min-width:180px;">&nbsp;N/A&nbsp;</span>
+          If the Vehicle is not new, and no warranty is identified in the previous sentence,
+          there is no express warranty on the vehicle. Unless prohibited by law, the
+          following three sentences apply. YOU ARE LEASING THE VEHICLE "AS IS". WE
+          MAKE NO EXPRESS WARRANTIES ON THE VEHICLE. WE DISCLAIM ANY
+          WARRANTIES IMPLIED BY LAW, INCLUDING THE IMPLIED WARRANTIES OF
+          MERCHANTABILITY AND FITNESS FOR ANY PARTICULAR PURPOSE. If we make a
+          written warranty covering the Vehicle or, within 90 days of the Lease Date we
+          extend a service contract covering the Vehicle, this disclaimer will not affect any
+          implied warranties during the term of the warranty or service contract.
+        </p>
+      </td>
+      <!-- Right: 8 & 9 -->
+      <td class="w50 vtop" style="padding:3px 4px; border-left:none;">
+        <p style="font-size:7pt; margin-bottom:6px;">
+          <strong>8. Disposition Fee</strong> (See "Return of the Vehicle" below on
+          this Lease): $&nbsp;<strong>$195.00</strong>&nbsp;.
+        </p>
+        <p style="font-size:7pt;">
+          <strong>9. Early Termination Fee</strong> (See "Terms Concerning Your Early
+          Termination Liability" below on this Lease): $&nbsp;<strong>$0.00</strong>&nbsp;.
+        </p>
+      </td>
+    </tr>
+  </table>
+
+  <!-- ── Section 10: Optional Products Table ── -->
+  <table style="margin-top:2px;">
+    <tr><th colspan="6" class="section-header">10. Optional Products and Services</th></tr>
+    <tr>
+      <td colspan="6" style="font-size:6.5pt; padding:3px 4px; border-top:none;">
+        You are not required to buy any of the following optional products and services to enter into the lease. The term of any product or
+        service will be the Lease term, unless a different term is shown below. If you decide you want to buy an optional product or service,
+        review the terms of the contract which describes the product or service before you initial below. A completed copy of the contract
+        will be given to you as soon as practicable. It is part of this lease. <strong>By initialing below, you indicate that you want to purchase the
+        optional product and service indicated. If the cost shown below is not shown as part of the Itemization of Amount Due at Lease
+        Signing and Delivery above, it has been added to the Gross Capitalized Cost (see above).</strong>
+      </td>
+    </tr>
+    <tr>
+      <th style="width:30%;">Optional Product or Service</th>
+      <th style="width:15%; text-align:center;">Amount or Period</th>
+      <th style="width:12%; text-align:center;">Price</th>
+      <th style="width:10%; text-align:center;">Term</th>
+      <th style="width:18%; text-align:center;">Name of Provider</th>
+      <th style="width:15%; text-align:center;">Approval</th>
+    </tr>
+    <tr>
+      <td style="font-size:7pt; padding:3px 4px;">Optional Mechanical Breakdown<br>Protection of Service Contract</td>
+      <td style="text-align:center; padding:3px 4px;">N/A</td>
+      <td style="text-align:center; padding:3px 4px;">N/A</td>
+      <td style="text-align:center; padding:3px 4px;">N/A</td>
+      <td style="text-align:center; padding:3px 4px;">N/A</td>
+      <td style="text-align:center; font-size:6.5pt; padding:3px 4px;">
+        Lessee<br>Initials&nbsp;N/A
+      </td>
+    </tr>
+    <tr>
+      <td style="font-size:7pt; padding:3px 4px;">Optional Gap Contract or Coverage,<br>of Gap Waiver</td>
+      <td style="text-align:center; padding:3px 4px;">N/A</td>
+      <td style="text-align:center; padding:3px 4px;">N/A</td>
+      <td style="text-align:center; padding:3px 4px;">N/A</td>
+      <td style="text-align:center; padding:3px 4px;">N/A</td>
+      <td style="text-align:center; font-size:6.5pt; padding:3px 4px;">
+        Lessee<br>Initials&nbsp;N/A
+      </td>
+    </tr>
+  </table>
+
+  <!-- ── Section 11: Notices + Signatures ── -->
+  <table style="margin-top:2px;">
+    <tr><th colspan="4" class="section-header">11. NOTICES</th></tr>
+    <tr>
+      <td colspan="4" style="font-weight:bold; font-size:7pt; padding:2px 4px;">
+        NOTICE TO THE LESSEE: 1. DO NOT SIGN THIS LEASE BEFORE YOU READ IT.&nbsp;&nbsp;2. YOU ARE ENTITLED TO A COPY OF THIS LEASE.
+      </td>
+    </tr>
+    <tr>
+      <td colspan="4" style="font-size:7pt; padding:2px 4px;">
+        <strong>LESSEE SIGNATURES</strong> (check if other than individual(s)&nbsp;
+          &amp;#x2610; Corporation&nbsp;&nbsp;
+          &amp;#x2610; Partnership&nbsp;&nbsp;
+          &amp;#x2611; LLC&nbsp;&nbsp;
+          &amp;#x2610; Sole Proprietorship
+      </td>
+    </tr>
+    <!-- Signature row -->
+    <tr>
+      <td class="w50 sig-block" style="height:48px; vertical-align:bottom;">
+        <span class="sig-line"></span>
+        <div style="margin-top:2px;">Lessee Signature</div>
+      </td>
+      <td class="w50 sig-block" style="height:48px; vertical-align:bottom; border-left:none;">
+        <span class="sig-line"></span>
+        <div style="margin-top:2px;">Lessee Signature</div>
+      </td>
+    </tr>
+    <tr>
+      <td class="w50 sig-block">
+        <strong>Joel Wollum</strong>
+        <div style="font-size:6.5pt; margin-top:1px;">Type/Print Lessee Name</div>
+      </td>
+      <td class="w50 sig-block" style="border-left:none;">
+        
+        <div style="font-size:6.5pt; margin-top:1px;">Type/Print Lessee Name</div>
+      </td>
+    </tr>
+  </table>
+
+  <!-- ── Lessor Acceptance ── -->
+  <table style="margin-top:4px;">
+    <tr>
+      <th colspan="2" class="section-header">LESSOR'S ACCEPTANCE AND ASSIGNMENT</th>
+    </tr>
+    <tr>
+      <td colspan="2" style="font-size:7pt; padding:3px 4px;">
+        The Lessor's authorized signature indicates the Lessor has accepted the terms, conditions and obligations of the Lease and that the Lessor
+        agrees to the "Lessor's Assignment" provision on the other side of the Lease.
+      </td>
+    </tr>
+    <tr>
+      <td class="w50 vtop" style="padding:4px 6px; height:56px;">
+        <div style="font-size:7pt;">Lessor Name:&nbsp;<strong>All Four, LLC</strong></div>
+      </td>
+      <td class="w50 vtop" style="padding:4px 6px; border-left:none;">
+        <div style="font-size:7pt; margin-bottom:2px;">By:</div>
+        <span class="sig-line" style="min-height:24px;"></span>
+      </td>
+    </tr>
+    <tr>
+      <td class="w50" style="padding:3px 6px;">&nbsp;</td>
+      <td class="w50" style="padding:3px 6px; border-left:none;">
+        <div style="font-size:7pt;">Type/Print Name:&nbsp; <strong>Madison Wellik</strong></div>
+        <div style="font-size:7pt; margin-top:4px;">Type/Print Title:&nbsp; <strong>Lease Sales Consultant</strong></div>
+      </td>
+    </tr>
+  </table>
+
+  <div class="page-footer">Page 2 of 5</div>
+</div><!-- /page-2 -->
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     PAGE 3 — Boilerplate (Default, Repossession, Early Termination, Other Terms)
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-3">
+
+  <table>
+    <tr><th class="section-header">12. Default, Repossession and Other Remedies</th></tr>
+    <tr>
+      <td class="section-legal">
+        You will be in default if: You fail to make a monthly payment when it is due; &#x2022; you fail to pay any amount you owe under the Lease when it is
+        due or when demand is made; &#x2022; You provide any false or misleading information in any lease application; &#x2022; You fail to maintain the required
+        insurance; &#x2022; You lose possession of the Vehicle by confiscation, forfeiture or other involuntary transfer regardless of whether the Vehicle is
+        the subject of judicial or administrative proceedings; &#x2022; You exceed the permitted mileage shown in Item 3; &#x2022; You die and there is no surviving
+        lessee; &#x2022; The Vehicle is lost, stolen or damaged beyond repair; &#x2022; You assign the Lease or transfer the Vehicle; &#x2022; You fail to keep any other
+        promise or obligation under the Lease or violate any other term of the Lease.
+      </td>
+    </tr>
+    <tr>
+      <td class="section-legal">
+        If the Lease is in default, we may at our election, after providing any notice and subject to any waiting periods imposed by law, take any one
+        or more of the following actions: We may take any action, such as buying insurance on your behalf, we believe to be required to protect out
+        interest in the Vehicle. Out action will not cure your default. Amounts we spend taking such action will be added to your Lease obligations and
+        will incur rent charges. If we terminate this Lease upon a default, you authorize us to cancel any optional products and services you bought in
+        connection with this Lease. You direct any provider of such products and services to pay us any refund of credit due on early cancellation. We
+        will apply any refund to your Lease obligations. We may peacefully repossess the Vehicle wherever we may find it. We will five all notices of
+        repossession required by law. Your authorize us to enter any property where the Vehicle may be to take possession of it and remove it. We
+        may use the license plates on the Vehicle in moving it to a storage place. After repossession, we will hold the Vehicle free of any rights you
+        may have under this Lease, subject to any right you may have under applicable law to cure the default or recover the Vehicle. Unless you tell
+        us within two business days of any personal property you claim was in the Vehicle when it was repossessed, we will not be responsible for
+        that property.
+      </td>
+    </tr>
+  </table>
+
+  <table style="margin-top:4px;">
+    <tr><th class="section-header">13. Terms Concerning Your Early Termination Liability</th></tr>
+    <tr>
+      <td>
+        <table style="border:none; width:100%;">
+          <tr>
+            <td style="border:none; width:6%; padding:2px 4px; vertical-align:top; font-size:7pt;">(a)</td>
+            <td style="border:none; padding:2px 4px; font-size:7pt;">
+              You may terminate (end) the Lease before the end of the Lease term under the following conditions: If you are not in default under the
+              Lease, you may end the Lease by returning the Vehicle to us and paying us within five business days of the date we make demand your
+              early termination liability (see below).
+            </td>
+          </tr>
+          <tr>
+            <td style="border:none; padding:2px 4px; vertical-align:top; font-size:7pt;">(b)</td>
+            <td style="border:none; padding:2px 4px; font-size:7pt;">
+              We may end the Lease before the end of the Lease term under the following conditions: If you are in default, we may end the Lease.
+              You must return the Vehicle to the place we designate. You must pay us within five business days of the date we make demand your
+              early termination liability (see below).
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td class="section-legal">
+        Upon early termination you agree to pay the following charges: &#x2022; Any unpaid monthly payments then due. &#x2022; The Early Termination Fee, if any,
+        shown in Item 9. &#x2022; Any official fees and taxes imposed in connection with termination. &#x2022; The amount by which the adjusted lease balance
+        exceeds the Vehicle's realized value at termination. &#x2022; If we have to take possession of the Vehicle from you, you will pay us the amount we
+        have to pay for expenses in doing so. &#x2022; If we have to store the Vehicle and pay storage charges, you will pay us the amount of the storage
+        charges. &#x2022; We will apply some or all of you security deposit to what you owe.
+      </td>
+    </tr>
+    <tr>
+      <td class="section-legal">
+        We figure your adjusted lease balance using the "constant yield method". "Constant yield method" means the method of determining the
+        rent charge portion of each base monthly payment under which the rent charge for each month is earned in advance by multiplying the
+        constant rate implicit in the Lease times the balance subject to rent charge as it declines during the Lease term. At any given time during the
+        Lease term, the balance subject to rent charge is the difference between the adjusted capitalized cost and the sum of: (i) all depreciation
+        amounts accrued during the previous monthly periods, and (ii) the first base monthly payment. The periodic rent charge calculations are
+        based on the assumption that we will receive your rental payments on their exact due date and that the Lease goes to its full term.
+      </td>
+    </tr>
+    <tr>
+      <td class="section-legal">
+        The realized value of the Vehicle is: the price we receive for the Vehicle at disposition; the highest offer we receive for disposition of the
+        Vehicle; of the fair market value of the Vehicle at the end of the Lease term. We will add the amount you owe us what it costs us to pay
+        someone to dispose of the Vehicle, for example an auction fee.
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <table style="border:none; width:100%;">
+          <tr>
+            <td style="border:none; width:6%; padding:2px 4px; vertical-align:top; font-size:7pt;">(c)</td>
+            <td style="border:none; padding:2px 4px; font-size:7pt;">
+              To the extent these charges take into account the value of the Vehicle at termination, if you disagree with the value we assign to the
+              Vehicle, you may obtain, at your own expense, from an independent third party agreeable to you and to us, a professional appraisal of
+              the wholesale value of the Vehicle which could be realized at sale. We will then use this appraised value as the realized value.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td class="section-legal">
+        If we have to pay someone to help us collect the amount you owe us, we will add the amount we have to pay to the amount you owe us.
+      </td>
+    </tr>
+  </table>
+
+  <table style="margin-top:4px;">
+    <tr><th class="section-header">14. Other Terms and Conditions</th></tr>
+    <tr>
+      <td class="section-legal">
+        <strong>Insurance.</strong> You agree to maintain in your name the following types of amounts of primary insurance for the Lease term and until you return
+        the Vehicle: Bodily injury insurance with $300,000/$500,000 limits; property damage insurance with $50,000 limits; collision, fire, theft, and
+        comprehensive coverage with a maximum deductible of $500. You may obtain insurance from anyone reasonably acceptable to us. North
+        Iowa Equity, LLC must be shown as additional insured and loss payee. We may endorse your name on any check we receive in payment of a
+        claim. Your policy must state that we will be given at least 10 days' notice of any cancellation, reduction or other material coverage change. If
+        your insurer does not pay a claim for any reason, it will mean that you have not maintained the required insurance. You will pay for any loss
+        that may result because you do not maintain required insurance or because the insurer does not pay a claim.
+      </td>
+    </tr>
+  </table>
+
+  <div class="page-footer">Page 3 of 5</div>
+</div><!-- /page-3 -->
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     PAGE 4 — Boilerplate continued (Other Terms and Conditions)
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-4">
+
+  <table>
+    <tr>
+      <td class="section-legal">
+        <p style="margin-bottom:5px;">
+          <strong>NOTICE: PHYSICAL DAMAGE OR LIABILITY INSURANCE COVERAGE FOR BODILY INJURY AND PROPERTY DAMAGE TO OTHER IS NOT
+          INCLUDED IN THIS LEASE.</strong>
+        </p>
+        <p style="margin-bottom:5px;">
+          <strong>Your Gap Liability and Gap Waiver.</strong> You are liable for the "gap amount." The "gap amount" is the difference between the amount you would
+          owe (or which you would owe in the absence of gap protection) under this Lease in the event of a total loss of the Vehicle before the end of
+          the Lease term occasioned by its loss, theft or physical damage, and the actual cash value we receive from your insurance company. For a fee,
+          we may waive our right to collect the gap amount from you. If we do, the price of such waiver appears in Item 10. Our waiver of our right to
+          collect the gap amount from you is conditioned on our receipt of: (a) all amounts due under the Lease as of the date of our receipt of the
+          insurance proceeds, or, if applicable law or gap protection contract provides, as of the date of the Vehicle's total loss; (b) an amount from you
+          equal to your deductible and any other subtractions from the actual cash value of the Vehicle under your policy; and (c) insurance proceeds
+          from the insurance policy required under this Lease. Gap protection may also be available from a third party. If so, and you elect such third-
+          party gap protection, the name of the provided of the protection and the price of the protection will appear in Item 10 and the terms and
+          conditions of such protection will be in a contract provided by the third party.
+        </p>
+        <p style="margin-bottom:5px;">
+          <strong>Standards for Wear and Use.</strong> You agree not to drive the Vehicle more than the mileage set forth in Item 3. You may be charged for excess
+          wear and use at the end of the scheduled Lease term. The following standards apply for determining unreasonable or excess wear and use: &#x2022;
+          You will not paint or letter the Vehicle or Modify the VIN number of the Vehicle without our prior written permission; &#x2022; You will not add,
+          remove or modify any accessories, equipment or parts without our prior written permission; &#x2022; The Vehicle will not have road damage, chips,
+          scratches, cracks, or damage to the glass, body, bumpers, frame or interior, mechanical or electrical malfunction, torn, burned, stained or
+          shredded upholstery and interior, dented trim or molding, damage from water, sand, or freezing; &#x2022; You must return the Vehicle with
+          operating interior and exterior lights; &#x2022; You must return the Vehicle with 4 matching tires of equal quality to the originals and a spare of equal
+          quality and type as the original; &#x2022; When you return the Vehicle, each Vehicle tire must have not less than 1/8 inch of tread remaining at its
+          shallowest point.
+        </p>
+        <p style="margin-bottom:5px;">
+          <strong>Security Deposit.</strong> If a charge for a refundable security deposit appears in Item 3, this paragraph applies. Unless required by law, we do not
+          keep the security deposit separate in a back or earmarked on our books. We may apply some or all of the security deposit to what you owe.
+          Any unused security deposit will be returned to you at the end of the Lease. We have no fiduciary duty to you with respect to the security
+          deposit unless such duty is imposed by law. No interest, increase or profit on the security deposit will accrue or be paid to you.
+        </p>
+        <p style="margin-bottom:5px;">
+          <strong>Optional Products and Services.</strong> If Item 5 reflects that you have agreed to purchase Optional Products and Services, you understand and agree
+          that the original Lessor may retain all or a part of the purchase price shown for such Optional Products and Services, depending upon whether
+          the Optional Products and Services are purchased by the original Lessor from a third party or are provided directly by the original Lessor.
+        </p>
+        <p style="margin-bottom:5px;">
+          <strong>Reconditioning Reserve.</strong> If a charge for a refundable reconditioning reserve appears in Item 3, this paragraph applies. If you fail to pay any
+          charges for excess mileage or excess wear and tear, we may use the reconditioning reserve to recondition the Vehicle for resale. The
+          reconditioning reserve will be refunded to you if: (i) you buy the Vehicle at or before the end or the Lease term; or (ii) you pay any excess
+          mileage and/or excess wear and tear charges due under this Lease. No interest, increase or profit will accrue or be paid to you on the
+          reconditioning reserve.
+        </p>
+        <p style="margin-bottom:5px;">
+          <strong>Option to Purchase Vehicle Upon Early Termination.</strong> You have an option to buy the Vehicle prior to the end of the term. The price will be the
+          adjusted lease balance (see "Terms Concerning Your Early Termination Liability", above) plus any other charges due and unpaid under this
+          lease. You must also pay any taxes or official fees (for taxes, tags, licenses and registration) imposed on our sale of the Vehicle to you.
+        </p>
+        <p style="margin-bottom:5px;">
+          <strong>Return of the Vehicle.</strong> You will return the Vehicle in clean condition. If you do not buy the Vehicle from us under your purchase option, you
+          agree to return the Vehicle to us at a place we designate. When you return the Vehicle, you must give us a completed, signed odometer
+          disclosure statement. You agree to pay us any amounts you owe under the Lease and have not paid. We may apply all or part of you security
+          deposit to what you owe us. If you keep the Vehicle after the date you are supposed to return it, you will pay us a monthly amount equal to
+          the monthly Lease payment and other amounts that may come due. Your payment does not permit you to keep the Vehicle unless you get
+          our permission in advance. You will pay us upon return of the Vehicle a disposition fee as shown in "Disposition Fee" above on this Lease.
+        </p>
+        <p style="margin-bottom:5px;">
+          <strong>Maintenance.</strong> You will maintain the Vehicle in good working order and repair. You will pay all operating costs, such as fuel, oil and
+          replacement tires. You will, at your expense, service the Vehicle according to the owner's manual maintenance schedule. If the Vehicle is
+          recalled, you will have the recall repairs or service performed. We have no obligation to provide you with a replacement Vehicle for any
+          reason.
+        </p>
+        <p>
+          <strong>Registration, Parking Tickets and Taxes.</strong> You must keep the Vehicle currently registered. You must pay all parking tickets and traffic fines
+          relating to the Vehicle. If you do not pay such tickets and fines, we have the right to do so for you, and you will pay us upon demand. We may
+          add the amount to what you owe us if you do not pay us when we make demand. You must pay when due or reimburse us if we pay for you
+          all government charges, fees and taxes whether assessed on you, us, or the Vehicle. You will not have to pay our income taxes. If you do not
+          pay the charges, fees and taxes and interest or penalties are assessed (unless the interest or penalties are a result of our negligence), you
+          must pay the interest or penalties when due or reimburse us if we pay them. You must pay personal property taxes assessed on the Vehicle,
+          whether you are billed for them by the government or whether we pay them and bill you for them or include the amount of such taxes as
+          part of your monthly payment.
+        </p>
+      </td>
+    </tr>
+  </table>
+
+  <div class="page-footer">Page 4 of 5</div>
+</div><!-- /page-4 -->
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     PAGE 5 — Boilerplate continued (More Other Terms + Lessor's Assignment)
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-5">
+
+  <table>
+    <tr>
+      <td class="section-legal">
+        <p style="font-weight:bold; margin-bottom:5px;">
+          You must pay personal property taxes assessed on the Vehicle,
+          whether you are billed for them by the government or whether we pay them and bill you for them or include the amount of such taxes as
+          part of your monthly payment.
+        </p>
+        <p style="margin-bottom:5px;">
+          <strong>Use of the Vehicle.</strong> You will keep the Vehicle free from any liens or claims. You have the risk of loss, and are responsible for the Vehicle's
+          damage or destruction. You will not allow unlicensed drivers to drive the Vehicle. You will not use the Vehicle for more than 30 days outside
+          the state where the Vehicle was first titled without our prior written permission.
+        </p>
+        <p style="margin-bottom:5px;">
+          <strong>Acknowledgment.</strong> You acknowledge you have examined the Vehicle. You acknowledge that the Vehicle is equipped as you want, and that it is
+          in good condition. You accept the Vehicle for all purposes of the Lease.
+        </p>
+        <p style="margin-bottom:5px;">
+          <strong>Indemnification. You agree to indemnify us and hold us and our assignees, agents, and insurers harmless from all damages, injuries, claims,
+          demands, and expenses, arising our of the condition, maintenance, use or operation of the Vehicle, including a claim under the strict
+          liability doctrine.</strong>
+        </p>
+        <p style="margin-bottom:5px;">
+          <strong>Assignment of Returned Premiums and Other Amounts.</strong> You assign to us any unearned returned premiums or charges or other amounts
+          relating to insurance or any optional product or service sold in connection with this Lease and returned or paid to us. You will earn no interest
+          or profit with respect to such property.
+        </p>
+        <p style="margin-bottom:5px;">
+          <strong>Your Odometer Obligations.</strong> You will maintain the odometer of the Vehicle so that it always reflects the Vehicles' actual mileage. If the
+          odometer is at any time inoperative, you will provide us with reasonable evidence of the Vehicle's actual mileage. If you are unable to do so.
+          you will pay us our reasonable estimate of any reduction of the Vehicle's fair market value caused by the inability to determine the Vehicle's
+          actual mileage. You will provide us with an odometer certification at any time we request one. We may request more than one certification
+          during the term of this Lease.
+        </p>
+        <p style="margin-bottom:5px;">
+          <strong>Assignment and Transfer of the Vehicle. You may not assign the Lease or transfer the Vehicle without prior written permission.</strong> We may
+          assign all of our rights under this lease. Any person to whom this Lease is assigned may reassign it.
+        </p>
+        <p style="margin-bottom:5px;">
+          <strong>Waiver.</strong> We do not waive our rights or remedies under this Lease by failing to exercise them at any time.
+        </p>
+        <p style="margin-bottom:5px;">
+          <strong>Giving Notice.</strong> Notices may be given personally or sent by first class mail. Notice mailed to us must be send to the address shown in this Lease
+          or as we otherwise direct from time to time. Notices shall be deemed given to us when they are personally given or actually received at our
+          address. Notices shall be deemed given to you when they are personally given or when placed in the mail, addressed to you at your address
+          then shown on our records, even though you might not actually receive our mailed notice. You agree that 10 days' notice is a reasonable
+          notice period unless state law requires a longer period, in which case you agree that the state required period is reasonable.
+        </p>
+        <p style="margin-bottom:5px;">
+          <strong>Monitoring, Recording, and Collection Calls.</strong> You agree that we may monitor and record telephone calls regarding your account to assure the
+          quality of our service or for other reasons. You also expressly consent to our using prerecorded/artificial voice messages and/or automatic
+          dialing equipment while servicing or collecting your account, as the law allows. In doing so, you agree we may use any telephone number you
+          provide us or that we get from another source, even if the number is for a mobile telephone and/or our using the number results in charges to
+          you.
+        </p>
+        <p>
+          <strong>General.</strong> If any part of the Lease is invalid, unenforceable or illegal in any jurisdiction, the part that is invalid, unenforceable or illegal will not
+          be effective as to that jurisdiction. The rest of the Lease will be enforceable. This lease is our entire agreement. We have made no promises to
+          you not contained in this Lease. Any change to this Lease must be written and signed by you and us. If any part of this Lease is found by a
+          court or other dispute resolution body to be void or unenforceable, this Lease is to read as if that pert were never contained in this Lease.
+        </p>
+      </td>
+    </tr>
+  </table>
+
+  <!-- ── Lessor's Assignment (footer section) ── -->
+  <table style="margin-top:8px; border-top:2px solid #000;">
+    <tr>
+      <td class="section-legal" style="border:none; padding-top:6px;">
+        <strong>Lessor's Assignment.</strong> Pursuant to the terms of that certain agreement between Lessor and the assignee for the assignment of leases by Lessor
+        to Assignee from time to time, Lessor may assign all rights, title and interest in the Lease and the Vehicle and rights the Lessor may have under
+        any guaranty executed in connection with the Lease, with full powers to Assignee to collect and discharge all obligations, any guaranty and
+        this assignment.
+      </td>
+    </tr>
+  </table>
+
+  <div class="page-footer">Page 5 of 5</div>
+</div><!-- /page-5 -->
+
+</body>
+</html>

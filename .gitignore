@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Next.js
+.next/
+out/
+
+# Env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vercel
+.vercel
+
+# Sensitive / binary data files
+*.xlsx
+**/*.xlsx
+~$*
+**/*.pdf
+
+# Build info
+tsconfig.tsbuildinfo
+
+# Claude settings
+.claude/
