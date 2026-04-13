@@ -2,16 +2,19 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { FileText, FolderOpen } from 'lucide-react'
+import { FileText, FolderOpen, Truck, BarChart2, CheckCircle, Package, FileSignature, CalendarX, ShoppingCart } from 'lucide-react'
+import { useState } from 'react'
 import clsx from 'clsx'
-
-const NAV_LINKS = [
-  { href: '/current-leases', label: 'Current Leases', icon: FolderOpen },
-  { href: '/new-lease',      label: 'New Lease',       icon: FileText },
-]
 
 export default function Sidebar() {
   const path = usePathname()
+  const [orderTrackingOpen, setOrderTrackingOpen] = useState(
+    path.startsWith('/order-tracking')
+  )
+  const [leasesOpen, setLeasesOpen] = useState(
+    path.startsWith('/current-leases') || path.startsWith('/new-lease') ||
+    path.startsWith('/leases/expired') || path.startsWith('/leases/purchased')
+  )
 
   return (
     <aside className="flex h-screen w-60 flex-col border-r border-gray-200 bg-white fixed left-0 top-0">
@@ -21,30 +24,159 @@ export default function Sidebar() {
           A4
         </div>
         <div>
-          <p className="text-sm font-semibold text-gray-900 leading-tight">All Four Lease</p>
+          <p className="text-sm font-semibold text-gray-900 leading-tight">All Four &amp; NIE Hub</p>
           <p className="text-xs text-gray-400 leading-tight">Portal</p>
         </div>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-0.5">
-        {NAV_LINKS.map(({ href, label, icon: Icon }) => (
-          <Link
-            key={href}
-            href={href}
-            className={clsx(
-              'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
-              path === href
-                ? 'bg-brand-50 text-brand-700'
-                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-            )}
-          >
-            <Icon size={17} className="shrink-0" />
-            {label}
-          </Link>
-        ))}
-      </nav>
 
+        {/* ── Order Tracking (collapsible group) ── */}
+        <button
+          type="button"
+          onClick={() => setOrderTrackingOpen((o) => !o)}
+          className={clsx(
+            'w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+            path.startsWith('/order-tracking')
+              ? 'bg-brand-50 text-brand-700'
+              : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+          )}
+        >
+          <Truck size={17} className="shrink-0" />
+          <span className="flex-1 text-left">Order Tracking</span>
+          <svg
+            className={clsx('h-4 w-4 shrink-0 transition-transform', orderTrackingOpen && 'rotate-180')}
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        {orderTrackingOpen && (
+          <div className="ml-4 border-l border-gray-200 pl-3 space-y-0.5">
+            <Link
+              href="/order-tracking/tracking-view"
+              className={clsx(
+                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                path === '/order-tracking/tracking-view'
+                  ? 'bg-brand-50 text-brand-700'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+              )}
+            >
+              <BarChart2 size={15} className="shrink-0" />
+              Tracking View
+            </Link>
+
+            <Link
+              href="/order-tracking/sold-orders"
+              className={clsx(
+                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                path === '/order-tracking/sold-orders'
+                  ? 'bg-brand-50 text-brand-700'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+              )}
+            >
+              <CheckCircle size={15} className="shrink-0" />
+              Sold Orders
+            </Link>
+
+            <Link
+              href="/order-tracking/stock-orders"
+              className={clsx(
+                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                path === '/order-tracking/stock-orders'
+                  ? 'bg-brand-50 text-brand-700'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+              )}
+            >
+              <Package size={15} className="shrink-0" />
+              Stock Orders
+            </Link>
+          </div>
+        )}
+
+        {/* ── Leases (collapsible group) ── */}
+        <button
+          type="button"
+          onClick={() => setLeasesOpen((o) => !o)}
+          className={clsx(
+            'w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+            path.startsWith('/current-leases') || path.startsWith('/new-lease') ||
+            path.startsWith('/leases/expired') || path.startsWith('/leases/purchased')
+              ? 'bg-brand-50 text-brand-700'
+              : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+          )}
+        >
+          <FileSignature size={17} className="shrink-0" />
+          <span className="flex-1 text-left">Leases</span>
+          <svg
+            className={clsx('h-4 w-4 shrink-0 transition-transform', leasesOpen && 'rotate-180')}
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        {leasesOpen && (
+          <div className="ml-4 border-l border-gray-200 pl-3 space-y-0.5">
+            <Link
+              href="/current-leases"
+              className={clsx(
+                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                path === '/current-leases'
+                  ? 'bg-brand-50 text-brand-700'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+              )}
+            >
+              <FolderOpen size={15} className="shrink-0" />
+              Active
+            </Link>
+
+            <Link
+              href="/leases/expired"
+              title="Leases that have reached their end date and are no longer active."
+              className={clsx(
+                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                path === '/leases/expired'
+                  ? 'bg-brand-50 text-brand-700'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+              )}
+            >
+              <CalendarX size={15} className="shrink-0" />
+              Expired
+            </Link>
+
+            <Link
+              href="/leases/purchased"
+              title="Leases that were converted into a purchase."
+              className={clsx(
+                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                path === '/leases/purchased'
+                  ? 'bg-brand-50 text-brand-700'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+              )}
+            >
+              <ShoppingCart size={15} className="shrink-0" />
+              Purchased
+            </Link>
+
+            <Link
+              href="/new-lease"
+              className={clsx(
+                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                path === '/new-lease'
+                  ? 'bg-brand-50 text-brand-700'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+              )}
+            >
+              <FileText size={15} className="shrink-0" />
+              New Lease
+            </Link>
+          </div>
+        )}
+
+      </nav>
     </aside>
   )
 }

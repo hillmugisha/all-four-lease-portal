@@ -2,8 +2,9 @@
 
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { CurrentLeaseRecord } from '@/lib/current-lease-types'
-import { Eye, RefreshCw, X, Search, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Eye, RefreshCw, X, Search, ChevronDown, ChevronLeft, ChevronRight, Download } from 'lucide-react'
 import clsx from 'clsx'
+import * as XLSX from 'xlsx'
 
 const PAGE_SIZE = 100
 
@@ -263,11 +264,35 @@ function ResizableTh({
 
 // ─── Filters ──────────────────────────────────────────────────────────────────
 
+// ─── Date helpers (for expiry-bucket filter) ──────────────────────────────────
+
+function parseLeaseEnd(s: string | null | undefined): Date | null {
+  if (!s) return null
+  const d = new Date(s.trim() + 'T00:00:00')
+  return isNaN(d.getTime()) ? null : d
+}
+
+function addDays(d: Date, n: number): Date {
+  const r = new Date(d); r.setDate(r.getDate() + n); return r
+}
+
+const EXPIRY_BUCKETS = ['≤ 30 days', '31–60 days', '61–90 days', '90+ days'] as const
+
+// ─── Filters ──────────────────────────────────────────────────────────────────
+
 interface Filters {
-  name:   string
-  lender: string
-  make:   string
-  company: string
+  name:         string
+  lender:       string
+  make:         string
+  company:      string
+  customerType: string
+  term:         string
+  expiryBucket: string
+}
+
+const EMPTY_FILTERS: Filters = {
+  name: '', lender: '', make: '', company: '',
+  customerType: '', term: '', expiryBucket: '',
 }
 
 function FilterSelect({
@@ -298,13 +323,15 @@ function FilterSelect({
 }
 
 function FiltersBar({
-  filters, onChange, lenders, makes, companies,
+  filters, onChange, lenders, makes, companies, customerTypes, terms,
 }: {
   filters: Filters
   onChange: (f: Filters) => void
   lenders: string[]
   makes: string[]
   companies: string[]
+  customerTypes: string[]
+  terms: string[]
 }) {
   function set(key: keyof Filters, value: string) {
     onChange({ ...filters, [key]: value })
@@ -344,6 +371,30 @@ function FiltersBar({
       />
 
       <FilterSelect
+        label="Customer Type"
+        value={filters.customerType}
+        onChange={(v) => set('customerType', v)}
+        options={customerTypes}
+        placeholder="All types"
+      />
+
+      <FilterSelect
+        label="Term"
+        value={filters.term}
+        onChange={(v) => set('term', v)}
+        options={terms}
+        placeholder="All terms"
+      />
+
+      <FilterSelect
+        label="Expiry"
+        value={filters.expiryBucket}
+        onChange={(v) => set('expiryBucket', v)}
+        options={[...EXPIRY_BUCKETS]}
+        placeholder="All expiries"
+      />
+
+      <FilterSelect
         label="Lender / Lessor"
         value={filters.lender}
         onChange={(v) => set('lender', v)}
@@ -354,7 +405,7 @@ function FiltersBar({
       {hasAny && (
         <div className="self-end">
           <button
-            onClick={() => onChange({ name: '', lender: '', make: '', company: '' })}
+            onClick={() => onChange(EMPTY_FILTERS)}
             className="btn-secondary py-1.5 text-xs"
           >
             <X size={12} />
@@ -364,6 +415,101 @@ function FiltersBar({
       )}
     </div>
   )
+}
+
+// ─── Excel export ─────────────────────────────────────────────────────────────
+
+function exportToExcel(records: CurrentLeaseRecord[]) {
+  const rows = records.map((l) => ({
+    // Status & Customer
+    'Lease Status':               l.lease_status,
+    'Company':                    l.company ?? '',
+    'Customer Name':              l.customer_name ?? '',
+    'Customer Type':              l.customer_type ?? '',
+    'Location/Driver':            l.location_driver ?? '',
+    'Payment Method':             l.payment_method ?? '',
+    'Phone':                      l.phone ?? '',
+    'Email':                      l.email_address ?? '',
+    // Billing Address
+    'Billing Address':            l.billing_address ?? '',
+    'Billing City':               l.billing_city ?? '',
+    'Billing State':              l.billing_state ?? '',
+    'Billing ZIP':                l.billing_zip_code ?? '',
+    // Vehicle
+    'Year':                       l.year ?? '',
+    'Make':                       l.make ?? '',
+    'Model':                      l.model ?? '',
+    'Color':                      l.color ?? '',
+    'VIN':                        l.vin ?? '',
+    'VIN 2':                      l.vin_2 ?? '',
+    'Odometer':                   l.odometer ?? '',
+    'Odometer Date':              l.odometer_date ?? '',
+    'Plate #':                    l.plate_number ?? '',
+    'GPS Serial':                 l.gps_serial_number ?? '',
+    // Lease Terms (Customer)
+    'Lease Type':                 l.new_swap_addition ?? '',
+    'Lease Start Date':           l.lease_start_date ?? '',
+    'Lease End Date':             l.lease_end_date ?? '',
+    'Term (months)':              l.term ?? '',
+    'Annual Miles':               l.annual_miles ?? '',
+    'Lease End Mile Fee':         l.lease_end_mile_fee ?? '',
+    // Financials (Customer)
+    'Net Cap Cost':               l.net_cap_cost ?? '',
+    'Monthly Depreciation':       l.mon_dep ?? '',
+    'Monthly Interest':           l.mon_interest ?? '',
+    'Monthly Tax':                l.monthly_tax ?? '',
+    'Monthly Payment (Customer)': l.mon_payment ?? '',
+    'Residual/Resale':            l.residual_resale_quote ?? '',
+    'Upfront Tax Paid':           l.upfront_tax_paid ?? '',
+    'TTL State':                  l.ttl_state ?? '',
+    'TTL Monthly':                l.ttl_mo ?? '',
+    'Lease Depreciation Months':  l.lease_depreciation_months ?? '',
+    // Lender / Financing
+    'Lender / Lessor':            l.lender_lessor ?? '',
+    'Loan/Lease #':               l.loan_lease_number ?? '',
+    'Loan/Lease Start':           l.loan_lease_start_date ?? '',
+    'Loan/Lease End':             l.loan_lease_end_date ?? '',
+    'Monthly Payment (Lender)':   l.monthly_payment ?? '',
+    'Lender Net Cap Cost':        l.lender_net_cap_cost ?? '',
+    'Balloon / Residual':         l.balloon_residual ?? '',
+    'Monthly Dep. (Lender)':      l.monthly_depreciation_lender ?? '',
+    'Lender Interest Rate %':     l.lender_int_rate_pct ?? '',
+    'Lender Term':                l.lender_term ?? '',
+    'Internal Book Value':        l.internal_book_value ?? '',
+    'Lender Mo. Dep. %':          l.lender_mo_dep_pct ?? '',
+    'In-Service Date':            l.in_service_date ?? '',
+    // Cash Flow
+    'Monthly Cash Flow Delta':    l.monthly_cash_flow_delta ?? '',
+    'Prorate Paid':               l.prorate_pd ?? '',
+    'Prorate Received':           l.prorate_rcvd ?? '',
+    // Book Values
+    'MMR':                              l.mmr ?? '',
+    'Balance Sheet (Mar 2026)':         l.balance_sheet_mar_2026 ?? '',
+    'Balance Sheet Delta':              l.bal_sheet_delta ?? '',
+    'NBV (Apr 2026)':                   l.nbv_apr_2026 ?? '',
+    'NBV Delta':                        l.nbv_delta ?? '',
+    'Balance Sheet (Apr 9 2026)':       l.balance_sheet_apr_09_2026 ?? '',
+    'Customer Lease Depreciated BV':    l.customer_lease_depreciated_book_value ?? '',
+    'Invoice to Retail':                l.invoice_to_retail ?? '',
+    // Disposal / Payoff
+    'Days to Sell':               l.days_to_sell ?? '',
+    'Payoff Quoted/Paid':         l.payoff_quoted_paid ?? '',
+    'Payoff Proceeds Sent':       l.payoff_proceeds_sent ?? '',
+    '90-Day Disposal Notes':      l.disposal_comments_90_day ?? '',
+    // Other
+    'NDVR/Delivery Date':         l.ndvr_delivery_date ?? '',
+    'Insurance Expiration':       l.insurance_expiration_date ?? '',
+    'Account Manager':            l.account_manager ?? '',
+    'Location':                   l.location ?? '',
+    'AM':                         l.am ?? '',
+    'Comments':                   l.comments ?? '',
+    'Additional Comments':        l.additional_comments ?? '',
+  }))
+
+  const ws = XLSX.utils.json_to_sheet(rows)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Current Leases')
+  XLSX.writeFile(wb, `current-leases-${new Date().toISOString().slice(0, 10)}.xlsx`)
 }
 
 // ─── Column definitions ───────────────────────────────────────────────────────
@@ -383,13 +529,27 @@ interface TableProps {
   leases: CurrentLeaseRecord[]
   loading: boolean
   onRefresh: () => void
+  initialFilters?: Partial<Filters> | null
 }
 
-export default function CurrentLeasesTable({ leases, loading, onRefresh }: TableProps) {
+export default function CurrentLeasesTable({ leases, loading, onRefresh, initialFilters }: TableProps) {
   const [selected, setSelected]   = useState<CurrentLeaseRecord | null>(null)
-  const [filters, setFilters]     = useState<Filters>({ name: '', lender: '', make: '', company: '' })
+  const [filters, setFilters]     = useState<Filters>(EMPTY_FILTERS)
   const [colWidths, setColWidths] = useState<number[]>(DEFAULT_WIDTHS)
   const [page, setPage]           = useState(1)
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set())
+
+  // Apply drill-down filters arriving from the Reporting tab
+  useEffect(() => {
+    if (initialFilters) {
+      setFilters({ ...EMPTY_FILTERS, ...initialFilters })
+      setPage(1)
+    }
+  }, [initialFilters])
+
+  const today = useMemo(() => {
+    const d = new Date(); d.setHours(0, 0, 0, 0); return d
+  }, [])
 
   const lenders = useMemo(() =>
     Array.from(new Set(leases.map((l) => l.lender_lessor).filter(Boolean) as string[])).sort(),
@@ -403,14 +563,63 @@ export default function CurrentLeasesTable({ leases, loading, onRefresh }: Table
     Array.from(new Set(leases.map((l) => l.company).filter(Boolean) as string[])).sort(),
     [leases]
   )
+  const customerTypes = useMemo(() =>
+    Array.from(new Set(leases.map((l) => l.customer_type).filter(Boolean) as string[])).sort(),
+    [leases]
+  )
+  const terms = useMemo(() =>
+    Array.from(new Set(leases.map((l) => (l.term ?? '').toString().trim()).filter(Boolean)))
+      .sort((a, b) => {
+        const na = parseFloat(a), nb = parseFloat(b)
+        return isNaN(na) || isNaN(nb) ? a.localeCompare(b) : na - nb
+      }),
+    [leases]
+  )
 
   const filtered = useMemo(() => leases.filter((l) => {
-    if (filters.name    && !(l.customer_name ?? '').toLowerCase().includes(filters.name.toLowerCase())) return false
-    if (filters.company && l.company !== filters.company)       return false
-    if (filters.make    && l.make !== filters.make)             return false
-    if (filters.lender  && l.lender_lessor !== filters.lender)  return false
+    if (filters.name         && !(l.customer_name ?? '').toLowerCase().includes(filters.name.toLowerCase())) return false
+    if (filters.company      && l.company !== filters.company)                                               return false
+    if (filters.make         && l.make !== filters.make)                                                     return false
+    if (filters.lender       && l.lender_lessor !== filters.lender)                                          return false
+    if (filters.customerType && l.customer_type !== filters.customerType)                                    return false
+    if (filters.term         && (l.term ?? '').toString().trim() !== filters.term)                           return false
+    if (filters.expiryBucket) {
+      const end = parseLeaseEnd(l.lease_end_date)
+      if (!end || end < today) return false
+      const d30 = addDays(today, 30), d60 = addDays(today, 60), d90 = addDays(today, 90)
+      if (filters.expiryBucket === '≤ 30 days'  && !(end >= today && end <= d30)) return false
+      if (filters.expiryBucket === '31–60 days' && !(end >  d30   && end <= d60)) return false
+      if (filters.expiryBucket === '61–90 days' && !(end >  d60   && end <= d90)) return false
+      if (filters.expiryBucket === '90+ days'   && end <= d90)                    return false
+    }
     return true
-  }), [leases, filters])
+  }), [leases, filters, today])
+
+  const allChecked  = filtered.length > 0 && filtered.every((l) => checkedIds.has(l.id))
+  const someChecked = filtered.some((l) => checkedIds.has(l.id))
+
+  function toggleAll() {
+    if (allChecked) {
+      setCheckedIds(new Set())
+    } else {
+      setCheckedIds(new Set(filtered.map((l) => l.id)))
+    }
+  }
+
+  function toggleId(id: string) {
+    setCheckedIds((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  function handleExport() {
+    const toExport = someChecked
+      ? filtered.filter((l) => checkedIds.has(l.id))
+      : filtered
+    exportToExcel(toExport)
+  }
 
   // Reset to page 1 whenever filters change
   useEffect(() => { setPage(1) }, [filters])
@@ -448,6 +657,8 @@ export default function CurrentLeasesTable({ leases, loading, onRefresh }: Table
           lenders={lenders}
           makes={makes}
           companies={companies}
+          customerTypes={customerTypes}
+          terms={terms}
         />
       )}
 
@@ -461,10 +672,20 @@ export default function CurrentLeasesTable({ leases, loading, onRefresh }: Table
               {totalPages > 1 && ` · page ${page} of ${totalPages}`}
             </p>
           </div>
-          <button onClick={onRefresh} className="btn-secondary py-1.5 text-xs" disabled={loading}>
-            <RefreshCw size={13} className={clsx(loading && 'animate-spin')} />
-            Refresh
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExport}
+              className="btn-secondary py-1.5 text-xs"
+              disabled={loading || filtered.length === 0}
+            >
+              <Download size={13} />
+              {someChecked ? `Export (${checkedIds.size})` : 'Export'}
+            </button>
+            <button onClick={onRefresh} className="btn-secondary py-1.5 text-xs" disabled={loading}>
+              <RefreshCw size={13} className={clsx(loading && 'animate-spin')} />
+              Refresh
+            </button>
+          </div>
         </div>
 
         {/* Loading skeleton */}
@@ -508,11 +729,24 @@ export default function CurrentLeasesTable({ leases, loading, onRefresh }: Table
         {!loading && filtered.length > 0 && (
           <div className="overflow-x-auto" style={{ overflowY: 'visible' }}>
             <table
-              style={{ tableLayout: 'fixed', width: colWidths.reduce((a, b) => a + b, 0) }}
+              style={{ tableLayout: 'fixed', width: colWidths.reduce((a, b) => a + b, 0) + 40 }}
               className="border-collapse text-sm"
             >
               <thead>
                 <tr className="border-b border-gray-200">
+                  {/* Checkbox column */}
+                  <th
+                    style={{ width: 40, minWidth: 40 }}
+                    className="border-r border-gray-200 bg-gray-50 px-3 py-2.5"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={allChecked}
+                      ref={(el) => { if (el) el.indeterminate = someChecked && !allChecked }}
+                      onChange={toggleAll}
+                      className="h-3.5 w-3.5 rounded border-gray-300"
+                    />
+                  </th>
                   {COL_HEADERS.map((h, i) => (
                     <ResizableTh key={h} width={colWidths[i]} onResize={(d) => resizeCol(i, d)}>
                       {h}
@@ -523,14 +757,23 @@ export default function CurrentLeasesTable({ leases, loading, onRefresh }: Table
               <tbody className="divide-y divide-gray-100 bg-white">
                 {paginated.map((lease) => (
                   <tr key={lease.id} className="hover:bg-gray-50 transition-colors">
+                    {/* Checkbox */}
+                    <td className="border-r border-gray-100 px-3 py-2.5">
+                      <input
+                        type="checkbox"
+                        checked={checkedIds.has(lease.id)}
+                        onChange={() => toggleId(lease.id)}
+                        className="h-3.5 w-3.5 rounded border-gray-300"
+                      />
+                    </td>
                     {/* Details */}
                     <td className="border-r border-gray-100 px-3 py-2.5">
                       <button
                         onClick={() => setSelected(lease)}
-                        className="inline-flex items-center gap-1 rounded border border-gray-200 bg-white px-2 py-1 text-xs font-medium text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+                        title="View lease details"
+                        className="rounded p-1 text-teal-500 hover:bg-teal-50 transition-colors"
                       >
-                        <Eye size={11} />
-                        View
+                        <Eye size={16} />
                       </button>
                     </td>
                     {/* Lease Status */}

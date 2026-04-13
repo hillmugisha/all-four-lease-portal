@@ -11,6 +11,7 @@ export async function GET() {
     const { data, error } = await getSupabase()
       .from('leases')
       .select('*')
+      .or('is_active.is.null,is_active.eq.false')
       .order('created_at', { ascending: false })
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest) {
 
     const payload = {
       ...body,
-      doc_status: body.doc_status || 'generated',
+      doc_status: body.doc_status || 'draft',
       // Persist calculated fields for reporting
       gross_cap_cost:              calc.grossCapCost,
       net_tradein_allowance:       calc.netTradeinAllowance,

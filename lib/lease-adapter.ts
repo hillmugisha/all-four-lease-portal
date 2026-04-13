@@ -139,8 +139,8 @@ export function recordToTemplateData(r: LeaseRecord): LeaseTemplateData {
       lessee_signer_name:    r.customer_signer_name ?? r.lessee_name,
       co_lessee_signer_name: r.co_lessee_signer_name ?? null,
       lessor_name:           r.lessor_name,
-      lessor_signer_name:    r.lessor_signer_name ?? 'Jim Liverseed',
-      lessor_signer_title:   'Lease Sales Consultant',
+      lessor_signer_name:    r.lessor_signer_name  ?? 'Jim Liverseed',
+      lessor_signer_title:   r.lessor_signer_title ?? 'Lease Sales Consultant',
     },
   }
 }

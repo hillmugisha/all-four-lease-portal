@@ -13,6 +13,7 @@ export default function CurrentLeasesPage() {
   const [leases, setLeases] = useState<CurrentLeaseRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<Tab>('reporting')
+  const [drillFilters, setDrillFilters] = useState<Record<string, string> | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -29,6 +30,18 @@ export default function CurrentLeasesPage() {
   }, [])
 
   useEffect(() => { load() }, [load])
+
+  // Auto-refresh when a lease is activated from the New Leases tab
+  useEffect(() => {
+    let channel: BroadcastChannel
+    try {
+      channel = new BroadcastChannel('lease-updates')
+      channel.onmessage = (e) => {
+        if (e.data?.type === 'lease-activated') load()
+      }
+    } catch { /* BroadcastChannel not supported */ }
+    return () => { try { channel?.close() } catch { /* ignore */ } }
+  }, [load])
 
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
     { id: 'reporting',  label: 'Reporting',     icon: BarChart2 },
@@ -68,11 +81,23 @@ export default function CurrentLeasesPage() {
 
       {/* Tab content */}
       {activeTab === 'reporting' && (
-        <CurrentLeasesKPIs leases={leases} onViewAll={() => setActiveTab('details')} />
+        <CurrentLeasesKPIs
+          leases={leases}
+          onViewAll={() => setActiveTab('details')}
+          onDrillDown={(filters) => {
+            setDrillFilters(filters as Record<string, string>)
+            setActiveTab('details')
+          }}
+        />
       )}
 
       {activeTab === 'details' && (
-        <CurrentLeasesTable leases={leases} loading={loading} onRefresh={load} />
+        <CurrentLeasesTable
+          leases={leases}
+          loading={loading}
+          onRefresh={load}
+          initialFilters={drillFilters}
+        />
       )}
     </div>
   )

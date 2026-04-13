@@ -83,6 +83,7 @@ export interface SignaturesInfo {
   lesseeSignatories: SignatoryEntry[]
   lessorSignatoryName: string
   lessorSignatoryEmail: string
+  lessorSignatoryTitle: string
 }
 
 // All steps combined into one lease record
@@ -105,7 +106,7 @@ export interface CalculatedFields {
 
 // ─── Database record (Supabase row) ──────────────────────────────────────────
 
-export type LeaseStatus = 'draft' | 'generated' | 'sent' | 'signed'
+export type LeaseStatus = 'draft' | 'sent' | 'customer_signed' | 'completed'
 
 export interface LeaseRecord {
   id: string
@@ -182,11 +183,16 @@ export interface LeaseRecord {
   amount_due_at_signing: number
   official_fees_taxes: number
 
-  // DocuSign / Signatures
-  customer_signer_name: string | null
-  customer_signer_email: string | null
-  co_lessee_signer_name: string | null
-  lessor_signer_name: string | null
-  docusign_envelope_id: string | null
-  signed_at: string | null
+  // Signer / DocuSign fields — these columns exist in the DB (add via SQL if missing).
+  lessor_signer_title?:   string | null
+  customer_signer_name?:  string | null
+  customer_signer_email?: string | null
+  co_lessee_signer_name?: string | null  // in-memory only, never inserted
+  lessor_signer_name?:    string | null
+  docusign_envelope_id?:  string | null
+  signed_at?:             string | null
+
+  // Activation — set when a completed lease is promoted to Current Leases
+  is_active?:    boolean | null
+  activated_at?: string  | null
 }

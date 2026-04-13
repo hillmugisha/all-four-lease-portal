@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    serverComponentsExternalPackages: ['pdf-lib', 'handlebars', 'puppeteer'],
+    serverComponentsExternalPackages: ['pdf-lib', 'handlebars', 'puppeteer', 'docusign-esign'],
   },
   async redirects() {
     return [

@@ -56,9 +56,10 @@ const DEFAULT_VALUES: Partial<LeaseFormData> = {
   tradeinPriorBalance:   0,
 
   // Signatures
-  lesseeSignatories:    [{ firstName: '', lastName: '', email: '' }],
-  lessorSignatoryName:  'Jim Liverseed',
-  lessorSignatoryEmail: 'jim.liverseed@pritchards.com',
+  lesseeSignatories:     [{ firstName: '', lastName: '', email: '' }],
+  lessorSignatoryName:   'Jim Liverseed',
+  lessorSignatoryTitle:  'Lease Sales Consultant',
+  lessorSignatoryEmail:  'jim.liverseed@pritchards.com',
 }
 
 export default function LeaseForm() {
@@ -92,13 +93,13 @@ export default function LeaseForm() {
       lessor_address: raw.lessorAddress,
       lessor_po_box:  raw.lessorPoBox || null,
       lessor_city:    raw.lessorCity,
-      lessor_state:   raw.lessorState.toUpperCase(),
+      lessor_state:   (raw.lessorState ?? '').toUpperCase(),
       lessor_zip:     raw.lessorZip,
 
       lessee_name:           raw.lesseeName,
       lessee_address:        raw.address,
       lessee_city:           raw.city,
-      lessee_state:          raw.state.toUpperCase(),
+      lessee_state:          (raw.state ?? '').toUpperCase(),
       lessee_zip:            raw.zip,
       lessee_phone:          raw.phone || null,
       lessee_email:          raw.email,
@@ -139,15 +140,8 @@ export default function LeaseForm() {
       tradein_gross_allowance: Number(raw.tradeinGrossAllowance ?? 0),
       tradein_prior_balance:   Number(raw.tradeinPriorBalance ?? 0),
 
-      // Signatures — populated from Step 5
-      customer_signer_name: raw.lesseeSignatories?.[0]
-        ? `${raw.lesseeSignatories[0].firstName} ${raw.lesseeSignatories[0].lastName}`.trim() || null
-        : null,
-      customer_signer_email: raw.lesseeSignatories?.[0]?.email || null,
-      co_lessee_signer_name: raw.lesseeSignatories?.[1]
-        ? `${raw.lesseeSignatories[1].firstName} ${raw.lesseeSignatories[1].lastName}`.trim() || null
-        : null,
-      lessor_signer_name: raw.lessorSignatoryName || null,
+      lessor_signer_title: raw.lessorSignatoryTitle || null,
+      lessor_signer_name:  raw.lessorSignatoryName  || null,
     }
   }
 
@@ -299,7 +293,7 @@ export default function LeaseForm() {
         {step === 1 && <Step1Parties    form={form} />}
         {step === 2 && <Step3Vehicle    form={form} />}
         {step === 3 && <Step4Financials form={form} />}
-        {step === 4 && <Step5Review     data={data as LeaseFormData} goToStep={goToStep} />}
+        {step === 4 && <Step5Review     form={form} />}
         {step === 5 && <Step5Signatures form={form} />}
       </div>
 
@@ -351,29 +345,10 @@ export default function LeaseForm() {
             )}
           </button>
 
-          {step < STEPS.length ? (
+          {step < STEPS.length && (
             <button type="button" onClick={handleNext} className="btn-primary">
               Next
               <ChevronRight size={16} />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={saving}
-              className="btn-primary"
-            >
-              {saving ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  Generating…
-                </>
-              ) : (
-                <>
-                  <FileDown size={16} />
-                  Generate PDF &amp; Save
-                </>
-              )}
             </button>
           )}
         </div>

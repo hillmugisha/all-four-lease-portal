@@ -3,7 +3,7 @@ import './globals.css'
 import Sidebar from '@/components/Sidebar'
 
 export const metadata: Metadata = {
-  title: 'All Four Lease Portal',
+  title: 'All Four & NIE Hub',
   description: 'Lease agreement generation and tracking for All Four, LLC',
 }
 

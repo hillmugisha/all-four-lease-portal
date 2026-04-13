@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { UseFormReturn, useFieldArray } from 'react-hook-form'
 import { LeaseFormData, FinancialInputs } from '@/lib/types'
 import { calculateLease } from '@/lib/calculations'
-import { Plus, Trash2, Eye, X, Loader2 } from 'lucide-react'
+import { Plus, Trash2, Eye, X, Loader2, Send, CheckCircle } from 'lucide-react'
 
 interface Props {
   form: UseFormReturn<LeaseFormData>
@@ -18,6 +18,10 @@ export default function Step5Signatures({ form }: Props) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [previewLoading, setPreviewLoading] = useState(false)
   const [previewError, setPreviewError] = useState<string | null>(null)
+
+  const [sending, setSending] = useState(false)
+  const [sendError, setSendError] = useState<string | null>(null)
+  const [sentEnvelopeId, setSentEnvelopeId] = useState<string | null>(null)
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -44,6 +48,26 @@ export default function Step5Signatures({ form }: Props) {
     if (!val) {
       const current = form.getValues('lesseeSignatories')
       for (let i = current.length - 1; i > 0; i--) remove(i)
+    }
+  }
+
+  async function handleSendToDocuSign() {
+    setSending(true)
+    setSendError(null)
+    try {
+      const res = await fetch('/api/send-to-docusign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ formData: form.getValues() }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Failed to send to DocuSign')
+      setSentEnvelopeId(json.envelopeId)
+      setShowPreview(false)
+    } catch (e) {
+      setSendError(String(e))
+    } finally {
+      setSending(false)
     }
   }
 
@@ -164,8 +188,9 @@ export default function Step5Signatures({ form }: Props) {
 
         customer_signer_name:  lesseePrimaryName,
         customer_signer_email: primary?.email ?? raw.email,
-        co_lessee_signer_name: coLesseeName,
+        co_lessee_signer_name: coLesseeName, // injected in-memory for PDF preview only
         lessor_signer_name:    raw.lessorSignatoryName || null,
+        lessor_signer_title:   raw.lessorSignatoryTitle || null,
 
         docusign_envelope_id: null,
         signed_at:            null,
@@ -334,6 +359,17 @@ export default function Step5Signatures({ form }: Props) {
                 )}
               </div>
               <div>
+                <label className="label">Job Title <span className="req">*</span></label>
+                <input
+                  {...register('lessorSignatoryTitle', { required: 'Required' })}
+                  className="input"
+                  placeholder="Lease Sales Consultant"
+                />
+                {errors.lessorSignatoryTitle && (
+                  <p className="field-error">{errors.lessorSignatoryTitle.message}</p>
+                )}
+              </div>
+              <div className="sm:col-span-2">
                 <label className="label">Email <span className="req">*</span></label>
                 <input
                   {...register('lessorSignatoryEmail', {
@@ -406,17 +442,49 @@ export default function Step5Signatures({ form }: Props) {
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-3 bg-white px-6 py-4 shadow-[0_-1px_3px_rgba(0,0,0,0.08)] shrink-0">
+          <div className="flex items-center justify-between bg-white px-6 py-4 shadow-[0_-1px_3px_rgba(0,0,0,0.08)] shrink-0">
+            <div className="flex-1 mr-4">
+              {sendError && (
+                <p className="text-sm text-red-600">{sendError}</p>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
             <button type="button" onClick={closePreview} className="btn-secondary">
               Close
             </button>
             <button
               type="button"
-              onClick={() => { /* DocuSign integration — Phase 2 */ }}
+              onClick={handleSendToDocuSign}
+              disabled={sending}
               className="btn-primary"
             >
-              Sign with DocuSign
+              {sending ? (
+                <>
+                  <Loader2 size={15} className="animate-spin" />
+                  Sending to DocuSign…
+                </>
+              ) : (
+                <>
+                  <Send size={15} />
+                  Send for Signature
+                </>
+              )}
             </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Success banner ────────────────────────────────────────────────── */}
+      {sentEnvelopeId && (
+        <div className="rounded-lg border border-green-200 bg-green-50 px-5 py-4 flex items-start gap-3">
+          <CheckCircle size={18} className="text-green-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-green-800">Sent for signature via DocuSign</p>
+            <p className="text-xs text-green-700 mt-0.5">
+              Each signatory will receive an email from DocuSign with a link to review and sign the lease agreement.
+            </p>
+            <p className="text-xs text-green-600 mt-1 font-mono">Envelope ID: {sentEnvelopeId}</p>
           </div>
         </div>
       )}

@@ -6,9 +6,18 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList,
 } from 'recharts'
 
+interface DrillFilters {
+  make:         string
+  customerType: string
+  term:         string
+  expiryBucket: string
+  lender:       string
+}
+
 interface Props {
   leases: CurrentLeaseRecord[]
   onViewAll?: () => void
+  onDrillDown?: (filters: Partial<DrillFilters>) => void
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -63,7 +72,7 @@ function ChartTooltip({ active, payload, label }: any) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function CurrentLeasesKPIs({ leases, onViewAll }: Props) {
+export default function CurrentLeasesKPIs({ leases, onViewAll, onDrillDown }: Props) {
   const today = useMemo(() => {
     const d = new Date()
     d.setHours(0, 0, 0, 0)
@@ -232,7 +241,12 @@ export default function CurrentLeasesKPIs({ leases, onViewAll }: Props) {
                 allowDecimals={false}
               />
               <Tooltip content={<ChartTooltip />} cursor={{ fill: '#f3f4f6' }} />
-              <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+              <Bar
+                dataKey="count"
+                radius={[4, 4, 0, 0]}
+                cursor={onDrillDown ? 'pointer' : undefined}
+                onClick={(data) => onDrillDown?.({ expiryBucket: data.label })}
+              >
                 {upcomingData.map((entry) => (
                   <Cell key={entry.label} fill={EXPIRY_COLORS[entry.label]} />
                 ))}
@@ -271,7 +285,12 @@ export default function CurrentLeasesKPIs({ leases, onViewAll }: Props) {
                 width={72}
               />
               <Tooltip content={<ChartTooltip />} cursor={{ fill: '#f3f4f6' }} />
-              <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+              <Bar
+                dataKey="value"
+                radius={[0, 4, 4, 0]}
+                cursor={onDrillDown ? 'pointer' : undefined}
+                onClick={(data) => onDrillDown?.({ make: data.name })}
+              >
                 {byMakeData.map((_, i) => (
                   <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
                 ))}
@@ -310,7 +329,12 @@ export default function CurrentLeasesKPIs({ leases, onViewAll }: Props) {
                 width={140}
               />
               <Tooltip content={<ChartTooltip />} cursor={{ fill: '#f3f4f6' }} />
-              <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+              <Bar
+                dataKey="value"
+                radius={[0, 4, 4, 0]}
+                cursor={onDrillDown ? 'pointer' : undefined}
+                onClick={(data) => onDrillDown?.({ customerType: data.name })}
+              >
                 {byTypeData.map((_, i) => (
                   <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
                 ))}
@@ -342,7 +366,13 @@ export default function CurrentLeasesKPIs({ leases, onViewAll }: Props) {
                 allowDecimals={false}
               />
               <Tooltip content={<ChartTooltip />} cursor={{ fill: '#f3f4f6' }} />
-              <Bar dataKey="value" fill={BRAND} radius={[4, 4, 0, 0]}>
+              <Bar
+                dataKey="value"
+                fill={BRAND}
+                radius={[4, 4, 0, 0]}
+                cursor={onDrillDown ? 'pointer' : undefined}
+                onClick={(data) => onDrillDown?.({ term: data.name })}
+              >
                 <LabelList dataKey="value" position="top" style={{ fontSize: 11, fill: '#374151', fontWeight: 600 }} />
               </Bar>
             </BarChart>
@@ -378,7 +408,12 @@ export default function CurrentLeasesKPIs({ leases, onViewAll }: Props) {
                 width={140}
               />
               <Tooltip content={<ChartTooltip />} cursor={{ fill: '#f3f4f6' }} />
-              <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+              <Bar
+                dataKey="value"
+                radius={[0, 4, 4, 0]}
+                cursor={onDrillDown ? 'pointer' : undefined}
+                onClick={(data) => onDrillDown?.({ lender: data.name })}
+              >
                 {byLenderData.map((_, i) => (
                   <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
                 ))}
