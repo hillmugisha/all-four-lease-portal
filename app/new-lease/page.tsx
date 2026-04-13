@@ -12,8 +12,8 @@ export default function NewLeasePage() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard')
 
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
-    { id: 'dashboard', label: 'Dashboard',              icon: LayoutDashboard },
-    { id: 'create',    label: 'Create Lease Agreement', icon: FilePlus },
+    { id: 'dashboard', label: 'Pipeline',         icon: LayoutDashboard },
+    { id: 'create',    label: 'Create New Lease', icon: FilePlus },
   ]
 
   return (

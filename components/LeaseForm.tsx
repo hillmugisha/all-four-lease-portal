@@ -59,7 +59,7 @@ const DEFAULT_VALUES: Partial<LeaseFormData> = {
   lesseeSignatories:     [{ firstName: '', lastName: '', email: '' }],
   lessorSignatoryName:   'Jim Liverseed',
   lessorSignatoryTitle:  'Lease Sales Consultant',
-  lessorSignatoryEmail:  'jim.liverseed@pritchards.com',
+  lessorSignatoryEmail:  'hill.mugisha@pritchards.com',
 }
 
 export default function LeaseForm() {

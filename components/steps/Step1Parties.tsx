@@ -10,6 +10,29 @@ interface Props {
   form: UseFormReturn<LeaseFormData>
 }
 
+// ─── Lessor presets ───────────────────────────────────────────────────────────
+
+const LESSORS = [
+  {
+    name:    'All Four, LLC',
+    address: '1 TeamQuest Way',
+    poBox:   'P.O. Box 147',
+    city:    'Clear Lake',
+    state:   'IA',
+    zip:     '50428',
+  },
+  {
+    name:    'North Iowa Equity, LLC',
+    address: '1 TeamQuest Way',
+    poBox:   'P.O. Box 147',
+    city:    'Clear Lake',
+    state:   'IA',
+    zip:     '50428',
+  },
+]
+
+// ─── Collapsible section ──────────────────────────────────────────────────────
+
 function CollapsibleSection({
   title,
   children,
@@ -45,7 +68,20 @@ function CollapsibleSection({
 const PHONE_REGEX = /^(\+1\s?)?(\(?\d{3}\)?[\s.\-]?)?\d{3}[\s.\-]?\d{4}$/
 
 export default function Step1Parties({ form }: Props) {
-  const { register, formState: { errors } } = form
+  const { register, setValue, watch, formState: { errors } } = form
+
+  const lessorName = watch('lessorName')
+
+  function handleLessorChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const selected = LESSORS.find((l) => l.name === e.target.value)
+    if (!selected) return
+    setValue('lessorName',    selected.name)
+    setValue('lessorAddress', selected.address)
+    setValue('lessorPoBox',   selected.poBox)
+    setValue('lessorCity',    selected.city)
+    setValue('lessorState',   selected.state)
+    setValue('lessorZip',     selected.zip)
+  }
 
   return (
     <div className="space-y-5">
@@ -60,33 +96,41 @@ export default function Step1Parties({ form }: Props) {
 
         {/* ── Lessor ── */}
         <CollapsibleSection title="Lessor">
-          {/* Company name — full width */}
+          {/* Company name — dropdown, full width */}
           <div className="sm:col-span-2">
             <label className="label">Lessor Name / Company <span className="req">*</span></label>
-            <input
-              {...register('lessorName', { required: 'Required' })}
-              placeholder="All Four, LLC"
-              className="input"
-            />
+            <div className="relative">
+              <select
+                {...register('lessorName', { required: 'Required' })}
+                onChange={handleLessorChange}
+                value={lessorName ?? ''}
+                className="input appearance-none pr-8"
+              >
+                <option value="" disabled>Select lessor…</option>
+                {LESSORS.map((l) => (
+                  <option key={l.name} value={l.name}>{l.name}</option>
+                ))}
+              </select>
+              <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            </div>
             {errors.lessorName && <p className="field-error">{errors.lessorName.message}</p>}
           </div>
 
-          {/* Street + P.O. Box */}
+          {/* Street + P.O. Box — read-only, driven by dropdown */}
           <div>
             <label className="label">Street Address <span className="req">*</span></label>
             <input
               {...register('lessorAddress', { required: 'Required' })}
-              placeholder="1 TeamQuest Way"
-              className="input"
+              readOnly
+              className="input bg-gray-50 text-gray-500 cursor-default"
             />
-            {errors.lessorAddress && <p className="field-error">{errors.lessorAddress.message}</p>}
           </div>
           <div>
             <label className="label">P.O. Box</label>
             <input
               {...register('lessorPoBox')}
-              placeholder="P.O. Box 147"
-              className="input"
+              readOnly
+              className="input bg-gray-50 text-gray-500 cursor-default"
             />
           </div>
 
@@ -95,35 +139,28 @@ export default function Step1Parties({ form }: Props) {
             <label className="label">City <span className="req">*</span></label>
             <input
               {...register('lessorCity', { required: 'Required' })}
-              placeholder="Clear Lake"
-              className="input"
+              readOnly
+              className="input bg-gray-50 text-gray-500 cursor-default"
             />
-            {errors.lessorCity && <p className="field-error">{errors.lessorCity.message}</p>}
           </div>
 
           {/* State + ZIP */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label">State <span className="req">*</span></label>
-              <select
+              <input
                 {...register('lessorState', { required: 'Required' })}
-                className="input"
-              >
-                <option value="">Select…</option>
-                {US_STATES.map((s) => (
-                  <option key={s.abbr} value={s.abbr}>{s.abbr} — {s.name}</option>
-                ))}
-              </select>
-              {errors.lessorState && <p className="field-error">{errors.lessorState.message}</p>}
+                readOnly
+                className="input bg-gray-50 text-gray-500 cursor-default"
+              />
             </div>
             <div>
               <label className="label">ZIP <span className="req">*</span></label>
               <input
                 {...register('lessorZip', { required: 'Required' })}
-                placeholder="50428"
-                className="input"
+                readOnly
+                className="input bg-gray-50 text-gray-500 cursor-default"
               />
-              {errors.lessorZip && <p className="field-error">{errors.lessorZip.message}</p>}
             </div>
           </div>
         </CollapsibleSection>

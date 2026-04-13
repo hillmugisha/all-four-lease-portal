@@ -1194,10 +1194,10 @@ export default function LeaseTable() {
                     <td className="border-r border-gray-100 px-3 py-2.5">
                       <button
                         onClick={() => setSelected(lease)}
-                        className="inline-flex items-center gap-1 rounded border border-gray-200 bg-white px-2 py-1 text-xs font-medium text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+                        title="View lease details"
+                        className="rounded p-1 text-teal-500 hover:bg-teal-50 transition-colors"
                       >
-                        <Eye size={11} />
-                        View
+                        <Eye size={16} />
                       </button>
                     </td>
                     {/* Customer Name */}
