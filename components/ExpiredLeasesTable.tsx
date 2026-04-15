@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
-import { CurrentLeaseRecord } from '@/lib/current-lease-types'
+import { ExpiredLeaseRecord } from '@/lib/expired-lease-types'
 import { Eye, RefreshCw, X, Search, ChevronDown, ChevronLeft, ChevronRight, Download } from 'lucide-react'
 import clsx from 'clsx'
 import * as XLSX from 'xlsx'
@@ -9,29 +9,11 @@ import { fmtDate, fmtMoney, fmtMoneyOrText, DR, MS } from '@/lib/table-utils'
 
 const PAGE_SIZE = 100
 
-// ─── Status badge ─────────────────────────────────────────────────────────────
+// ─── Detail modal ──────────────────────────────────────────────────────────────
 
-const LEASE_STATUS_STYLES: Record<string, string> = {
-  Active:     'bg-green-50 text-green-700',
-  Expired:    'bg-amber-50 text-amber-700',
-  Terminated: 'bg-red-50 text-red-700',
-  Purchased:  'bg-blue-50 text-blue-700',
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const color = LEASE_STATUS_STYLES[status] ?? 'bg-gray-100 text-gray-600'
-  return (
-    <span className={clsx('inline-flex items-center rounded px-2 py-0.5 text-xs font-medium', color)}>
-      {status}
-    </span>
-  )
-}
-
-// ─── Detail modal ─────────────────────────────────────────────────────────────
-
-function CurrentLeaseDetailModal({
+function ExpiredLeaseDetailModal({
   lease, onClose,
-}: { lease: CurrentLeaseRecord; onClose: () => void }) {
+}: { lease: ExpiredLeaseRecord; onClose: () => void }) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -51,7 +33,9 @@ function CurrentLeaseDetailModal({
             </p>
           </div>
           <div className="flex items-center gap-3 ml-4">
-            <StatusBadge status={lease.lease_status} />
+            <span className="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium bg-amber-50 text-amber-700">
+              Expired
+            </span>
             <button
               onClick={onClose}
               className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
@@ -63,6 +47,14 @@ function CurrentLeaseDetailModal({
 
         {/* Body */}
         <div className="px-6 py-5 space-y-1">
+          <MS title="Lease">
+            <DR label="Expired Date"    value={fmtDate(lease.expired_date)} />
+            <DR label="Lease Start"     value={fmtDate(lease.lease_start_date)} />
+            <DR label="Lease End"       value={fmtDate(lease.lease_end_date)} />
+            <DR label="Term"            value={lease.term != null ? `${lease.term} months` : null} />
+            <DR label="NDVR Date"       value={fmtDate(lease.ndvr_date)} />
+          </MS>
+
           <MS title="Customer">
             <DR label="Company"         value={lease.company} />
             <DR label="Customer Name"   value={lease.customer_name} />
@@ -74,10 +66,10 @@ function CurrentLeaseDetailModal({
           </MS>
 
           <MS title="Billing Address">
-            <DR label="Address"  value={lease.billing_address} />
-            <DR label="City"     value={lease.billing_city} />
-            <DR label="State"    value={lease.billing_state} />
-            <DR label="ZIP"      value={lease.billing_zip_code} />
+            <DR label="Address" value={lease.billing_address} />
+            <DR label="City"    value={lease.billing_city} />
+            <DR label="State"   value={lease.billing_state} />
+            <DR label="ZIP"     value={lease.billing_zip_code} />
           </MS>
 
           <MS title="Vehicle">
@@ -92,27 +84,19 @@ function CurrentLeaseDetailModal({
           </MS>
 
           <MS title="Lease Terms">
-            <DR label="New/Swap/Addition"    value={lease.new_swap_addition} />
-            <DR label="NDVR/Delivery Date"   value={fmtDate(lease.ndvr_delivery_date)} />
-            <DR label="Lease Start Date"     value={fmtDate(lease.lease_start_date)} />
-            <DR label="Lease End Date"       value={fmtDate(lease.lease_end_date)} />
-            <DR label="Term"                 value={lease.term != null ? `${lease.term} months` : null} />
-            <DR label="Annual Miles"         value={lease.annual_miles != null ? Number(lease.annual_miles).toLocaleString() : null} />
-            <DR label="Lease End Mile Fee"   value={lease.lease_end_mile_fee != null ? `$${lease.lease_end_mile_fee}/mi` : null} />
-            <DR label="Insurance Expiration" value={lease.insurance_expiration_date} />
-            <DR label="TTL State"            value={lease.ttl_state} />
-            <DR label="TTL Mo."              value={fmtMoney(lease.ttl_mo)} />
-            <DR label="Lease Dep. (months)"  value={lease.lease_depreciation_months != null ? String(Math.round(Number(lease.lease_depreciation_months))) : null} />
+            <DR label="Annual Miles"       value={lease.annual_miles != null ? Number(lease.annual_miles).toLocaleString() : null} />
+            <DR label="Lease End Mile Fee" value={lease.lease_end_mile_fee != null ? `$${lease.lease_end_mile_fee}/mi` : null} />
+            <DR label="TTL State"          value={lease.ttl_state} />
+            <DR label="TTL Mo."            value={fmtMoney(lease.ttl_mo)} />
           </MS>
 
           <MS title="Financials (Customer)">
-            <DR label="Net Cap Cost"        value={fmtMoney(lease.net_cap_cost)} />
-            <DR label="Monthly Dep."        value={fmtMoney(lease.mon_dep)} />
-            <DR label="Monthly Interest"    value={fmtMoney(lease.mon_interest)} />
-            <DR label="Monthly Tax"         value={fmtMoneyOrText(lease.monthly_tax)} />
-            <DR label="Monthly Payment"     value={fmtMoney(lease.mon_payment)} />
-            <DR label="Residual/Resale"     value={fmtMoney(lease.residual_resale_quote)} />
-            <DR label="Upfront Tax Paid"    value={fmtMoney(lease.upfront_tax_paid)} />
+            <DR label="Net Cap Cost"     value={fmtMoney(lease.net_cap_cost)} />
+            <DR label="Monthly Dep."     value={fmtMoney(lease.mon_dep)} />
+            <DR label="Monthly Interest" value={fmtMoney(lease.mon_interest)} />
+            <DR label="Monthly Tax"      value={fmtMoneyOrText(lease.monthly_tax)} />
+            <DR label="Monthly Payment"  value={fmtMoney(lease.mon_payment)} />
+            <DR label="Residual/Resale"  value={fmtMoney(lease.residual_resale_quote)} />
           </MS>
 
           <MS title="Lender / Financing">
@@ -125,11 +109,6 @@ function CurrentLeaseDetailModal({
             <DR label="Balloon / Residual"       value={fmtMoney(lease.balloon_residual)} />
             <DR label="Monthly Dep. (Lender)"    value={fmtMoney(lease.monthly_depreciation_lender)} />
             <DR label="Lender Int. Rate"         value={lease.lender_int_rate_pct != null ? `${(Number(lease.lender_int_rate_pct) * 100).toFixed(3)}%` : null} />
-            <DR label="Lender Term"              value={lease.lender_term} />
-          </MS>
-
-          <MS title="Status">
-            <DR label="Lease Status" value={lease.lease_status} />
           </MS>
         </div>
 
@@ -141,7 +120,7 @@ function CurrentLeaseDetailModal({
   )
 }
 
-// ─── Resizable column header ──────────────────────────────────────────────────
+// ─── Resizable column header ───────────────────────────────────────────────────
 
 function ResizableTh({
   width, onResize, children, className,
@@ -190,35 +169,17 @@ function ResizableTh({
 
 // ─── Filters ──────────────────────────────────────────────────────────────────
 
-// ─── Date helpers (for expiry-bucket filter) ──────────────────────────────────
-
-function parseLeaseEnd(s: string | null | undefined): Date | null {
-  if (!s) return null
-  const d = new Date(s.trim() + 'T00:00:00')
-  return isNaN(d.getTime()) ? null : d
-}
-
-function addDays(d: Date, n: number): Date {
-  const r = new Date(d); r.setDate(r.getDate() + n); return r
-}
-
-const EXPIRY_BUCKETS = ['≤ 30 days', '31–60 days', '61–90 days', '90+ days'] as const
-
-// ─── Filters ──────────────────────────────────────────────────────────────────
-
 interface Filters {
   name:         string
-  lender:       string
   make:         string
   company:      string
   customerType: string
   term:         string
-  expiryBucket: string
+  lender:       string
 }
 
 const EMPTY_FILTERS: Filters = {
-  name: '', lender: '', make: '', company: '',
-  customerType: '', term: '', expiryBucket: '',
+  name: '', make: '', company: '', customerType: '', term: '', lender: '',
 }
 
 function FilterSelect({
@@ -249,15 +210,15 @@ function FilterSelect({
 }
 
 function FiltersBar({
-  filters, onChange, lenders, makes, companies, customerTypes, terms,
+  filters, onChange, makes, companies, customerTypes, terms, lenders,
 }: {
   filters: Filters
   onChange: (f: Filters) => void
-  lenders: string[]
   makes: string[]
   companies: string[]
   customerTypes: string[]
   terms: string[]
+  lenders: string[]
 }) {
   function set(key: keyof Filters, value: string) {
     onChange({ ...filters, [key]: value })
@@ -280,60 +241,15 @@ function FiltersBar({
         </div>
       </div>
 
-      <FilterSelect
-        label="Company"
-        value={filters.company}
-        onChange={(v) => set('company', v)}
-        options={companies}
-        placeholder="All companies"
-      />
-
-      <FilterSelect
-        label="Make"
-        value={filters.make}
-        onChange={(v) => set('make', v)}
-        options={makes}
-        placeholder="All makes"
-      />
-
-      <FilterSelect
-        label="Customer Type"
-        value={filters.customerType}
-        onChange={(v) => set('customerType', v)}
-        options={customerTypes}
-        placeholder="All types"
-      />
-
-      <FilterSelect
-        label="Term"
-        value={filters.term}
-        onChange={(v) => set('term', v)}
-        options={terms}
-        placeholder="All terms"
-      />
-
-      <FilterSelect
-        label="Expiry"
-        value={filters.expiryBucket}
-        onChange={(v) => set('expiryBucket', v)}
-        options={[...EXPIRY_BUCKETS]}
-        placeholder="All expiries"
-      />
-
-      <FilterSelect
-        label="Lender / Lessor"
-        value={filters.lender}
-        onChange={(v) => set('lender', v)}
-        options={lenders}
-        placeholder="All lenders"
-      />
+      <FilterSelect label="Company"       value={filters.company}      onChange={(v) => set('company', v)}      options={companies}     placeholder="All companies" />
+      <FilterSelect label="Make"          value={filters.make}         onChange={(v) => set('make', v)}         options={makes}         placeholder="All makes" />
+      <FilterSelect label="Customer Type" value={filters.customerType} onChange={(v) => set('customerType', v)} options={customerTypes}  placeholder="All types" />
+      <FilterSelect label="Term"          value={filters.term}         onChange={(v) => set('term', v)}         options={terms}         placeholder="All terms" />
+      <FilterSelect label="Lender"        value={filters.lender}       onChange={(v) => set('lender', v)}       options={lenders}       placeholder="All lenders" />
 
       {hasAny && (
         <div className="self-end">
-          <button
-            onClick={() => onChange(EMPTY_FILTERS)}
-            className="btn-secondary py-1.5 text-xs"
-          >
+          <button onClick={() => onChange(EMPTY_FILTERS)} className="btn-secondary py-1.5 text-xs">
             <X size={12} />
             Clear
           </button>
@@ -343,12 +259,11 @@ function FiltersBar({
   )
 }
 
-// ─── Excel export ─────────────────────────────────────────────────────────────
+// ─── Excel export ──────────────────────────────────────────────────────────────
 
-function exportToExcel(records: CurrentLeaseRecord[]) {
+function exportToExcel(records: ExpiredLeaseRecord[]) {
   const rows = records.map((l) => ({
-    // Status & Customer
-    'Lease Status':               l.lease_status,
+    'Expired Date':               l.expired_date ?? '',
     'Company':                    l.company ?? '',
     'Customer Name':              l.customer_name ?? '',
     'Customer Type':              l.customer_type ?? '',
@@ -356,12 +271,10 @@ function exportToExcel(records: CurrentLeaseRecord[]) {
     'Payment Method':             l.payment_method ?? '',
     'Phone':                      l.phone ?? '',
     'Email':                      l.email_address ?? '',
-    // Billing Address
     'Billing Address':            l.billing_address ?? '',
     'Billing City':               l.billing_city ?? '',
     'Billing State':              l.billing_state ?? '',
     'Billing ZIP':                l.billing_zip_code ?? '',
-    // Vehicle
     'Year':                       l.year ?? '',
     'Make':                       l.make ?? '',
     'Model':                      l.model ?? '',
@@ -370,27 +283,20 @@ function exportToExcel(records: CurrentLeaseRecord[]) {
     'Odometer':                   l.odometer ?? '',
     'Odometer Date':              l.odometer_date ?? '',
     'Plate #':                    l.plate_number ?? '',
-    // Lease Terms
-    'Lease Type':                 l.new_swap_addition ?? '',
-    'NDVR/Delivery Date':         l.ndvr_delivery_date ?? '',
+    'NDVR Date':                  l.ndvr_date ?? '',
     'Lease Start Date':           l.lease_start_date ?? '',
     'Lease End Date':             l.lease_end_date ?? '',
     'Term (months)':              l.term ?? '',
     'Annual Miles':               l.annual_miles ?? '',
     'Lease End Mile Fee':         l.lease_end_mile_fee ?? '',
-    'Insurance Expiration':       l.insurance_expiration_date ?? '',
     'TTL State':                  l.ttl_state ?? '',
     'TTL Monthly':                l.ttl_mo ?? '',
-    'Lease Depreciation Months':  l.lease_depreciation_months ?? '',
-    // Financials (Customer)
     'Net Cap Cost':               l.net_cap_cost ?? '',
     'Monthly Depreciation':       l.mon_dep ?? '',
     'Monthly Interest':           l.mon_interest ?? '',
     'Monthly Tax':                l.monthly_tax ?? '',
     'Monthly Payment (Customer)': l.mon_payment ?? '',
     'Residual/Resale':            l.residual_resale_quote ?? '',
-    'Upfront Tax Paid':           l.upfront_tax_paid ?? '',
-    // Lender / Financing
     'Lender / Lessor':            l.lender_lessor ?? '',
     'Loan/Lease #':               l.loan_lease_number ?? '',
     'Loan/Lease Start':           l.loan_lease_start_date ?? '',
@@ -400,58 +306,39 @@ function exportToExcel(records: CurrentLeaseRecord[]) {
     'Balloon / Residual':         l.balloon_residual ?? '',
     'Monthly Dep. (Lender)':      l.monthly_depreciation_lender ?? '',
     'Lender Interest Rate %':     l.lender_int_rate_pct ?? '',
-    'Lender Term':                l.lender_term ?? '',
   }))
 
   const ws = XLSX.utils.json_to_sheet(rows)
   const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, 'Current Leases')
-  XLSX.writeFile(wb, `current-leases-${new Date().toISOString().slice(0, 10)}.xlsx`)
+  XLSX.utils.book_append_sheet(wb, ws, 'Expired Leases')
+  XLSX.writeFile(wb, `expired-leases-${new Date().toISOString().slice(0, 10)}.xlsx`)
 }
 
-// ─── Column definitions ───────────────────────────────────────────────────────
+// ─── Column definitions ────────────────────────────────────────────────────────
 
 const COL_HEADERS = [
-  'Details', 'Lease Status', 'Company', 'Customer Name',
-  'Monthly Depreciation', 'Monthly Interest', 'Monthly Tax', 'VIN',
-  'Customer Type', 'Lease Type',
+  'Details', 'Expired Date', 'Company', 'Customer Name',
+  'Year / Make / Model', 'VIN', 'Customer Type',
   'Lease Start', 'Lease End', 'Monthly Payment',
-  'Payment Method', 'Lender / Lessor',
+  'Lender / Lessor',
 ]
-const DEFAULT_WIDTHS = [80, 110, 160, 170, 145, 130, 115, 160, 140, 110, 115, 115, 140, 130, 170]
+const DEFAULT_WIDTHS = [80, 120, 150, 170, 180, 155, 130, 115, 115, 140, 170]
 
-// ─── Main component ───────────────────────────────────────────────────────────
+// ─── Main component ────────────────────────────────────────────────────────────
 
 interface TableProps {
-  leases: CurrentLeaseRecord[]
+  leases: ExpiredLeaseRecord[]
   loading: boolean
   onRefresh: () => void
-  initialFilters?: Partial<Filters> | null
 }
 
-export default function CurrentLeasesTable({ leases, loading, onRefresh, initialFilters }: TableProps) {
-  const [selected, setSelected]   = useState<CurrentLeaseRecord | null>(null)
+export default function ExpiredLeasesTable({ leases, loading, onRefresh }: TableProps) {
+  const [selected, setSelected]   = useState<ExpiredLeaseRecord | null>(null)
   const [filters, setFilters]     = useState<Filters>(EMPTY_FILTERS)
   const [colWidths, setColWidths] = useState<number[]>(DEFAULT_WIDTHS)
   const [page, setPage]           = useState(1)
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set())
 
-  // Apply drill-down filters arriving from the Reporting tab
-  useEffect(() => {
-    if (initialFilters) {
-      setFilters({ ...EMPTY_FILTERS, ...initialFilters })
-      setPage(1)
-    }
-  }, [initialFilters])
-
-  const today = useMemo(() => {
-    const d = new Date(); d.setHours(0, 0, 0, 0); return d
-  }, [])
-
-  const lenders = useMemo(() =>
-    Array.from(new Set(leases.map((l) => l.lender_lessor).filter(Boolean) as string[])).sort(),
-    [leases]
-  )
   const makes = useMemo(() =>
     Array.from(new Set(leases.map((l) => l.make).filter(Boolean) as string[])).sort(),
     [leases]
@@ -472,6 +359,10 @@ export default function CurrentLeasesTable({ leases, loading, onRefresh, initial
       }),
     [leases]
   )
+  const lenders = useMemo(() =>
+    Array.from(new Set(leases.map((l) => l.lender_lessor).filter(Boolean) as string[])).sort(),
+    [leases]
+  )
 
   const filtered = useMemo(() => leases.filter((l) => {
     if (filters.name         && !(l.customer_name ?? '').toLowerCase().includes(filters.name.toLowerCase())) return false
@@ -480,17 +371,8 @@ export default function CurrentLeasesTable({ leases, loading, onRefresh, initial
     if (filters.lender       && l.lender_lessor !== filters.lender)                                          return false
     if (filters.customerType && l.customer_type !== filters.customerType)                                    return false
     if (filters.term         && (l.term ?? '').toString().trim() !== filters.term)                           return false
-    if (filters.expiryBucket) {
-      const end = parseLeaseEnd(l.lease_end_date)
-      if (!end || end < today) return false
-      const d30 = addDays(today, 30), d60 = addDays(today, 60), d90 = addDays(today, 90)
-      if (filters.expiryBucket === '≤ 30 days'  && !(end >= today && end <= d30)) return false
-      if (filters.expiryBucket === '31–60 days' && !(end >  d30   && end <= d60)) return false
-      if (filters.expiryBucket === '61–90 days' && !(end >  d60   && end <= d90)) return false
-      if (filters.expiryBucket === '90+ days'   && end <= d90)                    return false
-    }
     return true
-  }), [leases, filters, today])
+  }), [leases, filters])
 
   const allChecked  = filtered.length > 0 && filtered.every((l) => checkedIds.has(l.id))
   const someChecked = filtered.some((l) => checkedIds.has(l.id))
@@ -518,7 +400,6 @@ export default function CurrentLeasesTable({ leases, loading, onRefresh, initial
     exportToExcel(toExport)
   }
 
-  // Reset to page 1 whenever filters change
   useEffect(() => { setPage(1) }, [filters])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
@@ -527,7 +408,6 @@ export default function CurrentLeasesTable({ leases, loading, onRefresh, initial
     [filtered, page]
   )
 
-  // Page number list with ellipsis — computed outside JSX to avoid TSX generic syntax issues
   const pageNumbers = useMemo((): (number | string)[] => {
     const visible = Array.from({ length: totalPages }, (_, i) => i + 1)
       .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
@@ -551,11 +431,11 @@ export default function CurrentLeasesTable({ leases, loading, onRefresh, initial
         <FiltersBar
           filters={filters}
           onChange={setFilters}
-          lenders={lenders}
           makes={makes}
           companies={companies}
           customerTypes={customerTypes}
           terms={terms}
+          lenders={lenders}
         />
       )}
 
@@ -563,7 +443,7 @@ export default function CurrentLeasesTable({ leases, loading, onRefresh, initial
         {/* Header bar */}
         <div className="flex items-center justify-between border-b border-gray-200 px-5 py-3.5">
           <div>
-            <h2 className="text-sm font-semibold text-gray-900">Current Lease Records</h2>
+            <h2 className="text-sm font-semibold text-gray-900">Expired Lease Records</h2>
             <p className="text-xs text-gray-400 mt-0.5">
               {hasFilters ? `${filtered.length} of ${leases.length}` : leases.length} total
               {totalPages > 1 && ` · page ${page} of ${totalPages}`}
@@ -602,9 +482,9 @@ export default function CurrentLeasesTable({ leases, loading, onRefresh, initial
         {/* Empty — no records */}
         {!loading && leases.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <p className="text-sm font-semibold text-gray-800">No current lease records</p>
+            <p className="text-sm font-semibold text-gray-800">No expired lease records</p>
             <p className="mt-1 text-xs text-gray-400 max-w-xs">
-              Run the import script to populate data from Active Leases.xlsx.
+              Run the import script to populate data from Expired Leases.xlsx.
             </p>
           </div>
         )}
@@ -673,9 +553,9 @@ export default function CurrentLeasesTable({ leases, loading, onRefresh, initial
                         <Eye size={16} />
                       </button>
                     </td>
-                    {/* Lease Status */}
-                    <td className="border-r border-gray-100 px-3 py-2.5">
-                      <StatusBadge status={lease.lease_status ?? 'Active'} />
+                    {/* Expired Date */}
+                    <td className="border-r border-gray-100 px-3 py-2.5 whitespace-nowrap text-xs font-medium text-amber-700">
+                      {fmtDate(lease.expired_date)}
                     </td>
                     {/* Company */}
                     <td className="border-r border-gray-100 px-3 py-2.5 overflow-hidden">
@@ -685,17 +565,11 @@ export default function CurrentLeasesTable({ leases, loading, onRefresh, initial
                     <td className="border-r border-gray-100 px-3 py-2.5 overflow-hidden">
                       <div className="font-medium text-gray-900 truncate">{lease.customer_name ?? '—'}</div>
                     </td>
-                    {/* Monthly Depreciation */}
-                    <td className="border-r border-gray-100 px-3 py-2.5 whitespace-nowrap text-xs text-gray-800">
-                      {fmtMoney(lease.mon_dep)}
-                    </td>
-                    {/* Monthly Interest */}
-                    <td className="border-r border-gray-100 px-3 py-2.5 whitespace-nowrap text-xs text-gray-800">
-                      {fmtMoney(lease.mon_interest)}
-                    </td>
-                    {/* Monthly Tax */}
-                    <td className="border-r border-gray-100 px-3 py-2.5 whitespace-nowrap text-xs text-gray-800">
-                      {fmtMoneyOrText(lease.monthly_tax)}
+                    {/* Year / Make / Model */}
+                    <td className="border-r border-gray-100 px-3 py-2.5 overflow-hidden">
+                      <div className="truncate text-xs text-gray-700">
+                        {[lease.year, lease.make, lease.model].filter(Boolean).join(' ') || '—'}
+                      </div>
                     </td>
                     {/* VIN */}
                     <td className="border-r border-gray-100 px-3 py-2.5 overflow-hidden">
@@ -704,10 +578,6 @@ export default function CurrentLeasesTable({ leases, loading, onRefresh, initial
                     {/* Customer Type */}
                     <td className="border-r border-gray-100 px-3 py-2.5 overflow-hidden">
                       <div className="truncate text-xs text-gray-700">{lease.customer_type ?? '—'}</div>
-                    </td>
-                    {/* Lease Type (New/Swap/Addition) */}
-                    <td className="border-r border-gray-100 px-3 py-2.5">
-                      <div className="truncate text-xs text-gray-700">{lease.new_swap_addition ?? '—'}</div>
                     </td>
                     {/* Lease Start */}
                     <td className="border-r border-gray-100 px-3 py-2.5 whitespace-nowrap text-xs text-gray-600">
@@ -721,10 +591,6 @@ export default function CurrentLeasesTable({ leases, loading, onRefresh, initial
                     <td className="border-r border-gray-100 px-3 py-2.5 whitespace-nowrap font-medium text-gray-900">
                       {fmtMoney(lease.mon_payment)}
                     </td>
-                    {/* Payment Method */}
-                    <td className="border-r border-gray-100 px-3 py-2.5 overflow-hidden">
-                      <div className="truncate text-xs text-gray-700">{lease.payment_method ?? '—'}</div>
-                    </td>
                     {/* Lender / Lessor */}
                     <td className="px-3 py-2.5 overflow-hidden">
                       <span className="truncate block text-xs text-gray-600">{lease.lender_lessor ?? '—'}</span>
@@ -736,7 +602,7 @@ export default function CurrentLeasesTable({ leases, loading, onRefresh, initial
           </div>
         )}
 
-        {/* Pagination bar */}
+        {/* Pagination */}
         {!loading && totalPages > 1 && (
           <div className="flex items-center justify-between border-t border-gray-200 px-5 py-3">
             <p className="text-xs text-gray-500">
@@ -758,7 +624,6 @@ export default function CurrentLeasesTable({ leases, loading, onRefresh, initial
                 <ChevronLeft size={13} /> Prev
               </button>
 
-              {/* Page number pills */}
               {pageNumbers.map((p, i) =>
                 typeof p === 'string' ? (
                   <span key={`ellipsis-${i}`} className="px-1 text-xs text-gray-400">…</span>
@@ -798,7 +663,7 @@ export default function CurrentLeasesTable({ leases, loading, onRefresh, initial
       </div>
 
       {selected && (
-        <CurrentLeaseDetailModal lease={selected} onClose={() => setSelected(null)} />
+        <ExpiredLeaseDetailModal lease={selected} onClose={() => setSelected(null)} />
       )}
     </>
   )

@@ -10,6 +10,13 @@ export interface LessorInfo {
 }
 
 export interface LesseeInfo {
+  // Lease classification (required before preview/send)
+  leaseType: string
+  customerType: string
+  vehicleUse: string
+  department?: string       // only when customerType = 'Internal'
+  departmentOther?: string  // only when department = 'Other'
+
   lesseeName: string
   address: string
   city: string
@@ -106,7 +113,7 @@ export interface CalculatedFields {
 
 // ─── Database record (Supabase row) ──────────────────────────────────────────
 
-export type LeaseStatus = 'draft' | 'sent' | 'customer_signed' | 'completed'
+export type LeaseStatus = 'draft' | 'sent' | 'customer_signed' | 'completed' | 'generated'
 
 export interface LeaseRecord {
   id: string

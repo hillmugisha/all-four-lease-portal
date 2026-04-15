@@ -1,11 +1,9 @@
 /**
- * import-active-leases.mjs
- * Reads Active Leases.xlsx and bulk-inserts into Supabase current_lease_info table.
+ * import-expired-leases.mjs
+ * Reads Expired Leases.xlsx and bulk-inserts into Supabase expired_leases table.
  *
  * Usage:
- *   node scripts/import-active-leases.mjs
- *
- * Requires: xlsx, @supabase/supabase-js, dotenv (all already in project deps or devDeps)
+ *   node scripts/import-expired-leases.mjs
  */
 
 import { readFileSync } from 'fs'
@@ -19,7 +17,6 @@ import { createClient } from '@supabase/supabase-js'
 const __dir = dirname(fileURLToPath(import.meta.url))
 const root  = join(__dir, '..')
 
-// Read .env.local manually (dotenv not guaranteed to be installed)
 const envPath = join(root, '.env.local')
 const envVars = {}
 try {
@@ -29,21 +26,21 @@ try {
     if (m) envVars[m[1].trim()] = m[2].trim()
   }
 } catch {
-  console.error('Could not read .env.local — set SUPABASE_URL and SUPABASE_SERVICE_KEY manually')
+  console.error('Could not read .env.local')
 }
 
-const SUPABASE_URL  = process.env.NEXT_PUBLIC_SUPABASE_URL  || envVars['NEXT_PUBLIC_SUPABASE_URL']
-const SUPABASE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY || envVars['SUPABASE_SERVICE_ROLE_KEY']
-                   || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || envVars['NEXT_PUBLIC_SUPABASE_ANON_KEY']
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL  || envVars['NEXT_PUBLIC_SUPABASE_URL']
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || envVars['SUPABASE_SERVICE_ROLE_KEY']
+                  || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || envVars['NEXT_PUBLIC_SUPABASE_ANON_KEY']
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
-  console.error('Missing Supabase credentials. Check .env.local for NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or ANON_KEY)')
+  console.error('Missing Supabase credentials.')
   process.exit(1)
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
-// ── Excel date serial → ISO string ───────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function excelDateToISO(serial) {
   if (!serial || typeof serial !== 'number') return null
@@ -60,7 +57,7 @@ function toNum(v) {
   if (v === null || v === undefined) return null
   if (typeof v === 'number') return isNaN(v) ? null : v
   const cleaned = String(v).trim().replace(/^\$/, '').replace(/,/g, '')
-  if (!cleaned || cleaned === '' || cleaned === ' ') return null
+  if (!cleaned) return null
   const n = Number(cleaned)
   return isNaN(n) ? null : n
 }
@@ -71,44 +68,35 @@ function toText(v) {
   return s || null
 }
 
-// ── Column mappings (47 columns, 0-based) ────────────────────────────────────
+// ── Column mappings (43 columns, 0-based) ─────────────────────────────────────
 
-// Date column indices — stored as ISO date string
-const DATE_COLS = new Set([17, 19, 20, 22, 39, 40])
-//  17: ndvr_delivery_date
+// Date column indices
+const DATE_COLS = new Set([0, 17, 19, 20, 22, 36, 37])
+//  0:  expired_date
+//  17: ndvr_date
 //  19: odometer_date
 //  20: lease_start_date
 //  22: lease_end_date
-//  39: loan_lease_start_date
-//  40: loan_lease_end_date
+//  36: loan_lease_start_date
+//  37: loan_lease_end_date
 
-// Numeric column indices — non-numeric values stored as null
-const NUM_COLS = new Set([
-  18,  // odometer
-  23,  // net_cap_cost
-  24,  // mon_dep
-  25,  // mon_interest
-  // 26: monthly_tax — kept as text (can be "Paid Upfront", "Exempt", etc.)
-  27,  // mon_payment
-  28,  // residual_resale_quote
-  29,  // annual_miles
-  30,  // lease_end_mile_fee
-  32,  // ttl_mo
-  34,  // lease_depreciation_months
-  36,  // upfront_tax_paid
-  41,  // monthly_payment
-  42,  // lender_net_cap_cost
-  43,  // balloon_residual
-  44,  // monthly_depreciation_lender
-  45,  // lender_int_rate_pct
-])
+// Numeric column indices (26 = monthly_tax is text — kept as-is)
+const NUM_COLS = new Set([18, 23, 24, 25, 27, 28, 29, 30, 32, 38, 39, 40, 41, 42])
+//  18: odometer
+//  23: net_cap_cost        24: mon_dep          25: mon_interest
+//  27: mon_payment         28: residual_resale_quote
+//  29: annual_miles        30: lease_end_mile_fee
+//  32: ttl_mo
+//  38: monthly_payment (lender)
+//  39: lender_net_cap_cost 40: balloon_residual
+//  41: monthly_depreciation_lender
+//  42: lender_int_rate_pct
 
-// Column index → DB field name
 const COL_MAP = [
-  'new_swap_addition',          // 0   New/Swap/Addition
+  'expired_date',               // 0   Expired Date              (date)
   'company',                    // 1   Company
   'customer_type',              // 2   Customer Type
-  'customer_name',              // 3   Customer Name
+  'customer_name',              // 3   Customer or Business Name
   'location_driver',            // 4   Location / Driver
   'payment_method',             // 5   Payment Method
   'billing_address',            // 6   Billing Address
@@ -122,9 +110,9 @@ const COL_MAP = [
   'model',                      // 14  Model
   'color',                      // 15  Color
   'vin',                        // 16  VIN
-  'ndvr_delivery_date',         // 17  NDVR/Delivery Date        (date)
+  'ndvr_date',                  // 17  NVDR Date                 (date)
   'odometer',                   // 18  Odometer                  (num)
-  'odometer_date',              // 19  Odometer Date             (date)
+  'odometer_date',              // 19  Odom Date                 (date)
   'lease_start_date',           // 20  Lease Start Date          (date)
   'term',                       // 21  Term
   'lease_end_date',             // 22  Lease End Date            (date)
@@ -139,44 +127,35 @@ const COL_MAP = [
   'ttl_state',                  // 31  TTL State
   'ttl_mo',                     // 32  TTL Mo                    (num)
   'plate_number',               // 33  Plate #
-  'lease_depreciation_months',  // 34  Lease Depreciation (months) (num)
-  'insurance_expiration_date',  // 35  Copy of Ins (DATE of Expiration) — special handling
-  'upfront_tax_paid',           // 36  Upfront Tax Paid          (num)
-  'lender_lessor',              // 37  Lender / Lessor
-  'loan_lease_number',          // 38  Loan / Lease #
-  'loan_lease_start_date',      // 39  Loan / Lease Start Date   (date)
-  'loan_lease_end_date',        // 40  Loan / Lease End Date     (date)
-  'monthly_payment',            // 41  Monthly Payment           (num)
-  'lender_net_cap_cost',        // 42  Net Cap Cost (lender)     (num)
-  'balloon_residual',           // 43  Balloon / Residual        (num)
-  'monthly_depreciation_lender',// 44  Monthly Depreciation      (num)
-  'lender_int_rate_pct',        // 45  Lender Int. Rate %        (num)
-  'lender_term',                // 46  Term (lender)
+  'lender_lessor',              // 34  Lender / Lessor
+  'loan_lease_number',          // 35  Loan / Lease #
+  'loan_lease_start_date',      // 36  Loan / Lease Start Date   (date)
+  'loan_lease_end_date',        // 37  Loan / Lease End Date     (date)
+  'monthly_payment',            // 38  Monthly Payment (lender)  (num)
+  'lender_net_cap_cost',        // 39  Net Cap Cost (lender)     (num)
+  'balloon_residual',           // 40  Balloon / Residual        (num)
+  'monthly_depreciation_lender',// 41  Monthly Depreciation      (num)
+  'lender_int_rate_pct',        // 42  Lender Int. Rate %        (num)
 ]
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 async function main() {
-  console.log('Reading Active Leases.xlsx…')
-  const wb   = xlsx.readFile(join(root, 'Active Leases.xlsx'))
+  console.log('Reading Expired Leases.xlsx…')
+  const wb   = xlsx.readFile(join(root, 'Expired Leases.xlsx'))
   const ws   = wb.Sheets[wb.SheetNames[0]]
   const rows = xlsx.utils.sheet_to_json(ws, { header: 1, raw: true })
 
-  // Skip header row
   const dataRows = rows.slice(1)
   console.log(`Found ${dataRows.length} data rows`)
 
   const records = []
   for (const row of dataRows) {
-    // Skip completely empty rows
     if (!row || row.every(v => v === null || v === undefined || v === '')) continue
 
-    const record = { lease_status: 'Active' }
+    const record = {}
 
     COL_MAP.forEach((field, idx) => {
-      // insurance_expiration_date handled below
-      if (idx === 35) return
-
       const raw = row[idx]
       if (DATE_COLS.has(idx)) {
         if (typeof raw === 'number' && raw > 10000) {
@@ -193,25 +172,16 @@ async function main() {
       }
     })
 
-    // insurance_expiration_date: may be a date serial or free text
-    const insRaw = row[35]
-    if (typeof insRaw === 'number' && insRaw > 10000) {
-      record['insurance_expiration_date'] = excelDateToISO(insRaw)
-    } else {
-      record['insurance_expiration_date'] = toText(insRaw)
-    }
-
     records.push(record)
   }
 
   console.log(`Prepared ${records.length} records for insert`)
 
-  // Batch insert in chunks of 100
   const BATCH = 100
   let inserted = 0
   for (let i = 0; i < records.length; i += BATCH) {
     const chunk = records.slice(i, i + BATCH)
-    const { error } = await supabase.from('current_lease_info').insert(chunk)
+    const { error } = await supabase.from('expired_leases').insert(chunk)
     if (error) {
       console.error(`Error inserting batch ${i}–${i + chunk.length}:`, error.message)
       console.error('First row of failed batch:', JSON.stringify(chunk[0], null, 2))
@@ -221,7 +191,7 @@ async function main() {
     process.stdout.write(`\rInserted ${inserted} / ${records.length}`)
   }
 
-  console.log(`\n✓ Done — ${inserted} records inserted into current_lease_info`)
+  console.log(`\n✓ Done — ${inserted} records inserted into expired_leases`)
 }
 
 main().catch(err => {

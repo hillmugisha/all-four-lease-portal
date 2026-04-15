@@ -169,7 +169,7 @@ create table if not exists current_lease_info (
   id                                  uuid          default gen_random_uuid() primary key,
   created_at                          timestamptz   default now(),
 
-  -- Excel columns (in order)
+  -- ── Customer & Contact ───────────────────────────────────────────────────────
   new_swap_addition                   text,
   company                             text,
   customer_type                       text,
@@ -182,32 +182,39 @@ create table if not exists current_lease_info (
   billing_zip_code                    text,
   phone                               text,
   email_address                       text,
+
+  -- ── Vehicle ──────────────────────────────────────────────────────────────────
   year                                text,
   make                                text,
   model                               text,
   color                               text,
   vin                                 text,
-  comments                            text,
-  ndvr_delivery_date                  text,
   odometer                            numeric(12,2),
   odometer_date                       text,
+  plate_number                        text,
+
+  -- ── Lease Terms ──────────────────────────────────────────────────────────────
+  ndvr_delivery_date                  text,
   lease_start_date                    text,
   term                                text,
   lease_end_date                      text,
+  annual_miles                        numeric(12,2),
+  lease_end_mile_fee                  numeric(12,6),
+  insurance_expiration_date           text,
+  ttl_state                           text,
+  ttl_mo                              numeric(12,2),
+  lease_depreciation_months           numeric(12,6),
+
+  -- ── Financials (Customer-Facing) ─────────────────────────────────────────────
   net_cap_cost                        numeric(12,2),
   mon_dep                             numeric(12,2),
   mon_interest                        numeric(12,2),
   monthly_tax                         text,
   mon_payment                         numeric(12,2),
   residual_resale_quote               numeric(12,2),
-  annual_miles                        numeric(12,2),
-  lease_end_mile_fee                  numeric(12,6),
-  ttl_state                           text,
-  ttl_mo                              numeric(12,2),
-  plate_number                        text,
-  lease_depreciation_months           numeric(12,6),
-  insurance_expiration_date           text,
   upfront_tax_paid                    numeric(12,2),
+
+  -- ── Lender / Financing ───────────────────────────────────────────────────────
   lender_lessor                       text,
   loan_lease_number                   text,
   loan_lease_start_date               text,
@@ -218,34 +225,142 @@ create table if not exists current_lease_info (
   monthly_depreciation_lender         numeric(12,2),
   lender_int_rate_pct                 numeric(10,6),
   lender_term                         text,
-  in_service_date                     text,
-  internal_book_value                 numeric(12,2),
-  lender_mo_dep_pct                   numeric(12,6),
-  am                                  text,
-  prorate_pd                          numeric(12,2),
-  prorate_rcvd                        numeric(12,2),
-  col_x1                              text,
-  gps_serial_number                   text,
-  monthly_cash_flow_delta             numeric(12,2),
-  account_manager                     text,
-  col_x2                              text,
-  col_x3                              text,
-  location                            text,
-  mmr                                 numeric(12,2),
-  balance_sheet_mar_2026              numeric(12,2),
-  bal_sheet_delta                     numeric(12,2),
-  nbv_apr_2026                        numeric(12,2),
-  nbv_delta                           numeric(12,2),
-  additional_comments                 text,
-  disposal_comments_90_day            text,
-  days_to_sell                        numeric(12,2),
-  invoice_to_retail                   numeric(12,2),
-  payoff_quoted_paid                  numeric(12,2),
-  payoff_proceeds_sent                numeric(12,2),
-  balance_sheet_apr_09_2026           numeric(12,2),
-  customer_lease_depreciated_book_value numeric(12,2),
-  vin_2                               text,
 
-  -- Added column
+  -- ── Status ───────────────────────────────────────────────────────────────────
   lease_status                        text          default 'Active'
+                                      check (lease_status in ('Active', 'Expired', 'Terminated', 'Purchased'))
+);
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- expired_leases — imported from Expired Leases.xlsx
+-- Run in: Supabase Dashboard > SQL Editor > New query
+-- ═══════════════════════════════════════════════════════════════════════════
+
+create table if not exists expired_leases (
+  id                                  uuid          default gen_random_uuid() primary key,
+  created_at                          timestamptz   default now(),
+
+  -- ── Identity ─────────────────────────────────────────────────────────────────
+  expired_date                        text,
+
+  -- ── Customer & Contact ───────────────────────────────────────────────────────
+  company                             text,
+  customer_type                       text,
+  customer_name                       text,
+  location_driver                     text,
+  payment_method                      text,
+  billing_address                     text,
+  billing_city                        text,
+  billing_state                       text,
+  billing_zip_code                    text,
+  phone                               text,
+  email_address                       text,
+
+  -- ── Vehicle ──────────────────────────────────────────────────────────────────
+  year                                text,
+  make                                text,
+  model                               text,
+  color                               text,
+  vin                                 text,
+  odometer                            numeric(12,2),
+  odometer_date                       text,
+  plate_number                        text,
+
+  -- ── Lease Terms ──────────────────────────────────────────────────────────────
+  ndvr_date                           text,
+  lease_start_date                    text,
+  term                                text,
+  lease_end_date                      text,
+  annual_miles                        numeric(12,2),
+  lease_end_mile_fee                  numeric(12,6),
+  ttl_state                           text,
+  ttl_mo                              numeric(12,2),
+
+  -- ── Financials (Customer-Facing) ─────────────────────────────────────────────
+  net_cap_cost                        numeric(12,2),
+  mon_dep                             numeric(12,2),
+  mon_interest                        numeric(12,2),
+  monthly_tax                         text,
+  mon_payment                         numeric(12,2),
+  residual_resale_quote               numeric(12,2),
+
+  -- ── Lender / Financing ───────────────────────────────────────────────────────
+  lender_lessor                       text,
+  loan_lease_number                   text,
+  loan_lease_start_date               text,
+  loan_lease_end_date                 text,
+  monthly_payment                     numeric(12,2),
+  lender_net_cap_cost                 numeric(12,2),
+  balloon_residual                    numeric(12,2),
+  monthly_depreciation_lender         numeric(12,2),
+  lender_int_rate_pct                 numeric(10,6)
+);
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- sold_leases — imported from Sold Leases.xlsx
+-- Run in: Supabase Dashboard > SQL Editor > New query
+-- ═══════════════════════════════════════════════════════════════════════════
+
+create table if not exists sold_leases (
+  id                                  uuid          default gen_random_uuid() primary key,
+  created_at                          timestamptz   default now(),
+
+  -- ── Sale & Disposal ───────────────────────────────────────────────────────────
+  sold_date                           text,
+  disposal_date                       text,
+  wholesale_proceeds                  numeric(12,2),
+  mmr_net_sale_price                  numeric(12,2),
+
+  -- ── Customer & Contact ───────────────────────────────────────────────────────
+  company                             text,
+  customer_type                       text,
+  customer_name                       text,
+  location_driver                     text,
+  payment_method                      text,
+  billing_address                     text,
+  billing_city                        text,
+  billing_state                       text,
+  billing_zip_code                    text,
+  phone                               text,
+  email_address                       text,
+
+  -- ── Vehicle ──────────────────────────────────────────────────────────────────
+  year                                text,
+  make                                text,
+  model                               text,
+  color                               text,
+  vin                                 text,
+  vin8                                text,
+  sold_odometer                       numeric(12,2),
+  odometer_date                       text,
+  plate_number                        text,
+  comments                            text,
+
+  -- ── Lease Terms ──────────────────────────────────────────────────────────────
+  ndvr_date                           text,
+  lease_start_date                    text,
+  term                                text,
+  lease_end_date                      text,
+  annual_miles                        numeric(12,2),
+  lease_end_mile_fee                  numeric(12,6),
+  ttl_state                           text,
+  ttl_mo                              numeric(12,2),
+
+  -- ── Financials (Customer-Facing) ─────────────────────────────────────────────
+  net_cap_cost                        numeric(12,2),
+  mon_dep                             numeric(12,2),
+  mon_payment                         numeric(12,2),
+  residual_resale_quote               numeric(12,2),
+  upfront_tax_paid                    numeric(12,2),
+
+  -- ── Lender / Financing ───────────────────────────────────────────────────────
+  lender_lessor                       text,
+  loan_lease_number                   text,
+  loan_lease_start_date               text,
+  loan_lease_end_date                 text,
+  monthly_payment                     numeric(12,2),
+  lender_net_cap_cost                 numeric(12,2),
+  balloon_residual                    numeric(12,2),
+  monthly_depreciation_lender         numeric(12,2),
+  lender_int_rate_pct                 numeric(10,6)
 );

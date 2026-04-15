@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { UseFormReturn, useFieldArray } from 'react-hook-form'
-import { LeaseFormData, FinancialInputs } from '@/lib/types'
+import { LeaseFormData, FinancialInputs, LeaseRecord } from '@/lib/types'
 import { calculateLease } from '@/lib/calculations'
-import { Plus, Trash2, Eye, X, Loader2, Send, CheckCircle } from 'lucide-react'
+import { Plus, Trash2, Loader2, Send, CheckCircle, FileText } from 'lucide-react'
+import { PdfViewerModal } from '@/components/PdfViewerModal'
 
 interface Props {
   form: UseFormReturn<LeaseFormData>
@@ -14,14 +15,15 @@ export default function Step5Signatures({ form }: Props) {
   const { register, control, watch, setValue, formState: { errors } } = form
 
   const [multiple, setMultiple] = useState(false)
-  const [showPreview, setShowPreview] = useState(false)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [previewRecord, setPreviewRecord] = useState<LeaseRecord | null>(null)
+  const [previewUrl, setPreviewUrl]       = useState<string | null>(null)
   const [previewLoading, setPreviewLoading] = useState(false)
-  const [previewError, setPreviewError] = useState<string | null>(null)
+  const [previewError, setPreviewError]   = useState<string | null>(null)
 
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
   const [sentEnvelopeId, setSentEnvelopeId] = useState<string | null>(null)
+  const [classificationError, setClassificationError] = useState<string | null>(null)
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -51,7 +53,19 @@ export default function Step5Signatures({ form }: Props) {
     }
   }
 
+  function checkClassification(): boolean {
+    const { leaseType, customerType, vehicleUse, department, departmentOther } = form.getValues()
+    if (!leaseType)    { setClassificationError('Lease Type is required — go back to Step 1 (Parties) and set it under Lease Classification.'); return false }
+    if (!customerType) { setClassificationError('Customer Type is required — go back to Step 1 (Parties) and set it under Lease Classification.'); return false }
+    if (!vehicleUse)   { setClassificationError('Vehicle Use is required — go back to Step 1 (Parties) and set it under Lease Classification.'); return false }
+    if (customerType === 'Internal' && !department) { setClassificationError('Department is required for Internal leases — go back to Step 1 (Parties) and select a department.'); return false }
+    if (customerType === 'Internal' && department === 'Other' && !departmentOther) { setClassificationError('Enter a department name for "Other" — go back to Step 1 (Parties).'); return false }
+    setClassificationError(null)
+    return true
+  }
+
   async function handleSendToDocuSign() {
+    if (!checkClassification()) return
     setSending(true)
     setSendError(null)
     try {
@@ -63,7 +77,7 @@ export default function Step5Signatures({ form }: Props) {
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'Failed to send to DocuSign')
       setSentEnvelopeId(json.envelopeId)
-      setShowPreview(false)
+      closePreview()
     } catch (e) {
       setSendError(String(e))
     } finally {
@@ -72,141 +86,142 @@ export default function Step5Signatures({ form }: Props) {
   }
 
   async function handlePreview() {
+    if (!checkClassification()) return
     setPreviewLoading(true)
     setPreviewError(null)
+
+    const raw = form.getValues()
+
+    const fi: FinancialInputs = {
+      leaseDate:             raw.leaseDate,
+      numPayments:           Number(raw.numPayments),
+      firstPaymentDate:      raw.firstPaymentDate,
+      paymentDay:            Number(raw.paymentDay),
+      vehicleAgreedValue:    Number(raw.vehicleAgreedValue),
+      taxes:                 Number(raw.taxes),
+      titleRegFees:          Number(raw.titleRegFees),
+      acquisitionFee:        Number(raw.acquisitionFee),
+      docFee:                Number(raw.docFee),
+      priorLeaseBalance:     Number(raw.priorLeaseBalance ?? 0),
+      optionalProducts:      Number(raw.optionalProducts ?? 0),
+      capCostReduction:      Number(raw.capCostReduction ?? 0),
+      residualValue:         Number(raw.residualValue),
+      rentCharge:            Number(raw.rentCharge),
+      monthlySalesTax:       Number(raw.monthlySalesTax ?? 0),
+      milesPerYear:          Number(raw.milesPerYear),
+      excessMileageRate:     Number(raw.excessMileageRate),
+      dispositionFee:        Number(raw.dispositionFee ?? 195),
+      earlyTerminationFee:   Number(raw.earlyTerminationFee ?? 0),
+      purchaseOptionFee:     Number(raw.purchaseOptionFee ?? 0),
+      tradeinYear:           raw.tradeinYear ?? '',
+      tradeinMake:           raw.tradeinMake ?? '',
+      tradeinModel:          raw.tradeinModel ?? '',
+      tradeinGrossAllowance: Number(raw.tradeinGrossAllowance ?? 0),
+      tradeinPriorBalance:   Number(raw.tradeinPriorBalance ?? 0),
+      customerSignerName:    raw.customerSignerName ?? '',
+      customerSignerEmail:   raw.customerSignerEmail ?? '',
+    }
+    const c = calculateLease(fi)
+
+    const primary = raw.lesseeSignatories?.[0]
+    const lesseePrimaryName = primary
+      ? `${primary.firstName} ${primary.lastName}`.trim()
+      : raw.lesseeName
+
+    const coLessee = raw.lesseeSignatories?.[1]
+    const coLesseeName = coLessee
+      ? `${coLessee.firstName} ${coLessee.lastName}`.trim() || null
+      : null
+
+    const record: LeaseRecord = {
+      id: 'preview',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      doc_status: 'generated' as const,
+
+      lessor_name:    raw.lessorName,
+      lessor_address: raw.lessorAddress,
+      lessor_po_box:  raw.lessorPoBox || null,
+      lessor_city:    raw.lessorCity,
+      lessor_state:   raw.lessorState?.toUpperCase() ?? '',
+      lessor_zip:     raw.lessorZip,
+
+      lessee_name:    raw.lesseeName,
+      lessee_address: raw.address,
+      lessee_city:    raw.city,
+      lessee_state:   raw.state?.toUpperCase() ?? '',
+      lessee_zip:     raw.zip,
+      lessee_phone:   raw.phone || null,
+      lessee_email:   raw.email,
+
+      lease_date: raw.leaseDate,
+
+      vehicle_condition:  raw.condition,
+      vehicle_year:       raw.year,
+      vehicle_make:       raw.make,
+      vehicle_model:      raw.model,
+      vehicle_body_style: raw.bodyStyle,
+      vehicle_vin:        raw.vin ? raw.vin.toUpperCase() : '',
+      vehicle_odometer:   raw.odometer || null,
+
+      vehicle_agreed_value:  fi.vehicleAgreedValue,
+      taxes:                 fi.taxes,
+      title_reg_fees:        fi.titleRegFees,
+      acquisition_fee:       fi.acquisitionFee,
+      doc_fee:               fi.docFee,
+      prior_lease_balance:   fi.priorLeaseBalance,
+      optional_products:     fi.optionalProducts,
+      cap_cost_reduction:    fi.capCostReduction,
+      residual_value:        fi.residualValue,
+      rent_charge:           fi.rentCharge,
+      num_payments:          fi.numPayments,
+      monthly_sales_tax:     fi.monthlySalesTax,
+      first_payment_date:    fi.firstPaymentDate,
+      payment_day:           fi.paymentDay,
+      miles_per_year:        fi.milesPerYear,
+      excess_mileage_rate:   fi.excessMileageRate,
+      disposition_fee:       fi.dispositionFee,
+      early_termination_fee: fi.earlyTerminationFee,
+      purchase_option_fee:   fi.purchaseOptionFee,
+
+      tradein_year:            raw.tradeinYear || null,
+      tradein_make:            raw.tradeinMake || null,
+      tradein_model:           raw.tradeinModel || null,
+      tradein_gross_allowance: fi.tradeinGrossAllowance,
+      tradein_prior_balance:   fi.tradeinPriorBalance,
+
+      gross_cap_cost:               c.grossCapCost,
+      net_tradein_allowance:        c.netTradeinAllowance,
+      adjusted_cap_cost:            c.adjustedCapCost,
+      depreciation:                 c.depreciation,
+      total_base_monthly_payments:  c.totalBaseMonthlyPayments,
+      base_monthly_payment:         c.baseMonthlyPayment,
+      total_monthly_payment:        c.totalMonthlyPayment,
+      total_of_payments:            c.totalOfPayments,
+      amount_due_at_signing:        c.amountDueAtSigning,
+      official_fees_taxes:          c.officialFeesTaxes,
+
+      customer_signer_name:  lesseePrimaryName,
+      customer_signer_email: primary?.email ?? raw.email,
+      co_lessee_signer_name: coLesseeName,
+      lessor_signer_name:    raw.lessorSignatoryName || null,
+      lessor_signer_title:   raw.lessorSignatoryTitle || null,
+
+      docusign_envelope_id: null,
+      signed_at:            null,
+    }
+
     try {
-      const raw = form.getValues()
-
-      const fi: FinancialInputs = {
-        leaseDate:             raw.leaseDate,
-        numPayments:           Number(raw.numPayments),
-        firstPaymentDate:      raw.firstPaymentDate,
-        paymentDay:            Number(raw.paymentDay),
-        vehicleAgreedValue:    Number(raw.vehicleAgreedValue),
-        taxes:                 Number(raw.taxes),
-        titleRegFees:          Number(raw.titleRegFees),
-        acquisitionFee:        Number(raw.acquisitionFee),
-        docFee:                Number(raw.docFee),
-        priorLeaseBalance:     Number(raw.priorLeaseBalance ?? 0),
-        optionalProducts:      Number(raw.optionalProducts ?? 0),
-        capCostReduction:      Number(raw.capCostReduction ?? 0),
-        residualValue:         Number(raw.residualValue),
-        rentCharge:            Number(raw.rentCharge),
-        monthlySalesTax:       Number(raw.monthlySalesTax ?? 0),
-        milesPerYear:          Number(raw.milesPerYear),
-        excessMileageRate:     Number(raw.excessMileageRate),
-        dispositionFee:        Number(raw.dispositionFee ?? 195),
-        earlyTerminationFee:   Number(raw.earlyTerminationFee ?? 0),
-        purchaseOptionFee:     Number(raw.purchaseOptionFee ?? 0),
-        tradeinYear:           raw.tradeinYear ?? '',
-        tradeinMake:           raw.tradeinMake ?? '',
-        tradeinModel:          raw.tradeinModel ?? '',
-        tradeinGrossAllowance: Number(raw.tradeinGrossAllowance ?? 0),
-        tradeinPriorBalance:   Number(raw.tradeinPriorBalance ?? 0),
-        customerSignerName:    raw.customerSignerName ?? '',
-        customerSignerEmail:   raw.customerSignerEmail ?? '',
-      }
-      const c = calculateLease(fi)
-
-      const primary = raw.lesseeSignatories?.[0]
-      const lesseePrimaryName = primary
-        ? `${primary.firstName} ${primary.lastName}`.trim()
-        : raw.lesseeName
-
-      const coLessee = raw.lesseeSignatories?.[1]
-      const coLesseeName = coLessee
-        ? `${coLessee.firstName} ${coLessee.lastName}`.trim() || null
-        : null
-
-      const record = {
-        id: 'preview',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        status: 'generated' as const,
-
-        lessor_name:    raw.lessorName,
-        lessor_address: raw.lessorAddress,
-        lessor_po_box:  raw.lessorPoBox || null,
-        lessor_city:    raw.lessorCity,
-        lessor_state:   raw.lessorState?.toUpperCase() ?? '',
-        lessor_zip:     raw.lessorZip,
-
-        lessee_name:    raw.lesseeName,
-        lessee_address: raw.address,
-        lessee_city:    raw.city,
-        lessee_state:   raw.state?.toUpperCase() ?? '',
-        lessee_zip:     raw.zip,
-        lessee_phone:   raw.phone || null,
-        lessee_email:   raw.email,
-
-        lease_date: raw.leaseDate,
-
-        vehicle_condition:  raw.condition,
-        vehicle_year:       raw.year,
-        vehicle_make:       raw.make,
-        vehicle_model:      raw.model,
-        vehicle_body_style: raw.bodyStyle,
-        vehicle_vin:        raw.vin ? raw.vin.toUpperCase() : '',
-        vehicle_odometer:   raw.odometer || null,
-
-        vehicle_agreed_value:  fi.vehicleAgreedValue,
-        taxes:                 fi.taxes,
-        title_reg_fees:        fi.titleRegFees,
-        acquisition_fee:       fi.acquisitionFee,
-        doc_fee:               fi.docFee,
-        prior_lease_balance:   fi.priorLeaseBalance,
-        optional_products:     fi.optionalProducts,
-        cap_cost_reduction:    fi.capCostReduction,
-        residual_value:        fi.residualValue,
-        rent_charge:           fi.rentCharge,
-        num_payments:          fi.numPayments,
-        monthly_sales_tax:     fi.monthlySalesTax,
-        first_payment_date:    fi.firstPaymentDate,
-        payment_day:           fi.paymentDay,
-        miles_per_year:        fi.milesPerYear,
-        excess_mileage_rate:   fi.excessMileageRate,
-        disposition_fee:       fi.dispositionFee,
-        early_termination_fee: fi.earlyTerminationFee,
-        purchase_option_fee:   fi.purchaseOptionFee,
-
-        tradein_year:            raw.tradeinYear || null,
-        tradein_make:            raw.tradeinMake || null,
-        tradein_model:           raw.tradeinModel || null,
-        tradein_gross_allowance: fi.tradeinGrossAllowance,
-        tradein_prior_balance:   fi.tradeinPriorBalance,
-
-        gross_cap_cost:               c.grossCapCost,
-        net_tradein_allowance:         c.netTradeinAllowance,
-        adjusted_cap_cost:            c.adjustedCapCost,
-        depreciation:                 c.depreciation,
-        total_base_monthly_payments:  c.totalBaseMonthlyPayments,
-        base_monthly_payment:         c.baseMonthlyPayment,
-        total_monthly_payment:        c.totalMonthlyPayment,
-        total_of_payments:            c.totalOfPayments,
-        amount_due_at_signing:        c.amountDueAtSigning,
-        official_fees_taxes:          c.officialFeesTaxes,
-
-        customer_signer_name:  lesseePrimaryName,
-        customer_signer_email: primary?.email ?? raw.email,
-        co_lessee_signer_name: coLesseeName, // injected in-memory for PDF preview only
-        lessor_signer_name:    raw.lessorSignatoryName || null,
-        lessor_signer_title:   raw.lessorSignatoryTitle || null,
-
-        docusign_envelope_id: null,
-        signed_at:            null,
-      }
-
-      const res = await fetch('/api/generate-pdf', {
-        method: 'POST',
+      const res = await fetch('/api/generate-preview-packet', {
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ record }),
+        body:    JSON.stringify({ record }),
       })
       if (!res.ok) throw new Error('Failed to generate preview')
-
       const blob = await res.blob()
       if (previewUrl) URL.revokeObjectURL(previewUrl)
       setPreviewUrl(URL.createObjectURL(blob))
-      setShowPreview(true)
+      setPreviewRecord(record)
     } catch (e) {
       setPreviewError(String(e))
     } finally {
@@ -215,7 +230,9 @@ export default function Step5Signatures({ form }: Props) {
   }
 
   function closePreview() {
-    setShowPreview(false)
+    if (previewUrl) URL.revokeObjectURL(previewUrl)
+    setPreviewUrl(null)
+    setPreviewRecord(null)
   }
 
   return (
@@ -392,11 +409,8 @@ export default function Step5Signatures({ form }: Props) {
         </div>
       </div>
 
-      {/* ── Preview button ─────────────────────────────────────────────────── */}
-      <div className="pt-2 border-t border-gray-100">
-        {previewError && (
-          <p className="mb-3 text-sm text-red-600">{previewError}</p>
-        )}
+      {/* ── Actions ────────────────────────────────────────────────────────── */}
+      <div className="pt-2 border-t border-gray-100 flex items-center gap-3 flex-wrap">
         <button
           type="button"
           onClick={handlePreview}
@@ -410,69 +424,49 @@ export default function Step5Signatures({ form }: Props) {
             </>
           ) : (
             <>
-              <Eye size={15} />
-              Preview Lease Agreement
+              <FileText size={15} />
+              Preview Lease Documents
             </>
           )}
         </button>
+        <button
+          type="button"
+          onClick={handleSendToDocuSign}
+          disabled={sending}
+          className="btn-primary"
+        >
+          {sending ? (
+            <>
+              <Loader2 size={15} className="animate-spin" />
+              Sending to DocuSign…
+            </>
+          ) : (
+            <>
+              <Send size={15} />
+              Send for Signature
+            </>
+          )}
+        </button>
+        {classificationError && (
+          <p className="w-full text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+            {classificationError}
+          </p>
+        )}
+        {previewError && (
+          <p className="w-full text-sm text-red-600">{previewError}</p>
+        )}
+        {sendError && (
+          <p className="w-full text-sm text-red-600">{sendError}</p>
+        )}
       </div>
 
       {/* ── Preview Modal ──────────────────────────────────────────────────── */}
-      {showPreview && previewUrl && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-black/60 backdrop-blur-sm">
-          {/* Header */}
-          <div className="flex items-center justify-between bg-white px-6 py-4 shadow-sm shrink-0">
-            <h3 className="text-base font-semibold text-gray-900">Lease Agreement Preview</h3>
-            <button
-              type="button"
-              onClick={closePreview}
-              className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
-            >
-              <X size={20} />
-            </button>
-          </div>
-
-          {/* PDF iframe */}
-          <div className="flex-1 bg-gray-100 overflow-hidden">
-            <iframe
-              src={previewUrl}
-              className="h-full w-full"
-              title="Lease Agreement Preview"
-            />
-          </div>
-
-          {/* Footer */}
-          <div className="flex items-center justify-between bg-white px-6 py-4 shadow-[0_-1px_3px_rgba(0,0,0,0.08)] shrink-0">
-            <div className="flex-1 mr-4">
-              {sendError && (
-                <p className="text-sm text-red-600">{sendError}</p>
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-            <button type="button" onClick={closePreview} className="btn-secondary">
-              Close
-            </button>
-            <button
-              type="button"
-              onClick={handleSendToDocuSign}
-              disabled={sending}
-              className="btn-primary"
-            >
-              {sending ? (
-                <>
-                  <Loader2 size={15} className="animate-spin" />
-                  Sending to DocuSign…
-                </>
-              ) : (
-                <>
-                  <Send size={15} />
-                  Send for Signature
-                </>
-              )}
-            </button>
-            </div>
-          </div>
-        </div>
+      {previewRecord && previewUrl && (
+        <PdfViewerModal
+          lease={previewRecord}
+          preloadedUrl={previewUrl}
+          onClose={closePreview}
+        />
       )}
 
       {/* ── Success banner ────────────────────────────────────────────────── */}

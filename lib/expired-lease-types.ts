@@ -1,9 +1,11 @@
-export interface CurrentLeaseRecord {
+export interface ExpiredLeaseRecord {
   id: string
   created_at: string
 
-  // ── Customer & Contact ──────────────────────────────────────────────────────
-  new_swap_addition: string | null
+  // ── Identity ─────────────────────────────────────────────────────────────────
+  expired_date: string | null
+
+  // ── Customer & Contact ───────────────────────────────────────────────────────
   company: string | null
   customer_type: string | null
   customer_name: string | null
@@ -16,7 +18,7 @@ export interface CurrentLeaseRecord {
   phone: string | null
   email_address: string | null
 
-  // ── Vehicle ─────────────────────────────────────────────────────────────────
+  // ── Vehicle ──────────────────────────────────────────────────────────────────
   year: string | null
   make: string | null
   model: string | null
@@ -26,17 +28,15 @@ export interface CurrentLeaseRecord {
   odometer_date: string | null
   plate_number: string | null
 
-  // ── Lease Terms ─────────────────────────────────────────────────────────────
-  ndvr_delivery_date: string | null
+  // ── Lease Terms ──────────────────────────────────────────────────────────────
+  ndvr_date: string | null
   lease_start_date: string | null
   term: string | null
   lease_end_date: string | null
   annual_miles: number | null
   lease_end_mile_fee: number | null
-  insurance_expiration_date: string | null
   ttl_state: string | null
   ttl_mo: number | null
-  lease_depreciation_months: number | null
 
   // ── Financials (Customer-Facing) ─────────────────────────────────────────────
   net_cap_cost: number | null
@@ -45,7 +45,6 @@ export interface CurrentLeaseRecord {
   monthly_tax: string | null
   mon_payment: number | null
   residual_resale_quote: number | null
-  upfront_tax_paid: number | null
 
   // ── Lender / Financing ───────────────────────────────────────────────────────
   lender_lessor: string | null
@@ -57,8 +56,4 @@ export interface CurrentLeaseRecord {
   balloon_residual: number | null
   monthly_depreciation_lender: number | null
   lender_int_rate_pct: number | null
-  lender_term: string | null
-
-  // ── Status ───────────────────────────────────────────────────────────────────
-  lease_status: string
 }

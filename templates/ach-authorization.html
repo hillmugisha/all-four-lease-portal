@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ACH Authorization — {{lessee.name}}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 9pt;
+      color: #000;
+      background: #fff;
+      line-height: 1.5;
+    }
+
+    @page {
+      size: letter portrait;
+      margin: 0.6in 0.6in 0.6in 0.6in;
+    }
+
+    .page { width: 100%; }
+
+    b, strong { font-weight: bold; }
+
+    /* ── Header ── */
+    .header-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 14px;
+    }
+    .header-table td {
+      border: none;
+      padding: 0;
+      vertical-align: top;
+    }
+    .header-logo-cell {
+      width: 50%;
+    }
+    .header-address-cell {
+      width: 50%;
+      text-align: right;
+      font-size: 8.5pt;
+      line-height: 1.6;
+    }
+    .company-name {
+      font-size: 13pt;
+      font-weight: bold;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── Doc title ── */
+    .doc-title {
+      text-align: center;
+      font-size: 11pt;
+      font-weight: bold;
+      letter-spacing: 0.03em;
+      margin-bottom: 14px;
+      margin-top: 4px;
+    }
+
+    /* ── Intro paragraph ── */
+    .intro {
+      font-size: 9pt;
+      line-height: 1.5;
+      margin-bottom: 14px;
+    }
+
+    /* ── Inline fill lines ── */
+    .fill-line {
+      display: inline-block;
+      border-bottom: 0.75pt solid #000;
+      min-width: 140px;
+      padding: 0 4px;
+      vertical-align: bottom;
+      line-height: 1.6;
+    }
+    .fill-line-sm  { min-width: 80px; }
+    .fill-line-md  { min-width: 140px; }
+    .fill-line-lg  { min-width: 220px; }
+    .fill-line-xl  { min-width: 320px; }
+
+    /* ── Field rows ── */
+    .field-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 6px;
+    }
+    .field-table td {
+      border: none;
+      padding: 3px 0;
+      font-size: 9pt;
+      vertical-align: bottom;
+    }
+    .field-label {
+      font-weight: bold;
+      white-space: nowrap;
+      padding-right: 8px;
+      width: 120px;
+    }
+    .field-value {
+      border-bottom: 0.75pt solid #000;
+    }
+
+    /* ── Section header ── */
+    .section-header {
+      font-size: 9.5pt;
+      font-weight: bold;
+      margin-top: 14px;
+      margin-bottom: 5px;
+      text-decoration: underline;
+    }
+
+    /* ── Bank fields ── */
+    .bank-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 6px;
+    }
+    .bank-table td {
+      border: none;
+      padding: 4px 0;
+      font-size: 9pt;
+      vertical-align: bottom;
+    }
+    .bank-label {
+      font-weight: bold;
+      white-space: nowrap;
+      padding-right: 10px;
+      width: 130px;
+    }
+    .bank-value {
+      border-bottom: 0.75pt solid #000;
+    }
+
+    /* ── Frequency row ── */
+    .freq-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 6px;
+    }
+    .freq-table td {
+      border: none;
+      padding: 3px 4px 3px 0;
+      font-size: 9pt;
+      vertical-align: bottom;
+    }
+    .freq-label {
+      font-weight: bold;
+      white-space: nowrap;
+      padding-right: 8px;
+      width: 70px;
+    }
+    .freq-option {
+      white-space: nowrap;
+      padding-right: 18px;
+    }
+    .freq-option .anchor-invisible { display: inline; }
+    .num-payments-label {
+      font-weight: bold;
+      white-space: nowrap;
+      padding-right: 8px;
+    }
+    .num-payments-value {
+      border-bottom: 0.75pt solid #000;
+      min-width: 80px;
+    }
+
+    /* ── Legal text ── */
+    .legal-text {
+      font-size: 8.5pt;
+      line-height: 1.55;
+      margin-top: 14px;
+      margin-bottom: 14px;
+    }
+
+    /* ── Signature block ── */
+    .sig-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 18px;
+    }
+    .sig-table td {
+      border: none;
+      padding: 0;
+      vertical-align: bottom;
+    }
+    .sig-line {
+      display: block;
+      border-bottom: 0.75pt solid #000;
+      width: 100%;
+      margin-bottom: 3px;
+      min-height: 22px;
+    }
+    .sig-label {
+      display: block;
+      font-size: 8pt;
+      text-align: center;
+    }
+
+    /* ── Revocation notice ── */
+    .revoke-text {
+      font-size: 8.5pt;
+      line-height: 1.55;
+      margin-top: 16px;
+    }
+
+    /* ── Invisible DocuSign anchors ── */
+    .anchor-invisible {
+      color: #fff;
+      font-size: 4pt;
+      line-height: 0;
+      display: inline-block;
+      width: 0;
+      overflow: hidden;
+    }
+
+    /* ── Customer fill-in hint text ── */
+    .field-hint {
+      color: #bbb;
+      font-style: italic;
+      font-size: 8pt;
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ── Header ── -->
+  <table class="header-table">
+    <tr>
+      <td class="header-logo-cell">
+        {{#if logoDataUri}}
+        <img src="{{logoDataUri}}" alt="All Four" style="max-height:64px; max-width:200px; display:block;">
+        {{/if}}
+      </td>
+      <td class="header-address-cell">
+        <span class="company-name">All Four, LLC</span><br>
+        1 TeamQuest Way / P.O. Box 147<br>
+        Clear Lake, IA 50428<br>
+        641-923-2855 / www.allfourfmc.com
+      </td>
+    </tr>
+  </table>
+
+  <!-- ── Title ── -->
+  <div class="doc-title">Recurring eCheck Debits Authorization Form</div>
+
+  <!-- ── Intro paragraph ── -->
+  <p class="intro">
+    This is permission for recurring debits. As authorized signor on the Depository Account presented, by completing
+    and signing this form, you give All Four, LLC permission to charge/debit account presented below for the amount
+    indicated on or after the indicated date. This authorization is to remain in full force and effect until All Four,
+    LLC has received written notification from me of its termination. **
+  </p>
+
+  <p style="font-size:9pt; margin-bottom:10px;"><b>Please complete the information below:</b></p>
+
+  <!-- ── Authorization sentence ── -->
+  <p style="font-size:9pt; line-height:1.8; margin-bottom:4px;">
+    I,&nbsp;<span class="fill-line fill-line-xl">{{signatures.lessee_signer_name}}</span>&nbsp;as an authorized signor for&nbsp;<span class="fill-line fill-line-xl">{{lessee.name}}</span>
+  </p>
+  <p style="font-size:9pt; line-height:1.8; margin-bottom:4px;">
+    authorize All Four, LLC to charge / debit my account indicated below for the invoiced amount plus applicable
+  </p>
+  <p style="font-size:9pt; line-height:1.8; margin-bottom:14px;">
+    fees &amp; violations on or after&nbsp;<span class="fill-line fill-line-md">{{fmtDate lease.lease_date}}</span>.&nbsp;&nbsp;These payments are for vehicle lease payments on account.
+  </p>
+
+  <!-- ── Billing Address ── -->
+  <table class="field-table">
+    <tr>
+      <td class="field-label">Billing Address:</td>
+      <td class="field-value">
+        <span class="anchor-invisible">\ach_billing_address\</span><span class="field-hint">Street address</span>
+      </td>
+    </tr>
+    <tr>
+      <td class="field-label">City, State, Zip:</td>
+      <td class="field-value">
+        <span class="anchor-invisible">\ach_billing_city\</span><span class="field-hint">City, State  ZIP</span>
+      </td>
+    </tr>
+    <tr>
+      <td class="field-label">Phone #:</td>
+      <td class="field-value">
+        <span class="anchor-invisible">\ach_billing_phone\</span><span class="field-hint">(xxx) xxx-xxxx</span>
+      </td>
+    </tr>
+    <tr>
+      <td class="field-label">Email:</td>
+      <td class="field-value">
+        <span class="anchor-invisible">\ach_billing_email\</span><span class="field-hint">email@example.com</span>
+      </td>
+    </tr>
+  </table>
+
+  <!-- ── Frequency ── -->
+  <table class="freq-table" style="margin-top:10px;">
+    <tr>
+      <td class="freq-label"><b>Frequency:</b></td>
+      <td class="freq-option">
+        <span class="anchor-invisible">\ach_freq_weekly\</span>&#x2610;&nbsp;Weekly
+      </td>
+      <td class="freq-option">
+        <span class="anchor-invisible">\ach_freq_monthly\</span>&#x2610;&nbsp;Monthly
+      </td>
+      <td class="freq-option">
+        <span class="anchor-invisible">\ach_freq_annually\</span>&#x2610;&nbsp;Annually
+      </td>
+      <td style="padding-right:8px;"></td>
+      <td class="num-payments-label"><b>Number of Payments:</b></td>
+      <td class="num-payments-value">
+        <span class="anchor-invisible">\ach_num_payments\</span>- {{financials.num_payments}}
+      </td>
+    </tr>
+  </table>
+
+  <!-- ── Bank Details ── -->
+  <div class="section-header">Depository Bank Information</div>
+
+  <table class="bank-table">
+    <tr>
+      <td class="bank-label">Depository Bank:</td>
+      <td class="bank-value">
+        <span class="anchor-invisible">\ach_bank_name\</span><span class="field-hint">Bank name</span>
+      </td>
+    </tr>
+    <tr>
+      <td class="bank-label">Routing Number:</td>
+      <td class="bank-value">
+        <span class="anchor-invisible">\ach_routing\</span><span class="field-hint">9-digit routing number</span>
+      </td>
+    </tr>
+    <tr>
+      <td class="bank-label">Account Number:</td>
+      <td class="bank-value">
+        <span class="anchor-invisible">\ach_account\</span><span class="field-hint">Account number</span>
+      </td>
+    </tr>
+    <tr>
+      <td class="bank-label">Account Type:</td>
+      <td style="padding: 4px 0; vertical-align: bottom; font-size:9pt;">
+        <span class="anchor-invisible">\ach_account_type_checking\</span>&#x2610;&nbsp;Checking
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <span class="anchor-invisible">\ach_account_type_savings\</span>&#x2610;&nbsp;Savings
+      </td>
+    </tr>
+  </table>
+
+  <!-- ── Legal text ── -->
+  <p class="legal-text">
+    I acknowledge that a minimum Non-Sufficient Funds (NSF) fee of $35.00 may be charged by All Four, LLC to
+    <span class="fill-line fill-line-lg">{{lessee.name}}</span> in the event there are insufficient funds available at the time the
+    debit is initiated. I authorize All Four, LLC to charge / debit the account indicated in this authorization form
+    according to the terms outlined above. This payment is for the goods / services / invoices described above,
+    for the amount indicated above. I certify that I am an authorized signor on this Depository Account.
+  </p>
+
+  <!-- ── Signature ── -->
+  <table class="sig-table">
+    <tr>
+      <td style="width: 55%; padding-right: 24px; vertical-align: bottom;">
+        <span class="anchor-invisible">\ach_lessee_sign\</span>
+        <span class="sig-line"></span>
+        <span class="sig-label">Signature</span>
+      </td>
+      <td style="width: 20%; padding-right: 24px; vertical-align: bottom;">
+        <span class="anchor-invisible">\ach_lessee_date\</span>
+        <span class="sig-line"></span>
+        <span class="sig-label">Date</span>
+      </td>
+      <td style="width: 25%; vertical-align: bottom; padding-right: 0;"></td>
+    </tr>
+  </table>
+
+  <!-- ── Revocation notice ── -->
+  <p class="revoke-text">
+    **I&nbsp;<span class="fill-line fill-line-lg"></span>&nbsp;hereby Revoke my Authorization for the charges / debits to the
+    account. I understand that my right to place a stop exists as long as I request and deliver this written stop
+    payment notice at least three business days prior to the scheduled settlement date.
+  </p>
+
+</div>
+</body>
+</html>

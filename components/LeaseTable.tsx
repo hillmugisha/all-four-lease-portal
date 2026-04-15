@@ -4,8 +4,9 @@ import { useEffect, useState, useMemo, useRef, useCallback } from 'react'
 import { LeaseRecord } from '@/lib/types'
 import { fmt, fmtDate } from '@/lib/calculations'
 import { FileDown, RefreshCw, Plus, Eye, X, Search, ChevronDown, Trash2, Download, Printer, AlertTriangle, Zap, Loader2, CheckCircle2 } from 'lucide-react'
-import Link from 'next/link'
 import clsx from 'clsx'
+import { PdfViewerModal } from '@/components/PdfViewerModal'
+import { DR as DetailRow, MS as ModalSection } from '@/lib/table-utils'
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
 
@@ -54,24 +55,6 @@ async function downloadPdf(record: LeaseRecord) {
 }
 
 // ─── Detail modal ─────────────────────────────────────────────────────────────
-
-function DetailRow({ label, value }: { label: string; value: string | number | null | undefined }) {
-  return (
-    <div className="flex justify-between py-2 border-b border-gray-100 last:border-0 text-sm">
-      <span className="text-gray-500 shrink-0 mr-4">{label}</span>
-      <span className="font-medium text-gray-900 text-right">{value ?? '—'}</span>
-    </div>
-  )
-}
-
-function ModalSection({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">{title}</h3>
-      <div className="rounded-lg border border-gray-200 bg-white px-4 py-1 mb-4">{children}</div>
-    </div>
-  )
-}
 
 function LeaseDetailModal({ lease, onClose }: { lease: LeaseRecord; onClose: () => void }) {
   return (
@@ -180,297 +163,115 @@ function LeaseDetailModal({ lease, onClose }: { lease: LeaseRecord; onClose: () 
   )
 }
 
-// ─── PDF Viewer Modal ─────────────────────────────────────────────────────────
+// ─── Bulk Delete Confirm Modal ────────────────────────────────────────────────
 
-interface SignerInfo {
-  name:          string
-  email:         string
-  routing_order: string
-  status:        string    // 'created' | 'sent' | 'delivered' | 'completed' | 'declined'
-  signed_at:     string | null
-}
-
-interface EnvelopeStatusResponse {
-  doc_status:      LeaseRecord['doc_status']
-  envelope_status: string | null
-  hasEnvelope:     boolean
-  signed_count:    number
-  total_count:     number
-  signers:         SignerInfo[]
-}
-
-function SignerBadge({ signers, signedCount, totalCount, isCompleted, checking }: {
-  signers:     SignerInfo[]
-  signedCount: number
-  totalCount:  number
-  isCompleted: boolean
-  checking:    boolean
-}) {
-  if (isCompleted) {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-green-900/60 px-2.5 py-0.5 text-xs font-medium text-green-300">
-        <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
-        Fully Executed
-      </span>
-    )
-  }
-  if (totalCount === 0) return null
-  return (
-    <div className="relative group">
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-900/60 px-2.5 py-0.5 text-xs font-medium text-amber-300 cursor-default">
-        {checking
-          ? <RefreshCw size={10} className="animate-spin" />
-          : <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />}
-        {signedCount} / {totalCount} signed
-      </span>
-      {/* Tooltip — list each signer */}
-      {signers.length > 0 && (
-        <div className="pointer-events-none absolute right-0 top-full mt-1.5 z-20 hidden group-hover:block
-                        w-56 rounded-lg bg-gray-900 border border-gray-700 shadow-xl p-2 space-y-1.5">
-          {signers.map((s, i) => (
-            <div key={i} className="flex items-center gap-2 text-xs">
-              <span className={clsx(
-                'h-2 w-2 shrink-0 rounded-full',
-                s.status === 'completed' ? 'bg-green-400' : 'bg-gray-500',
-              )} />
-              <span className="truncate text-gray-300">{s.name || s.email}</span>
-              <span className={clsx(
-                'ml-auto shrink-0 font-medium',
-                s.status === 'completed' ? 'text-green-400' : 'text-gray-500',
-              )}>
-                {s.status === 'completed' ? 'Signed' : 'Pending'}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-const POLL_INTERVAL_MS = 30_000
-
-function PdfViewerModal({
-  lease,
-  onClose,
-  onStatusChange,
+function BulkDeleteConfirmModal({
+  leases,
+  onConfirm,
+  onCancel,
+  deleting,
 }: {
-  lease:           LeaseRecord
-  onClose:         () => void
-  onStatusChange?: (leaseId: string, status: LeaseRecord['doc_status']) => void
+  leases:    LeaseRecord[]
+  onConfirm: () => void
+  onCancel:  () => void
+  deleting:  boolean
 }) {
-  const [pdfUrl, setPdfUrl]         = useState<string | null>(null)
-  const [loadingPdf, setLoadingPdf] = useState(true)
-  const [pdfError, setPdfError]     = useState<string | null>(null)
-  const [checking, setChecking]     = useState(false)
-  const [signers, setSigners]       = useState<SignerInfo[]>([])
-  const [signedCount, setSignedCount] = useState(0)
-  const [totalCount, setTotalCount]   = useState(0)
-  const [docStatus, setDocStatus]     = useState<LeaseRecord['doc_status']>(lease.doc_status)
+  const toDelete  = leases.filter((l) => l.doc_status !== 'completed')
+  const protected_ = leases.filter((l) => l.doc_status === 'completed')
 
-  const iframeRef = useRef<HTMLIFrameElement>(null)
-  const filename  = `lease-${lease.lessee_name.replace(/\s+/g, '-')}-${lease.vehicle_vin}.pdf`
-  const hasEnvelope = !!lease.docusign_envelope_id
-
-  // ── Effect: initial PDF load + polling ──────────────────────────────────────
-  useEffect(() => {
-    let objectUrl: string | null = null
-    let pollTimer: ReturnType<typeof setInterval> | null = null
-    let cancelled = false
-
-    // Plain-object refs so interval closure always sees the latest values
-    const state = {
-      docStatus:   lease.doc_status as LeaseRecord['doc_status'],
-      signedCount: 0,
-    }
-
-    async function loadPdf() {
-      if (cancelled) return
-      setLoadingPdf(true)
-      setPdfError(null)
-
-      if (objectUrl) { URL.revokeObjectURL(objectUrl); objectUrl = null }
-
-      try {
-        let res: Response
-        if (hasEnvelope) {
-          // Always fetch the live signed version from DocuSign
-          res = await fetch(`/api/leases/${lease.id}/signed-pdf`)
-        } else {
-          // Fallback: re-generate from form data (draft / pre-DocuSign leases)
-          res = await fetch('/api/generate-pdf', {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ record: lease }),
-          })
-        }
-
-        if (!res.ok) { if (!cancelled) setPdfError('Failed to load PDF'); return }
-
-        const blob = await res.blob()
-        if (cancelled) return
-        objectUrl = URL.createObjectURL(blob)
-        setPdfUrl(objectUrl)
-      } catch {
-        if (!cancelled) setPdfError('Failed to load PDF')
-      } finally {
-        if (!cancelled) setLoadingPdf(false)
-      }
-    }
-
-    async function syncStatus() {
-      if (cancelled || !hasEnvelope) return
-      setChecking(true)
-
-      try {
-        const res = await fetch(`/api/leases/${lease.id}/envelope-status`)
-        if (!res.ok || cancelled) return
-        const data: EnvelopeStatusResponse = await res.json()
-        if (cancelled) return
-
-        setSigners(data.signers)
-        setSignedCount(data.signed_count)
-        setTotalCount(data.total_count)
-
-        const statusChanged  = data.doc_status !== state.docStatus
-        const moreSignatures = data.signed_count > state.signedCount
-
-        state.signedCount = data.signed_count
-
-        if (statusChanged) {
-          state.docStatus = data.doc_status
-          setDocStatus(data.doc_status)
-          onStatusChange?.(lease.id, data.doc_status)
-        }
-
-        // Re-fetch PDF whenever a new signature appears or status advances
-        if (moreSignatures || statusChanged) {
-          await loadPdf()
-        }
-
-        // Stop polling once fully executed
-        if (data.doc_status === 'completed' && pollTimer) {
-          clearInterval(pollTimer)
-          pollTimer = null
-        }
-      } catch { /* silent — retry on next tick */ }
-      finally {
-        if (!cancelled) setChecking(false)
-      }
-    }
-
-    // Kick off initial load
-    loadPdf()
-
-    if (hasEnvelope && lease.doc_status !== 'completed') {
-      syncStatus()
-      pollTimer = setInterval(syncStatus, POLL_INTERVAL_MS)
-    } else if (hasEnvelope && lease.doc_status === 'completed') {
-      // Still fetch signers so the badge populates
-      syncStatus()
-    }
-
-    return () => {
-      cancelled = true
-      if (pollTimer) clearInterval(pollTimer)
-      if (objectUrl) URL.revokeObjectURL(objectUrl)
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lease.id])
-
-  // ── Download / Print ────────────────────────────────────────────────────────
-  function handleDownload() {
-    if (!pdfUrl) return
-    const a    = document.createElement('a')
-    a.href     = pdfUrl
-    a.download = filename
-    a.click()
-  }
-
-  function handlePrint() {
-    if (!iframeRef.current?.contentWindow) return
-    iframeRef.current.contentWindow.print()
-  }
-
-  const isCompleted = docStatus === 'completed'
-
-  // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div
-        className="relative z-10 flex w-full max-w-5xl flex-col rounded-xl bg-gray-900 shadow-2xl overflow-hidden"
-        style={{ height: '90vh' }}
-      >
-        {/* ── Toolbar ── */}
-        <div className="flex shrink-0 items-center justify-between bg-gray-800 px-4 py-2.5 gap-3">
-          {/* Left: filename + signing badge */}
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="truncate text-sm font-medium text-gray-200">{filename}</span>
-            {hasEnvelope && (
-              <SignerBadge
-                signers={signers}
-                signedCount={signedCount}
-                totalCount={totalCount}
-                isCompleted={isCompleted}
-                checking={checking}
-              />
-            )}
-          </div>
-
-          {/* Right: actions */}
-          <div className="flex shrink-0 items-center gap-1">
-            <button
-              onClick={handleDownload}
-              disabled={!pdfUrl}
-              title="Download"
-              className="inline-flex items-center gap-1.5 rounded px-2.5 py-1.5 text-xs font-medium text-gray-300 hover:bg-gray-700 disabled:opacity-40 transition-colors"
-            >
-              <Download size={15} />
-              Download
-            </button>
-            <button
-              onClick={handlePrint}
-              disabled={!pdfUrl}
-              title="Print"
-              className="inline-flex items-center gap-1.5 rounded px-2.5 py-1.5 text-xs font-medium text-gray-300 hover:bg-gray-700 disabled:opacity-40 transition-colors"
-            >
-              <Printer size={15} />
-              Print
-            </button>
-            <div className="mx-1 h-5 w-px bg-gray-600" />
-            <button
-              onClick={onClose}
-              title="Close"
-              className="rounded p-1.5 text-gray-400 hover:bg-gray-700 hover:text-gray-200 transition-colors"
-            >
-              <X size={16} />
-            </button>
-          </div>
-        </div>
-
-        {/* ── Content ── */}
-        {loadingPdf && (
-          <div className="flex flex-1 items-center justify-center">
-            <div className="flex flex-col items-center gap-3 text-gray-400">
-              <RefreshCw size={24} className="animate-spin" />
-              <span className="text-sm">
-                {hasEnvelope ? 'Loading signed document…' : 'Generating PDF…'}
-              </span>
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
+      <div className="relative z-10 w-full max-w-md rounded-xl bg-white shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle size={18} className="text-red-500 shrink-0" />
+            <div>
+              <h2 className="text-sm font-semibold text-gray-900">Delete Leases</h2>
+              <p className="mt-0.5 text-xs text-gray-500">
+                {leases.length} lease{leases.length !== 1 ? 's' : ''} selected
+              </p>
             </div>
           </div>
-        )}
-        {!loadingPdf && pdfError && (
-          <div className="flex flex-1 items-center justify-center text-red-400 text-sm">{pdfError}</div>
-        )}
-        {pdfUrl && (
-          <iframe
-            ref={iframeRef}
-            src={pdfUrl}
-            className="flex-1 w-full border-0 bg-gray-700"
-            title={filename}
-          />
-        )}
+          <button
+            onClick={onCancel}
+            className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="max-h-[52vh] overflow-y-auto px-5 py-4 space-y-4">
+          {toDelete.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm text-gray-700 font-medium">
+                {toDelete.length} lease{toDelete.length !== 1 ? 's' : ''} will be permanently deleted:
+              </p>
+              <div className="space-y-1.5">
+                {toDelete.map((l) => (
+                  <div key={l.id} className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5">
+                    <p className="text-sm font-semibold text-gray-900">{l.lessee_name}</p>
+                    <p className="mt-0.5 text-xs text-gray-500">
+                      {[l.vehicle_year, l.vehicle_make, l.vehicle_model].filter(Boolean).join(' ')}
+                      {l.vehicle_vin && <> · <span className="font-mono">{l.vehicle_vin}</span></>}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {protected_.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm text-gray-700 font-medium">
+                {protected_.length} completed lease{protected_.length !== 1 ? 's' : ''} will be skipped:
+              </p>
+              <div className="space-y-1.5">
+                {protected_.map((l) => (
+                  <div key={l.id} className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-semibold text-gray-700">{l.lessee_name}</p>
+                      <span className="shrink-0 rounded bg-green-50 px-1.5 py-0.5 text-xs font-medium text-green-700">
+                        Completed
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-xs text-gray-400">
+                      {[l.vehicle_year, l.vehicle_make, l.vehicle_model].filter(Boolean).join(' ')}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {toDelete.length > 0 && (
+            <p className="text-sm font-medium text-red-600">This action cannot be undone.</p>
+          )}
+
+          {toDelete.length === 0 && (
+            <p className="text-sm text-gray-500">
+              All selected leases have <strong>Completed</strong> status and cannot be deleted.
+            </p>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end gap-3 border-t border-gray-200 px-5 py-3">
+          <button onClick={onCancel} className="btn-secondary">Cancel</button>
+          <button
+            onClick={onConfirm}
+            disabled={deleting || toDelete.length === 0}
+            className="inline-flex items-center gap-2 rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {deleting ? (
+              <><Loader2 size={14} className="animate-spin" /> Deleting…</>
+            ) : (
+              <><Trash2 size={14} /> Delete {toDelete.length > 0 ? toDelete.length : ''}</>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -843,7 +644,11 @@ function leaseEndDate(firstPayment: string, numPayments: number): string {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function LeaseTable() {
+interface LeaseTableProps {
+  onCreateNew?: () => void
+}
+
+export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
   const [leases, setLeases]           = useState<LeaseRecord[]>([])
   const [loading, setLoading]         = useState(true)
   const [selected, setSelected]       = useState<LeaseRecord | null>(null)
@@ -854,10 +659,14 @@ export default function LeaseTable() {
   const [colWidths, setColWidths]     = useState<number[]>(DEFAULT_WIDTHS)
 
   // Bulk-activate state
-  const [checkedIds, setCheckedIds]           = useState<Set<string>>(new Set())
+  const [checkedIds, setCheckedIds]             = useState<Set<string>>(new Set())
   const [showActivateModal, setShowActivateModal] = useState(false)
-  const [activating, setActivating]           = useState(false)
-  const [toast, setToast]                     = useState<ToastState | null>(null)
+  const [activating, setActivating]             = useState(false)
+  const [toast, setToast]                       = useState<ToastState | null>(null)
+
+  // Bulk-delete state
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false)
+  const [bulkDeleting, setBulkDeleting]               = useState(false)
 
   async function load() {
     setLoading(true)
@@ -984,10 +793,64 @@ export default function LeaseTable() {
     }
   }
 
-  // Derived: leases selected that are eligible (completed + not yet active)
+  // ── Bulk delete ─────────────────────────────────────────────────────────────
+  async function confirmBulkDelete() {
+    setBulkDeleting(true)
+    const toDelete = selectedLeases.filter((l) => l.doc_status !== 'completed')
+    try {
+      const results = await Promise.allSettled(
+        toDelete.map((l) =>
+          fetch(`/api/leases/${l.id}`, { method: 'DELETE' })
+        )
+      )
+      const deletedIds = new Set(
+        toDelete
+          .filter((_, i) => {
+            const r = results[i]
+            return r.status === 'fulfilled' && r.value.ok
+          })
+          .map((l) => l.id)
+      )
+      const failCount = toDelete.length - deletedIds.size
+      setLeases((prev) => prev.filter((l) => !deletedIds.has(l.id)))
+      setCheckedIds((prev) => {
+        const next = new Set(prev)
+        deletedIds.forEach((id) => next.delete(id))
+        return next
+      })
+      setShowBulkDeleteModal(false)
+      if (failCount > 0) {
+        fireToast(`${deletedIds.size} deleted, ${failCount} failed`, 'error')
+      } else {
+        fireToast(
+          `${deletedIds.size} lease${deletedIds.size !== 1 ? 's' : ''} deleted`,
+          'success',
+        )
+      }
+    } catch {
+      setShowBulkDeleteModal(false)
+      fireToast('Delete failed. Please try again.', 'error')
+    } finally {
+      setBulkDeleting(false)
+    }
+  }
+
+  // All checked leases (regardless of status)
   const selectedLeases = useMemo(
     () => leases.filter((l) => checkedIds.has(l.id)),
     [leases, checkedIds],
+  )
+
+  // Activate is only meaningful for completed-but-not-yet-active leases
+  const hasActivatable = useMemo(
+    () => selectedLeases.some((l) => l.doc_status === 'completed' && !l.is_active),
+    [selectedLeases],
+  )
+
+  // Delete is allowed for any non-completed lease
+  const hasDeletable = useMemo(
+    () => selectedLeases.some((l) => l.doc_status !== 'completed'),
+    [selectedLeases],
   )
 
   // Unique sorted years and makes from loaded data
@@ -1050,18 +913,33 @@ export default function LeaseTable() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowActivateModal(true)}
-              disabled={checkedIds.size === 0}
+              disabled={!hasActivatable}
               className={clsx(
                 'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors',
-                checkedIds.size > 0
+                hasActivatable
                   ? 'bg-green-600 text-white hover:bg-green-700'
                   : 'bg-gray-100 text-gray-400 cursor-not-allowed',
               )}
             >
               <Zap size={13} />
-              {checkedIds.size > 0
-                ? `Activate ${checkedIds.size} Lease${checkedIds.size !== 1 ? 's' : ''}`
+              {hasActivatable
+                ? `Activate (${selectedLeases.filter((l) => l.doc_status === 'completed' && !l.is_active).length})`
                 : 'Activate Leases'}
+            </button>
+            <button
+              onClick={() => setShowBulkDeleteModal(true)}
+              disabled={!hasDeletable}
+              className={clsx(
+                'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors',
+                hasDeletable
+                  ? 'bg-red-600 text-white hover:bg-red-700'
+                  : 'bg-gray-100 text-gray-400 cursor-not-allowed',
+              )}
+            >
+              <Trash2 size={13} />
+              {hasDeletable
+                ? `Delete (${selectedLeases.filter((l) => l.doc_status !== 'completed').length})`
+                : 'Delete'}
             </button>
             <button onClick={load} className="btn-secondary py-1.5 text-xs" disabled={loading}>
               <RefreshCw size={13} className={clsx(loading && 'animate-spin')} />
@@ -1094,10 +972,10 @@ export default function LeaseTable() {
             <p className="mt-1 text-xs text-gray-400 max-w-xs">
               Create your first lease agreement to see records appear here.
             </p>
-            <Link href="/new-lease" className="btn-primary mt-6">
+            <button onClick={onCreateNew} className="btn-primary mt-6">
               <Plus size={15} />
               Create New Lease
-            </Link>
+            </button>
           </div>
         )}
 
@@ -1129,29 +1007,25 @@ export default function LeaseTable() {
                     className="border-r border-gray-200 bg-gray-50 px-3 py-2.5"
                   >
                     {(() => {
-                      const eligible = filtered.filter(
-                        (l) => l.doc_status === 'completed' && !l.is_active,
-                      )
-                      const allChecked =
-                        eligible.length > 0 && eligible.every((l) => checkedIds.has(l.id))
-                      const someChecked = eligible.some((l) => checkedIds.has(l.id))
+                      // All non-active rows are selectable (completed → activate, others → delete)
+                      const selectable = filtered.filter((l) => !l.is_active)
+                      const allChecked = selectable.length > 0 && selectable.every((l) => checkedIds.has(l.id))
+                      const someChecked = selectable.some((l) => checkedIds.has(l.id))
                       return (
                         <input
                           type="checkbox"
                           checked={allChecked}
-                          ref={(el) => {
-                            if (el) el.indeterminate = someChecked && !allChecked
-                          }}
-                          disabled={eligible.length === 0}
+                          ref={(el) => { if (el) el.indeterminate = someChecked && !allChecked }}
+                          disabled={selectable.length === 0}
                           onChange={() => {
                             if (allChecked) {
                               setCheckedIds(new Set())
                             } else {
-                              setCheckedIds(new Set(eligible.map((l) => l.id)))
+                              setCheckedIds(new Set(selectable.map((l) => l.id)))
                             }
                           }}
                           className="h-3.5 w-3.5 rounded border-gray-300 accent-green-600 disabled:opacity-30"
-                          title={eligible.length === 0 ? 'No eligible leases' : 'Select all completed leases'}
+                          title={selectable.length === 0 ? 'No selectable leases' : 'Select all'}
                         />
                       )
                     })()}
@@ -1173,20 +1047,13 @@ export default function LeaseTable() {
                         <span title="Already activated" className="inline-flex items-center justify-center">
                           <CheckCircle2 size={15} className="text-green-500" />
                         </span>
-                      ) : lease.doc_status === 'completed' ? (
+                      ) : (
                         <input
                           type="checkbox"
                           checked={checkedIds.has(lease.id)}
                           onChange={() => toggleCheck(lease.id)}
                           className="h-3.5 w-3.5 rounded border-gray-300 accent-green-600 cursor-pointer"
-                          title="Select to activate"
-                        />
-                      ) : (
-                        <input
-                          type="checkbox"
-                          disabled
-                          className="h-3.5 w-3.5 rounded border-gray-300 opacity-30 cursor-not-allowed"
-                          title="Only completed leases can be activated"
+                          title={lease.doc_status === 'completed' ? 'Select to activate' : 'Select to delete'}
                         />
                       )}
                     </td>
@@ -1281,6 +1148,15 @@ export default function LeaseTable() {
           onConfirm={confirmActivate}
           onCancel={() => setShowActivateModal(false)}
           activating={activating}
+        />
+      )}
+
+      {showBulkDeleteModal && (
+        <BulkDeleteConfirmModal
+          leases={selectedLeases}
+          onConfirm={confirmBulkDelete}
+          onCancel={() => setShowBulkDeleteModal(false)}
+          deleting={bulkDeleting}
         />
       )}
 

@@ -139,8 +139,8 @@ export default function Step3Vehicle({ form }: Props) {
 
         {/* Remaining fields — always visible, disabled when auto-filled */}
 
-        {/* Condition */}
-        <div className="sm:col-span-2">
+        {/* Row 2: Condition | Year | Make | Model — proportioned to data length */}
+        <div className="sm:col-span-1">
           <label className="label">Condition <span className="req">*</span></label>
           <select
             {...register('condition', { required: 'Required' })}
@@ -153,7 +153,6 @@ export default function Step3Vehicle({ form }: Props) {
           {errors.condition && <p className="field-error">{errors.condition.message}</p>}
         </div>
 
-        {/* Year */}
         <div className="sm:col-span-1">
           <label className="label">Year <span className="req">*</span></label>
           <input
@@ -166,8 +165,7 @@ export default function Step3Vehicle({ form }: Props) {
           {errors.year && <p className="field-error">{errors.year.message}</p>}
         </div>
 
-        {/* Make */}
-        <div className="sm:col-span-1">
+        <div className="sm:col-span-2">
           <label className="label">Make <span className="req">*</span></label>
           <input
             {...register('make', { required: 'Required' })}
@@ -178,7 +176,6 @@ export default function Step3Vehicle({ form }: Props) {
           {errors.make && <p className="field-error">{errors.make.message}</p>}
         </div>
 
-        {/* Model */}
         <div className="sm:col-span-2">
           <label className="label">Model <span className="req">*</span></label>
           <input
@@ -190,8 +187,8 @@ export default function Step3Vehicle({ form }: Props) {
           {errors.model && <p className="field-error">{errors.model.message}</p>}
         </div>
 
-        {/* Body Style */}
-        <div className="sm:col-span-2">
+        {/* Row 3: Body Style | Odometer */}
+        <div className="sm:col-span-3">
           <label className="label">Body Style</label>
           <input
             {...register('bodyStyle')}
@@ -200,7 +197,6 @@ export default function Step3Vehicle({ form }: Props) {
           />
         </div>
 
-        {/* Odometer */}
         <div className="sm:col-span-2">
           <label className="label">Odometer (miles)</label>
           <input

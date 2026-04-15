@@ -49,7 +49,7 @@ export default function NewLeasePage() {
 
       {/* Tab content */}
       {activeTab === 'dashboard' && (
-        <LeaseTable />
+        <LeaseTable onCreateNew={() => setActiveTab('create')} />
       )}
 
       {activeTab === 'create' && (

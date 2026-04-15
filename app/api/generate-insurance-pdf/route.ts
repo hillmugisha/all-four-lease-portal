@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { renderLease } from '@/lib/lease-renderer'
+import { renderInsuranceAck } from '@/lib/lease-renderer'
 import { recordToTemplateData } from '@/lib/lease-adapter'
 import { LeaseRecord } from '@/lib/types'
 
 /**
- * POST /api/generate-pdf
+ * POST /api/generate-insurance-pdf
  * Body: { record: LeaseRecord }
  * Returns: PDF binary as application/pdf
  */
@@ -12,10 +12,8 @@ export async function POST(req: NextRequest) {
   try {
     const { record } = (await req.json()) as { record: LeaseRecord }
 
-    // Render the Handlebars template to HTML
-    const html = renderLease(recordToTemplateData(record))
+    const html = renderInsuranceAck(recordToTemplateData(record))
 
-    // Launch headless Chrome and print to PDF
     const puppeteer = await import('puppeteer')
     const browser = await puppeteer.default.launch({
       headless: true,
@@ -33,7 +31,7 @@ export async function POST(req: NextRequest) {
 
     await browser.close()
 
-    const filename = `lease-${(record.lessee_name ?? 'unknown').replace(/\s+/g, '-')}-${record.vehicle_vin ?? 'unknown'}.pdf`
+    const filename = `insurance-ack-${record.lessee_name.replace(/\s+/g, '-')}-${record.vehicle_vin}.pdf`
 
     return new NextResponse(Buffer.from(pdf), {
       status: 200,
@@ -43,7 +41,7 @@ export async function POST(req: NextRequest) {
       },
     })
   } catch (err) {
-    console.error('PDF generation error:', err)
+    console.error('Insurance PDF generation error:', err)
     return NextResponse.json({ error: String(err) }, { status: 500 })
   }
 }

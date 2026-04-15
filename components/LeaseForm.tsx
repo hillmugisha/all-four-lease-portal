@@ -30,6 +30,11 @@ const DEFAULT_VALUES: Partial<LeaseFormData> = {
   lessorState:   'IA',
   lessorZip:     '50428',
 
+  // Lease classification
+  leaseType:    'Closed-End Lease',
+  customerType: 'Business',
+  vehicleUse:   'Standard Customer Use',
+
   // Vehicle
   condition: 'NEW',
 
@@ -183,8 +188,8 @@ export default function LeaseForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-      const saved: LeaseRecord = await saveRes.json()
-      if (!saveRes.ok) throw new Error((saved as any).error ?? 'Save failed')
+      const saved = await saveRes.json() as LeaseRecord & { error?: string }
+      if (!saveRes.ok) throw new Error(saved.error ?? 'Save failed')
 
       const pdfRes = await fetch('/api/generate-pdf', {
         method: 'POST',

@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Insurance Acknowledgement — {{lessee.name}}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 9pt;
+      color: #000;
+      background: #fff;
+      line-height: 1.45;
+    }
+
+    @page {
+      size: letter portrait;
+      margin: 0.6in 0.6in 0.6in 0.6in;
+    }
+
+    .page { width: 100%; }
+
+    b, strong { font-weight: bold; }
+
+    /* ── Title ── */
+    .doc-title {
+      text-align: center;
+      font-size: 11pt;
+      font-weight: bold;
+      letter-spacing: 0.03em;
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+
+    /* ── Intro paragraphs ── */
+    .intro { font-size: 9pt; margin-bottom: 4px; }
+
+    /* ── Party block (LESSOR / LESSEE) ── */
+    .party-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 8px;
+    }
+    .party-table td {
+      border: 0.75pt solid #000;
+      padding: 2px 6px;
+      font-size: 9pt;
+      vertical-align: middle;
+    }
+    .party-heading {
+      font-weight: bold;
+      font-size: 9pt;
+      background: #fff;
+    }
+    .party-label {
+      width: 28%;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+    .party-value {
+      width: 72%;
+    }
+
+    /* ── Vehicle table ── */
+    .vehicle-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 10px;
+    }
+    .vehicle-table th, .vehicle-table td {
+      border: 0.75pt solid #000;
+      padding: 3px 6px;
+      font-size: 9pt;
+      text-align: left;
+    }
+    .vehicle-table th { font-weight: bold; }
+
+    /* ── Section headers ── */
+    .section-header {
+      font-size: 9pt;
+      font-weight: bold;
+      margin-top: 12px;
+      margin-bottom: 5px;
+    }
+
+    /* ── Body text ── */
+    .body-text {
+      font-size: 9pt;
+      line-height: 1.5;
+      margin-bottom: 6px;
+    }
+
+    /* ── Numbered items ── */
+    .numbered-item {
+      font-size: 9pt;
+      line-height: 1.5;
+      margin-bottom: 5px;
+      padding-left: 0;
+    }
+
+    /* ── Agent / Company side-by-side wrapper ── */
+    .ins-pair-wrapper {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      margin-bottom: 10px;
+    }
+    .ins-pair-wrapper > tbody > tr > td {
+      border: none;
+      padding: 0;
+      vertical-align: top;
+    }
+    .ins-pair-wrapper .gap-col { width: 4%; }
+
+    /* ── Inner agent / company table ── */
+    .ins-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .ins-table td {
+      border: 0.75pt solid #000;
+      padding: 2px 6px;
+      font-size: 9pt;
+      vertical-align: middle;
+    }
+    .ins-heading {
+      font-weight: bold;
+      font-size: 9pt;
+    }
+    .ins-label {
+      width: 36%;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+    .ins-value {
+      width: 64%;
+    }
+
+    /* ── Notices ── */
+    .notice-text {
+      font-size: 9pt;
+      font-weight: bold;
+      line-height: 1.5;
+      margin-bottom: 8px;
+    }
+    .auth-text {
+      font-size: 9pt;
+      font-weight: bold;
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+
+    /* ── Signature block ── */
+    .sig-by { font-size: 9pt; font-weight: bold; margin-bottom: 4px; }
+    .sig-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 6px;
+    }
+    .sig-table td {
+      border: none;
+      padding: 0 8px 0 0;
+      vertical-align: bottom;
+    }
+    .sig-line {
+      display: block;
+      width: 100%;
+      border-bottom: 0.75pt solid #000;
+      min-height: 28px;
+      margin-bottom: 3px;
+    }
+    .sig-label {
+      font-size: 8pt;
+      text-align: center;
+      display: block;
+    }
+    .anchor-invisible {
+      color: #fff;
+      font-size: 4pt;
+      line-height: 0;
+      display: inline-block;
+      user-select: none;
+    }
+
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <!-- TITLE                                                            -->
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <div class="doc-title">
+    CLOSED END MOTOR VEHICLE LEASE AGREEMENT<br>
+    INSURANCE REQUIRMENTS ACKNOWLEDGEMENT
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <!-- OPENING                                                          -->
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <p class="intro">
+    The Parties entered into that certain Closed End Vehicle Lease Agreement (the &ldquo;Agreement&rdquo;)&nbsp; on
+    <strong>{{fmtDate lease.lease_date}}</strong>
+  </p>
+  <p class="intro" style="margin-bottom: 12px;">
+    This&nbsp; Acknowledgement is attached to the Agreement as Exhibit A and is incorporated into the Agreement as if set forth fully therein.
+  </p>
+
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <!-- LESSOR                                                           -->
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <table class="party-table">
+    <colgroup><col style="width:28%;"><col style="width:72%;"></colgroup>
+    <tr>
+      <td colspan="2" class="party-heading">LESSOR:</td>
+    </tr>
+    <tr>
+      <td class="party-label">NAME</td>
+      <td class="party-value">{{lessor.name}}</td>
+    </tr>
+    <tr>
+      <td class="party-label">ADDRESS</td>
+      <td class="party-value">{{lessor.address}}{{#if lessor.po_box}}, {{lessor.po_box}}{{/if}}</td>
+    </tr>
+    <tr>
+      <td class="party-label">CITY, ST ZIP CODE</td>
+      <td class="party-value">{{lessor.city}}, {{lessor.state}} {{lessor.zip}}</td>
+    </tr>
+    <tr>
+      <td class="party-label">PHONE</td>
+      <td class="party-value">(641) 923-2855</td>
+    </tr>
+  </table>
+
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <!-- LESSEE                                                           -->
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <table class="party-table">
+    <colgroup><col style="width:28%;"><col style="width:72%;"></colgroup>
+    <tr>
+      <td colspan="2" class="party-heading">LESSEE:</td>
+    </tr>
+    <tr>
+      <td class="party-label">NAME</td>
+      <td class="party-value">{{lessee.name}}</td>
+    </tr>
+    <tr>
+      <td class="party-label">ADDRESS</td>
+      <td class="party-value">{{lessee.address}}</td>
+    </tr>
+    <tr>
+      <td class="party-label">CITY, ST ZIP CODE</td>
+      <td class="party-value">{{lessee.city}}, {{lessee.state}} {{lessee.zip}}</td>
+    </tr>
+    <tr>
+      <td class="party-label">PHONE</td>
+      <td class="party-value">{{#if lessee.phone}}{{lessee.phone}}{{/if}}</td>
+    </tr>
+  </table>
+
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <!-- VEHICLE INSURED                                                  -->
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <div class="party-heading" style="margin-bottom: 5px;">VEHICLE INSURED:</div>
+  <table class="vehicle-table">
+    <tr>
+      <th style="width:12%;">YEAR</th>
+      <th style="width:18%;">MAKE</th>
+      <th style="width:30%;">MODEL</th>
+      <th style="width:40%;">VIN</th>
+    </tr>
+    <tr>
+      <td>{{vehicle.year}}</td>
+      <td>{{vehicle.make}}</td>
+      <td>{{vehicle.model}}</td>
+      <td style="font-family: 'Courier New', Courier, monospace; letter-spacing: 0.05em;">{{vehicle.vin}}</td>
+    </tr>
+  </table>
+
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <!-- INSURANCE OBLIGATIONS OF LESSEE                                  -->
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <div class="section-header">INSURANCE OBLIGATIONS OF LESSEE</div>
+
+  <p class="body-text">
+    The Lessee hereby acknowledges and agrees that during the entire term of the Closed Automobile Lease Agreement (the &ldquo;Lease&rdquo;), Lessee shall obtain and maintain, at Lessee&rsquo;s own expense, primary insurance coverage for the benefit of both Lessor and Lessee. Such insurance shall include property damage liability insurance and insurance against loss or damage to the leased automobile(s) (the &ldquo;Vehicle&rdquo;), including without limitation, loss from fire (including so-called extended coverage), theft, and collision risks, and other losses customarily insured against for the type of Vehicle leased under this Agreement, in amounts and form and with insurers that shall be reasonably satisfactory to Lessee.
+  </p>
+
+  <p class="body-text">
+    The amount of insurance against loss or damage to the Vehicle shall be no less than the greater of: (i) the replacement value of the Vehicle; (ii) the stipulated loss value for each item of Vehicle as specified in a Lease Agreement relating to such Vehicle; or (iii) if the Lease does not provide for a stipulated loss value for the Vehicle, a sum equal to the amount calculated in accordance with the formula set forth in said Lease or any calculation made at the inception of the Lease Schedule thereto.
+  </p>
+
+  <p class="body-text">All insurance policies obtained by Lessee pursuant to this Acknowledgement shall:</p>
+
+  <p class="numbered-item">1.&nbsp;&nbsp;&nbsp; Name Lessee as the insured and Lessor as an additional insured and loss payee thereof as Lessor&rsquo;s interests may appear; and</p>
+
+  <p class="numbered-item">2.&nbsp;&nbsp;&nbsp; Contain provisions requiring the insurer to give Lessor at least thirty (30) days prior written notice of any material alteration to the terms of such policy or cancellation thereof.</p>
+
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <!-- EVIDENCE OF INSURANCE                                            -->
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <div class="section-header">EVIDENCE OF INSURANCE</div>
+
+  <p class="body-text">
+    Lessee shall furnish Lessor with certificates of insurance or other evidence satisfactory to Lessor that the required insurance coverage in in effect (such as proof of insurance via insurance policy card) and that the insurance set forth in the Lease Agreement is in place, including but not limited to evidence of&nbsp; the&nbsp; $500,000.00 Combined Single Limit policy requirement. Lessor shall have no duty to either ascertain the existence of or examine any insurance policy or to advise Lessee in the event any insurance coverage does not comply with the requirements hereof.
+  </p>
+
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <!-- NOTICE OF DAMAGE                                                 -->
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <div class="section-header">NOTICE OF DAMAGE</div>
+
+  <p class="body-text">
+    Lessee further agrees to give Lessor prompt notice of any damage to or loss of the Vehicle or any part thereof.
+  </p>
+
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <!-- DEFAULT AND REMEDIES                                             -->
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <div class="section-header">DEFAULT AND REMEDIES</div>
+
+  <p class="body-text">
+    IN THE EVENT OF DEFAULT, LESSOR SHALL HAVE THE RIGHT TO DECLARE THE ENTIRE UNPAID BALANCE IMMEDIATELY DUE AND PAYABLE&nbsp; OR ALTERNATIVELY PURCHASE COVERAGE FOR ITS INTEREST AND ADD THE PREMIUM PLUS INTEREST TO THE BALANCE OF THE LEASE.
+  </p>
+
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <!-- PERIODIC INSURANCE REVIEWS AND UPDATES                          -->
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <div class="section-header">PERIODIC INSURANCE REVIEWS AND UPDATES</div>
+
+  <p class="numbered-item">1.&nbsp;&nbsp;&nbsp; Lessor shall conduct a comprehensive review of all insurance coverage related to the Vehicle no less frequently than once every six (6) months during the term of the Lease.</p>
+
+  <p class="numbered-item">2.&nbsp;&nbsp;&nbsp; Such reviews shall assess the adequacy of coverage limits, policy terms, and compliance with current federal laws and regulations governing automobile insurance requirements.</p>
+
+  <p class="numbered-item">3.&nbsp;&nbsp;&nbsp; If changes in federal laws, regulations, or market conditions necessitate modifications to the insurance coverage, Lessor shall implement such modifications within thirty (30) days of identifying the need for such changes.</p>
+
+  <p class="numbered-item">4.&nbsp;&nbsp;&nbsp; Lessor shall promptly notify Lessee of any material changes to the insurance coverage resulting from such reviews.</p>
+
+  <p class="numbered-item">5.&nbsp;&nbsp;&nbsp; All insurance updates shall be documented through formal amendments to the existing policies, with copies provided to Lessor within ten (10) days of implementation.</p>
+
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <!-- INSURANCE AGENT  /  INSURANCE COMPANY                           -->
+  <!-- DocuSign text tabs are anchored to the invisible \ins_*\ tokens  -->
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <table class="ins-pair-wrapper">
+    <colgroup><col style="width:48%;"><col class="gap-col"><col style="width:48%;"></colgroup>
+    <tr>
+      <!-- ── Insurance Agent ── -->
+      <td>
+        <table class="ins-table">
+          <colgroup><col style="width:36%;"><col style="width:64%;"></colgroup>
+          <tr>
+            <td colspan="2" class="ins-heading">INSURANCE AGENT:</td>
+          </tr>
+          <tr>
+            <td class="ins-label">NAME</td>
+            <td class="ins-value"><span class="anchor-invisible">\ins_agent_name\</span></td>
+          </tr>
+          <tr>
+            <td class="ins-label">ADDRESS</td>
+            <td class="ins-value"><span class="anchor-invisible">\ins_agent_address\</span></td>
+          </tr>
+          <tr>
+            <td class="ins-label">CITY, ST ZIP CODE</td>
+            <td class="ins-value"><span class="anchor-invisible">\ins_agent_city\</span></td>
+          </tr>
+          <tr>
+            <td class="ins-label">PHONE</td>
+            <td class="ins-value"><span class="anchor-invisible">\ins_agent_phone\</span></td>
+          </tr>
+        </table>
+      </td>
+
+      <!-- ── Gap ── -->
+      <td></td>
+
+      <!-- ── Insurance Company ── -->
+      <td>
+        <table class="ins-table">
+          <colgroup><col style="width:36%;"><col style="width:64%;"></colgroup>
+          <tr>
+            <td colspan="2" class="ins-heading">INSURANCE COMPANY:</td>
+          </tr>
+          <tr>
+            <td class="ins-label">NAME</td>
+            <td class="ins-value"><span class="anchor-invisible">\ins_co_name\</span></td>
+          </tr>
+          <tr>
+            <td class="ins-label">POLICY NUMBER</td>
+            <td class="ins-value"><span class="anchor-invisible">\ins_co_policy\</span></td>
+          </tr>
+          <tr>
+            <td class="ins-label">EFFECTIVE DATE</td>
+            <td class="ins-value"><span class="anchor-invisible">\ins_co_effective\</span></td>
+          </tr>
+          <tr>
+            <td class="ins-label">COVERAGE</td>
+            <td class="ins-value"><span class="anchor-invisible">\ins_co_coverage\</span></td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <!-- NOTICES                                                          -->
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <p class="notice-text">
+    COPY OF LESSEE&rsquo;S&nbsp; INSURANCE CARD SHALL BE ATTACHED TO THIS ACKNOWLEDGEMENT WITHIN TEN (10) DAYS OF THE DATE OF THE LEASE AGREEMENT.
+  </p>
+
+  <p class="auth-text">
+    I AUTHORIZE THE ABOVE NAMED LESSOR TO VERIFY AND MY INSURANCE AGENT TO DISCLOSE THIS INSURANCE INFORMATION.
+  </p>
+
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <!-- SIGNATURE                                                        -->
+  <!-- ══════════════════════════════════════════════════════════════════ -->
+  <div class="sig-by">BY:&nbsp;&nbsp;&nbsp;</div>
+
+  <table class="sig-table" style="margin-top: 10px;">
+    <tr>
+      <td style="width: 52%; padding-right: 20px; vertical-align: bottom;">
+        <span class="anchor-invisible">\ins_lessee1_sign\</span>
+        <span class="sig-line"></span>
+        <span class="sig-label">Lessee Signature</span>
+      </td>
+      <td style="width: 24%; padding-right: 20px; vertical-align: bottom;">
+        <span class="anchor-invisible">\ins_lessee1_date\</span>
+        <span class="sig-line"></span>
+        <span class="sig-label">Date</span>
+      </td>
+      <td style="width: 24%; vertical-align: bottom; padding-right: 0;">
+        <!-- spacer column -->
+      </td>
+    </tr>
+  </table>
+
+  <table class="sig-table" style="margin-top: 14px;">
+    <tr>
+      <td style="width: 52%; padding-right: 20px; vertical-align: bottom;">
+        <span class="sig-line"></span>
+        <span class="sig-label">Printed Name Of Lessee</span>
+      </td>
+      <td style="width: 48%; vertical-align: bottom; padding-right: 0;"></td>
+    </tr>
+  </table>
+
+</div>
+</body>
+</html>

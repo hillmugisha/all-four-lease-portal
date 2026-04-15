@@ -16,7 +16,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import docusign from 'docusign-esign'
 import { getDocuSignClient, getAccountId } from '@/lib/docusign'
-import { renderLease } from '@/lib/lease-renderer'
+import { renderLease, renderInsuranceAck, renderAchAuthorizationForLessor } from '@/lib/lease-renderer'
 import { recordToTemplateData } from '@/lib/lease-adapter'
 import { calculateLease } from '@/lib/calculations'
 import { getSupabase } from '@/lib/supabase'
@@ -131,11 +131,9 @@ function buildRecord(raw: LeaseFormData): Omit<LeaseRecord, 'id' | 'created_at' 
   }
 }
 
-// ─── Helper: generate PDF bytes ───────────────────────────────────────────────
+// ─── Helper: generate PDF bytes from HTML ─────────────────────────────────────
 
-async function generatePdf(record: LeaseRecord): Promise<Buffer> {
-  const html = renderLease(recordToTemplateData(record))
-
+async function renderToPdf(html: string): Promise<Buffer> {
   const puppeteer = await import('puppeteer')
   const browser   = await puppeteer.default.launch({
     headless: true,
@@ -149,36 +147,63 @@ async function generatePdf(record: LeaseRecord): Promise<Buffer> {
     margin: { top: '0', right: '0', bottom: '0', left: '0' },
   })
   await browser.close()
-
   return Buffer.from(pdf)
 }
 
-// ─── Helper: build a DocuSign SignHere tab using an anchor string ─────────────
+async function generatePdf(record: LeaseRecord): Promise<Buffer> {
+  return renderToPdf(renderLease(recordToTemplateData(record)))
+}
 
-function signTab(anchorString: string): docusign.SignHere {
+async function generateInsurancePdf(record: LeaseRecord): Promise<Buffer> {
+  return renderToPdf(renderInsuranceAck(recordToTemplateData(record)))
+}
+
+async function generateAchPdf(record: LeaseRecord): Promise<Buffer> {
+  return renderToPdf(renderAchAuthorizationForLessor(recordToTemplateData(record)))
+}
+
+// ─── Helper: build DocuSign tab using an anchor string ───────────────────────
+
+function signTab(anchorString: string, documentId?: string): docusign.SignHere {
   return {
     anchorString,
-    anchorXOffset:          '0',
-    anchorYOffset:          '-32', // place widget above the anchor text, on the sig-line
-    anchorUnits:            'pixels',
-    anchorIgnoreIfNotPresent: 'true', // skip tab gracefully if anchor not found (e.g. no co-lessee)
+    anchorXOffset:            '0',
+    anchorYOffset:            '-32',
+    anchorUnits:              'pixels',
+    anchorIgnoreIfNotPresent: 'true',
+    ...(documentId ? { documentId } : {}),
   }
 }
 
-function dateTab(anchorString: string): docusign.DateSigned {
+function dateTab(anchorString: string, documentId?: string): docusign.DateSigned {
   return {
     anchorString,
-    anchorXOffset:          '120',
-    anchorYOffset:          '-4',
-    anchorUnits:            'pixels',
+    anchorXOffset:            '120',
+    anchorYOffset:            '-4',
+    anchorUnits:              'pixels',
     anchorIgnoreIfNotPresent: 'true',
+    ...(documentId ? { documentId } : {}),
+  }
+}
+
+function textTab(anchorString: string, documentId?: string, required = false): docusign.Text {
+  return {
+    anchorString,
+    anchorXOffset:            '4',
+    anchorYOffset:            '-2',
+    anchorUnits:              'pixels',
+    anchorIgnoreIfNotPresent: 'true',
+    required:                 required ? 'true' : 'false',
+    ...(documentId ? { documentId } : {}),
   }
 }
 
 // ─── Helper: create and send the DocuSign envelope ───────────────────────────
 
 async function createEnvelope(
-  pdfBytes: Buffer,
+  leasePdfBytes: Buffer,
+  insurancePdfBytes: Buffer,
+  achPdfBytes: Buffer,
   raw: LeaseFormData,
   record: LeaseRecord,
 ): Promise<string> {
@@ -193,23 +218,78 @@ async function createEnvelope(
     : record.lessee_name
   const lesseeEmail = primary?.email || record.lessee_email
 
-  // ── Document ──
-  const document: docusign.Document = {
-    documentBase64: pdfBytes.toString('base64'),
+  // ── Document 1: Lease Agreement ──
+  const leaseDoc: docusign.Document = {
+    documentBase64: leasePdfBytes.toString('base64'),
     name:           `Lease Agreement — ${lesseeName}`,
     fileExtension:  'pdf',
     documentId:     '1',
   }
 
+  // ── Document 2: Insurance Acknowledgement ──
+  const insuranceDoc: docusign.Document = {
+    documentBase64: insurancePdfBytes.toString('base64'),
+    name:           `Insurance Acknowledgement — ${lesseeName}`,
+    fileExtension:  'pdf',
+    documentId:     '2',
+  }
+
+  // ── Document 3: ACH Authorization ──
+  const achDoc: docusign.Document = {
+    documentBase64: achPdfBytes.toString('base64'),
+    name:           `ACH Authorization — ${lesseeName}`,
+    fileExtension:  'pdf',
+    documentId:     '3',
+  }
+
   // ── Signer 1: primary lessee (routing order 1) ──
+  // Signs all three documents
   const signer1: docusign.Signer = {
-    email:       lesseeEmail,
-    name:        lesseeName,
-    recipientId: '1',
+    email:        lesseeEmail,
+    name:         lesseeName,
+    recipientId:  '1',
     routingOrder: '1',
     tabs: {
-      signHereTabs: [signTab('\\lessee1_sign\\')],
-      dateSignedTabs: [dateTab('\\lessee1_date\\')],
+      signHereTabs: [
+        signTab('\\lessee1_sign\\',    '1'),   // Lease Agreement
+        signTab('\\ins_lessee1_sign\\', '2'),  // Insurance Acknowledgement
+        signTab('\\ach_lessee_sign\\',  '3'),  // ACH Authorization
+      ],
+      dateSignedTabs: [
+        dateTab('\\lessee1_date\\',    '1'),
+        dateTab('\\ins_lessee1_date\\', '2'),
+        dateTab('\\ach_lessee_date\\',  '3'),
+      ],
+      textTabs: [
+        // Insurance Agent fields (Document 2) — lessee fills in at signing
+        textTab('\\ins_agent_name\\',    '2', true),
+        textTab('\\ins_agent_address\\', '2', true),
+        textTab('\\ins_agent_city\\',    '2', true),
+        textTab('\\ins_agent_phone\\',   '2', true),
+        // Insurance Company fields (Document 2)
+        textTab('\\ins_co_name\\',       '2', true),
+        textTab('\\ins_co_policy\\',     '2', true),
+        textTab('\\ins_co_effective\\',  '2', true),
+        textTab('\\ins_co_coverage\\',   '2', true),
+        // ACH Authorization fields (Document 3) — lessee fills in at signing
+        { ...textTab('\\ach_billing_address\\', '3', true), tabLabel: 'Billing Address',    width: '300', height: '16' },
+        { ...textTab('\\ach_billing_city\\',    '3', true), tabLabel: 'City, State, Zip',   width: '300', height: '16' },
+        { ...textTab('\\ach_billing_phone\\',   '3', true), tabLabel: 'Phone Number',       width: '160', height: '16' },
+        { ...textTab('\\ach_billing_email\\',   '3', true), tabLabel: 'Email Address',      width: '240', height: '16' },
+        { ...textTab('\\ach_num_payments\\',    '3', true), tabLabel: 'Number of Payments', width: '60',  height: '16', value: String(record.num_payments) },
+        { ...textTab('\\ach_bank_name\\',       '3', true), tabLabel: 'Depository Bank',    width: '300', height: '16' },
+        { ...textTab('\\ach_routing\\',         '3', true), tabLabel: 'Routing Number',     width: '180', height: '16' },
+        { ...textTab('\\ach_account\\',         '3', true), tabLabel: 'Account Number',     width: '200', height: '16' },
+      ],
+      checkboxTabs: [
+        // Frequency checkboxes (Document 3)
+        { anchorString: '\\ach_freq_weekly\\',   documentId: '3', anchorUnits: 'pixels', anchorXOffset: '0', anchorYOffset: '-2', anchorIgnoreIfNotPresent: 'true' },
+        { anchorString: '\\ach_freq_monthly\\',  documentId: '3', anchorUnits: 'pixels', anchorXOffset: '0', anchorYOffset: '-2', anchorIgnoreIfNotPresent: 'true' },
+        { anchorString: '\\ach_freq_annually\\', documentId: '3', anchorUnits: 'pixels', anchorXOffset: '0', anchorYOffset: '-2', anchorIgnoreIfNotPresent: 'true' },
+        // Account type checkboxes (Document 3)
+        { anchorString: '\\ach_account_type_checking\\', documentId: '3', anchorUnits: 'pixels', anchorXOffset: '0', anchorYOffset: '-2', anchorIgnoreIfNotPresent: 'true' },
+        { anchorString: '\\ach_account_type_savings\\',  documentId: '3', anchorUnits: 'pixels', anchorXOffset: '0', anchorYOffset: '-2', anchorIgnoreIfNotPresent: 'true' },
+      ],
     },
   }
 
@@ -217,7 +297,6 @@ async function createEnvelope(
   let nextId = 2
 
   // ── Co-lessee (routing order 1 — signs in parallel with primary) ──
-  // Only added when the form has a second signatory with name + email filled in.
   if (coLessee?.firstName && coLessee?.email) {
     const coName = `${coLessee.firstName} ${coLessee.lastName}`.trim()
     signers.push({
@@ -226,13 +305,13 @@ async function createEnvelope(
       recipientId:  String(nextId++),
       routingOrder: '1',
       tabs: {
-        signHereTabs:   [signTab('\\colessee_sign\\')],
-        dateSignedTabs: [dateTab('\\colessee_date\\')],
+        signHereTabs:   [signTab('\\colessee_sign\\', '1')],
+        dateSignedTabs: [dateTab('\\colessee_date\\', '1')],
       },
     })
   }
 
-  // ── Lessor (routing order 2 — counter-signs after lessee(s) complete) ──
+  // ── Lessor (routing order 2 — counter-signs lease only) ──
   const lessorEmail = raw.lessorSignatoryEmail
   const lessorName  = raw.lessorSignatoryName || record.lessor_name
 
@@ -243,8 +322,8 @@ async function createEnvelope(
       recipientId:  String(nextId),
       routingOrder: '2',
       tabs: {
-        signHereTabs:   [signTab('\\lessor_sign\\')],
-        dateSignedTabs: [dateTab('\\lessor_date\\')],
+        signHereTabs:   [signTab('\\lessor_sign\\', '1')],
+        dateSignedTabs: [dateTab('\\lessor_date\\', '1')],
       },
     })
   }
@@ -252,17 +331,13 @@ async function createEnvelope(
   // ── Envelope ──
   const envelopeDefinition: docusign.EnvelopeDefinition = {
     emailSubject: `Please sign your lease agreement — ${record.vehicle_year} ${record.vehicle_make} ${record.vehicle_model}`,
-    documents:    [document],
-    recipients: {
-      signers,
-    },
-    status: 'sent', // 'sent' delivers immediately; use 'created' for a draft
+    documents:    [leaseDoc, insuranceDoc, achDoc],
+    recipients:   { signers },
+    status:       'sent',
   }
 
   const envelopesApi = new docusign.EnvelopesApi(apiClient)
-  const result = await envelopesApi.createEnvelope(accountId, {
-    envelopeDefinition,
-  })
+  const result = await envelopesApi.createEnvelope(accountId, { envelopeDefinition })
 
   if (!result.envelopeId) throw new Error('DocuSign did not return an envelope ID')
   return result.envelopeId
@@ -300,11 +375,15 @@ export async function POST(req: NextRequest) {
         : null,
     }
 
-    // 4. Generate PDF bytes (using the enriched in-memory record)
-    const pdfBytes = await generatePdf(pdfRecord)
+    // 4. Generate all three PDF documents in parallel
+    const [leasePdfBytes, insurancePdfBytes, achPdfBytes] = await Promise.all([
+      generatePdf(pdfRecord),
+      generateInsurancePdf(pdfRecord),
+      generateAchPdf(pdfRecord),
+    ])
 
-    // 5. Create DocuSign envelope
-    const envelopeId = await createEnvelope(pdfBytes, formData, savedRecord)
+    // 5. Create DocuSign envelope with all three documents
+    const envelopeId = await createEnvelope(leasePdfBytes, insurancePdfBytes, achPdfBytes, formData, savedRecord)
 
     // 5. Persist envelope ID and mark as sent
     await getSupabase()

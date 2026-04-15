@@ -196,26 +196,80 @@ function buildViewModel(data: LeaseTemplateData) {
   }
 }
 
-// ─── Main render function ─────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-let _compiledTemplate: HandlebarsTemplateDelegate | null = null
-
-export function renderLease(data: LeaseTemplateData): string {
-  if (!_compiledTemplate) {
-    const templatePath = path.join(process.cwd(), 'templates', 'lease.html')
-    const source = fs.readFileSync(templatePath, 'utf-8')
-    _compiledTemplate = Handlebars.compile(source)
-  }
-  const vm = buildViewModel(data)
-  return _compiledTemplate(vm)
+function compileTemplate(filename: string): HandlebarsTemplateDelegate {
+  const templatePath = path.join(process.cwd(), 'templates', filename)
+  const source = fs.readFileSync(templatePath, 'utf-8')
+  return Handlebars.compile(source)
 }
 
-// ─── Convert LeaseRecord (Supabase row) to LeaseTemplateData ────────────────
-// Import LeaseRecord from your existing types if you want to bridge the two.
-// Example adapter (add to your API route):
-//
-// import { renderLease } from '@/lib/lease-renderer'
-// import type { LeaseRecord } from '@/lib/types'
-// import type { LeaseTemplateData } from '@/lib/lease-types'
-//
-// function recordToTemplateData(r: LeaseRecord): LeaseTemplateData { ... }
+// Logo is static — cache the base64 data URI after the first read.
+let _logoDataUri: string | null = null
+
+function getLogoDataUri(): string {
+  if (_logoDataUri !== null) return _logoDataUri
+  const logoPath = path.join(process.cwd(), 'logo.webp')
+  if (fs.existsSync(logoPath)) {
+    const buf = fs.readFileSync(logoPath)
+    _logoDataUri = `data:image/webp;base64,${buf.toString('base64')}`
+  } else {
+    _logoDataUri = ''
+  }
+  return _logoDataUri
+}
+
+// NIE logo — loaded from "NIE logo.png" in the project root.
+let _nieLogoDataUri: string | null = null
+
+function getNieLogoDataUri(): string {
+  if (_nieLogoDataUri !== null) return _nieLogoDataUri
+  const logoPath = path.join(process.cwd(), 'NIE logo.png')
+  if (fs.existsSync(logoPath)) {
+    const buf = fs.readFileSync(logoPath)
+    _nieLogoDataUri = `data:image/png;base64,${buf.toString('base64')}`
+  } else {
+    _nieLogoDataUri = ''
+  }
+  return _nieLogoDataUri
+}
+
+// ─── Main render function ─────────────────────────────────────────────────────
+
+export function renderLease(data: LeaseTemplateData): string {
+  return compileTemplate('lease.html')(buildViewModel(data))
+}
+
+// ─── Insurance Acknowledgement renderer ──────────────────────────────────────
+
+export function renderInsuranceAck(data: LeaseTemplateData): string {
+  // Reuse the same full view-model — the template only accesses lease, lessor, lessee, signatures
+  return compileTemplate('insurance-acknowledgement.html')(buildViewModel(data))
+}
+
+// ─── ACH Authorization renderer (All Four, LLC) ──────────────────────────────
+
+export function renderAchAuthorization(data: LeaseTemplateData): string {
+  // Inject the logo as a base64 data URI so Puppeteer (setContent, no base URL) can render it
+  const vm = { ...buildViewModel(data), logoDataUri: getLogoDataUri() }
+  return compileTemplate('ach-authorization.html')(vm)
+}
+
+// ─── ACH Authorization renderer (North Iowa Equity, LLC) ─────────────────────
+
+export function renderNieAchAuthorization(data: LeaseTemplateData): string {
+  const vm = { ...buildViewModel(data), nieLogoDataUri: getNieLogoDataUri() }
+  return compileTemplate('ach-authorization-nie.html')(vm)
+}
+
+// ─── Lessor-based ACH selector ────────────────────────────────────────────────
+// Returns the correct ACH HTML string based on the lessor name stored in the record.
+
+export function renderAchAuthorizationForLessor(data: LeaseTemplateData): string {
+  const lessorName = data.lessor?.name ?? ''
+  if (lessorName.toLowerCase().includes('north iowa equity')) {
+    return renderNieAchAuthorization(data)
+  }
+  return renderAchAuthorization(data)
+}
+

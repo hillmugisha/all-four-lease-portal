@@ -35,3 +35,6 @@ tsconfig.tsbuildinfo
 
 # Claude settings
 .claude/
+
+# Personal notes
+Obsidian files/
