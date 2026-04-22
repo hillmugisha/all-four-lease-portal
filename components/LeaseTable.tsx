@@ -1,23 +1,29 @@
 'use client'
 
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react'
+import { usePersistedColumns } from '@/lib/usePersistedColumns'
 import { LeaseRecord } from '@/lib/types'
 import { fmt, fmtDate } from '@/lib/calculations'
-import { FileDown, RefreshCw, Plus, Eye, X, Search, ChevronDown, Trash2, Download, Printer, AlertTriangle, Zap, Loader2, CheckCircle2 } from 'lucide-react'
+import { FileDown, Columns, Plus, Eye, X, Search, ChevronDown, Trash2, AlertTriangle, Zap, Loader2, CheckCircle2, Pencil } from 'lucide-react'
+import LeaseDocumentsSection from '@/components/LeaseDocumentsSection'
 import clsx from 'clsx'
 import { PdfViewerModal } from '@/components/PdfViewerModal'
 import { DR as DetailRow, MS as ModalSection } from '@/lib/table-utils'
+import LeaseForm from '@/components/LeaseForm'
+import OrganizeColumnsModal from '@/components/OrganizeColumnsModal'
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
 
 const STATUS_STYLES: Record<LeaseRecord['doc_status'], string> = {
   draft:           'bg-gray-100 text-gray-500',
+  generated:       'bg-blue-50 text-blue-700',
   sent:            'bg-amber-50 text-amber-700',
   customer_signed: 'bg-purple-50 text-purple-700',
   completed:       'bg-green-50 text-green-700',
 }
 const STATUS_LABELS: Record<LeaseRecord['doc_status'], string> = {
   draft:           'Draft',
+  generated:       'Generated',
   sent:            'Sent for Signatures',
   customer_signed: 'Customer Signed',
   completed:       'Completed',
@@ -61,7 +67,7 @@ function LeaseDetailModal({ lease, onClose }: { lease: LeaseRecord; onClose: () 
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl bg-gray-50 shadow-2xl">
+      <div className="relative z-10 w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl bg-gray-50 shadow-2xl">
         <div className="sticky top-0 z-10 flex items-start justify-between bg-white border-b border-gray-200 px-6 py-4 rounded-t-xl">
           <div>
             <h2 className="text-base font-semibold text-gray-900">{lease.lessee_name}</h2>
@@ -78,6 +84,7 @@ function LeaseDetailModal({ lease, onClose }: { lease: LeaseRecord; onClose: () 
           </div>
         </div>
         <div className="px-6 py-5 space-y-1">
+          <LeaseDocumentsSection leaseId={lease.id} tableName="leases" />
           <ModalSection title="Lessor">
             <DetailRow label="Name"            value={lease.lessor_name} />
             <DetailRow label="Address"         value={lease.lessor_address} />
@@ -481,7 +488,7 @@ function ResizableTh({
     <th
       style={{ width, minWidth: 60, position: 'relative' }}
       className={clsx(
-        'select-none border-r border-gray-200 bg-gray-50 px-3 py-2.5 text-left text-xs font-bold uppercase tracking-wide text-gray-500',
+        'select-none border-r border-[#D6E4FF] bg-[#F5F9FF] px-3 py-2.5 text-left text-xs font-bold uppercase tracking-wide text-gray-900',
         className
       )}
     >
@@ -496,143 +503,39 @@ function ResizableTh({
   )
 }
 
-// ─── Filters bar ──────────────────────────────────────────────────────────────
-
-interface Filters {
-  name:   string
-  status: string
-  year:   string
-  make:   string
-  model:  string
-}
-
-function FilterSelect({
-  label, value, onChange, options, placeholder,
-}: {
-  label: string
-  value: string
-  onChange: (v: string) => void
-  options: string[]
-  placeholder: string
-}) {
-  return (
-    <div className="min-w-[130px]">
-      <label className="mb-1 block text-xs font-medium text-gray-500">{label}</label>
-      <div className="relative">
-        <select
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="input py-1.5 text-sm appearance-none pr-7 w-full"
-        >
-          <option value="">{placeholder}</option>
-          {options.map((o) => <option key={o} value={o}>{o}</option>)}
-        </select>
-        <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-      </div>
-    </div>
-  )
-}
-
-function FiltersBar({
-  filters, onChange, statuses, years, makes, models,
-}: {
-  filters: Filters
-  onChange: (f: Filters) => void
-  statuses: string[]
-  years: string[]
-  makes: string[]
-  models: string[]
-}) {
-  function set(key: keyof Filters, value: string) {
-    onChange({ ...filters, [key]: value })
-  }
-
-  const hasAny = Object.values(filters).some(Boolean)
-
-  return (
-    <div className="mb-4 flex flex-wrap items-end gap-3">
-      {/* Customer name — text search (too many unique values for a dropdown) */}
-      <div className="relative min-w-[180px] flex-1">
-        <label className="mb-1 block text-xs font-medium text-gray-500">Customer Name</label>
-        <div className="relative">
-          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-          <input
-            type="text"
-            placeholder="Search…"
-            value={filters.name}
-            onChange={(e) => set('name', e.target.value)}
-            className="input pl-7 py-1.5 text-sm"
-          />
-        </div>
-      </div>
-
-      {/* Doc Status filter — options keyed by raw value but displayed as labels */}
-      <div className="min-w-[160px]">
-        <label className="mb-1 block text-xs font-medium text-gray-500">Doc Status</label>
-        <div className="relative">
-          <select
-            value={filters.status}
-            onChange={(e) => set('status', e.target.value)}
-            className="input py-1.5 text-sm appearance-none pr-7 w-full"
-          >
-            <option value="">All statuses</option>
-            {statuses.map((s) => (
-              <option key={s} value={s}>
-                {STATUS_LABELS[s as LeaseRecord['doc_status']] ?? s}
-              </option>
-            ))}
-          </select>
-          <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-        </div>
-      </div>
-
-      <FilterSelect
-        label="Year"
-        value={filters.year}
-        onChange={(v) => set('year', v)}
-        options={years}
-        placeholder="All years"
-      />
-
-      <FilterSelect
-        label="Make"
-        value={filters.make}
-        onChange={(v) => set('make', v)}
-        options={makes}
-        placeholder="All makes"
-      />
-
-      <FilterSelect
-        label="Model"
-        value={filters.model}
-        onChange={(v) => set('model', v)}
-        options={models}
-        placeholder="All models"
-      />
-
-      {hasAny && (
-        <div className="self-end">
-          <button
-            onClick={() => onChange({ name: '', status: '', year: '', make: '', model: '' })}
-            className="btn-secondary py-1.5 text-xs"
-          >
-            <X size={12} />
-            Clear
-          </button>
-        </div>
-      )}
-    </div>
-  )
-}
-
 // ─── Column definitions ───────────────────────────────────────────────────────
 
-const COL_HEADERS = [
-  'Details', 'Customer Name', 'Email', 'Vehicle', 'VIN',
-  'Lease Date', 'Lease Start', 'Lease End',
-  'Monthly Payment', 'Lease Term', 'Total', 'Doc Status', 'Lease Agreement Docs',
+type ColKey =
+  | 'lessee_name' | 'lessee_email' | 'vehicle' | 'vehicle_vin'
+  | 'lease_date' | 'first_payment_date' | 'lease_end'
+  | 'total_monthly_payment' | 'num_payments' | 'total_of_payments'
+  | 'doc_status' | 'created_at' | 'updated_at'
+
+interface ColDef { key: ColKey; label: string; default: boolean; width: number }
+
+const COLUMNS: ColDef[] = [
+  { key: 'lessee_name',           label: 'Customer Name',   default: true,  width: 190 },
+  { key: 'lessee_email',          label: 'Email',           default: true,  width: 190 },
+  { key: 'vehicle',               label: 'Vehicle',         default: true,  width: 190 },
+  { key: 'vehicle_vin',           label: 'VIN',             default: true,  width: 150 },
+  { key: 'lease_date',            label: 'Lease Date',      default: true,  width: 110 },
+  { key: 'first_payment_date',    label: 'Lease Start',     default: true,  width: 110 },
+  { key: 'lease_end',             label: 'Lease End',       default: true,  width: 110 },
+  { key: 'total_monthly_payment', label: 'Monthly Payment', default: true,  width: 140 },
+  { key: 'num_payments',          label: 'Lease Term',      default: true,  width: 90  },
+  { key: 'total_of_payments',     label: 'Total',           default: true,  width: 130 },
+  { key: 'doc_status',            label: 'Doc Status',      default: true,  width: 120 },
+  { key: 'created_at',            label: 'Created Date',    default: false, width: 130 },
+  { key: 'updated_at',            label: 'Last Updated',    default: false, width: 130 },
 ]
-const DEFAULT_WIDTHS = [80, 190, 190, 190, 150, 110, 110, 110, 140, 90, 130, 120, 170]
+
+const DEFAULT_COLS: ColKey[]              = COLUMNS.filter((c) => c.default).map((c) => c.key)
+const INIT_WIDTHS: Record<ColKey, number> = Object.fromEntries(COLUMNS.map((c) => [c.key, c.width])) as Record<ColKey, number>
+
+// ─── Filters ─────────────────────────────────────────────────────────────────
+
+interface Filters { search: string; status: string; year: string; make: string; model: string }
+const EMPTY_FILTERS: Filters = { search: '', status: '', year: '', make: '', model: '' }
 
 // Calculate lease end date: first_payment_date + (num_payments - 1) months
 function leaseEndDate(firstPayment: string, numPayments: number): string {
@@ -640,6 +543,43 @@ function leaseEndDate(firstPayment: string, numPayments: number): string {
   const [y, m, d] = firstPayment.split('-').map(Number)
   const end = new Date(y, m - 1 + (numPayments - 1), d)
   return end.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+}
+
+// ─── Cell renderer ────────────────────────────────────────────────────────────
+
+function renderCell(col: ColKey, lease: LeaseRecord): React.ReactNode {
+  switch (col) {
+    case 'lessee_name':
+      return <div className="font-medium text-gray-900 truncate">{lease.lessee_name}</div>
+    case 'lessee_email':
+      return <span className="text-xs text-gray-600 truncate block">{lease.lessee_email}</span>
+    case 'vehicle':
+      return <span className="truncate block text-gray-800">{[lease.vehicle_year, lease.vehicle_make, lease.vehicle_model].filter(Boolean).join(' ')}</span>
+    case 'vehicle_vin':
+      return <span className="font-mono text-xs text-gray-600 truncate block">{lease.vehicle_vin}</span>
+    case 'lease_date':
+      return <span className="whitespace-nowrap text-xs text-gray-600">{fmtDate(lease.lease_date)}</span>
+    case 'first_payment_date':
+      return <span className="whitespace-nowrap text-xs text-gray-600">{lease.first_payment_date ? fmtDate(lease.first_payment_date) : '—'}</span>
+    case 'lease_end':
+      return <span className="whitespace-nowrap text-xs text-gray-600">{lease.first_payment_date && lease.num_payments ? leaseEndDate(lease.first_payment_date, lease.num_payments) : '—'}</span>
+    case 'total_monthly_payment':
+      return <span className="whitespace-nowrap font-medium text-gray-900">{lease.total_monthly_payment ? fmt(lease.total_monthly_payment) : '—'}</span>
+    case 'num_payments':
+      return <span className="whitespace-nowrap text-xs text-gray-600">{lease.num_payments} mo.</span>
+    case 'total_of_payments':
+      return <span className="whitespace-nowrap text-gray-600">{lease.total_of_payments ? fmt(lease.total_of_payments) : '—'}</span>
+    case 'doc_status':
+      return <StatusBadge status={lease.doc_status} />
+    case 'created_at':
+      return <span className="whitespace-nowrap text-xs text-gray-600">{lease.created_at ? fmtDate(lease.created_at.slice(0, 10)) : '—'}</span>
+    case 'updated_at': {
+      const dt = lease.updated_at ?? lease.created_at
+      return <span className="whitespace-nowrap text-xs text-gray-600">{dt ? fmtDate(dt.slice(0, 10)) : '—'}</span>
+    }
+    default:
+      return null
+  }
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -653,20 +593,19 @@ export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
   const [loading, setLoading]         = useState(true)
   const [selected, setSelected]       = useState<LeaseRecord | null>(null)
   const [viewingPdf, setViewingPdf]   = useState<LeaseRecord | null>(null)
+  const [editingLease, setEditingLease] = useState<LeaseRecord | null>(null)
   const [deletingLease, setDeletingLease] = useState<LeaseRecord | null>(null)
   const [deleteInProgress, setDeleteInProgress] = useState(false)
-  const [filters, setFilters]         = useState<Filters>({ name: '', status: '', year: '', make: '', model: '' })
-  const [colWidths, setColWidths]     = useState<number[]>(DEFAULT_WIDTHS)
+  const [filters, setFilters]         = useState<Filters>(EMPTY_FILTERS)
+  const [colWidths, setColWidths]     = useState<Record<ColKey, number>>(INIT_WIDTHS)
+  const [visibleCols, setVisibleCols] = usePersistedColumns('cols:new-leases', DEFAULT_COLS)
+  const [columnsModalOpen, setColumnsModalOpen] = useState(false)
 
   // Bulk-activate state
   const [checkedIds, setCheckedIds]             = useState<Set<string>>(new Set())
   const [showActivateModal, setShowActivateModal] = useState(false)
   const [activating, setActivating]             = useState(false)
   const [toast, setToast]                       = useState<ToastState | null>(null)
-
-  // Bulk-delete state
-  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false)
-  const [bulkDeleting, setBulkDeleting]               = useState(false)
 
   async function load() {
     setLoading(true)
@@ -793,48 +732,6 @@ export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
     }
   }
 
-  // ── Bulk delete ─────────────────────────────────────────────────────────────
-  async function confirmBulkDelete() {
-    setBulkDeleting(true)
-    const toDelete = selectedLeases.filter((l) => l.doc_status !== 'completed')
-    try {
-      const results = await Promise.allSettled(
-        toDelete.map((l) =>
-          fetch(`/api/leases/${l.id}`, { method: 'DELETE' })
-        )
-      )
-      const deletedIds = new Set(
-        toDelete
-          .filter((_, i) => {
-            const r = results[i]
-            return r.status === 'fulfilled' && r.value.ok
-          })
-          .map((l) => l.id)
-      )
-      const failCount = toDelete.length - deletedIds.size
-      setLeases((prev) => prev.filter((l) => !deletedIds.has(l.id)))
-      setCheckedIds((prev) => {
-        const next = new Set(prev)
-        deletedIds.forEach((id) => next.delete(id))
-        return next
-      })
-      setShowBulkDeleteModal(false)
-      if (failCount > 0) {
-        fireToast(`${deletedIds.size} deleted, ${failCount} failed`, 'error')
-      } else {
-        fireToast(
-          `${deletedIds.size} lease${deletedIds.size !== 1 ? 's' : ''} deleted`,
-          'success',
-        )
-      }
-    } catch {
-      setShowBulkDeleteModal(false)
-      fireToast('Delete failed. Please try again.', 'error')
-    } finally {
-      setBulkDeleting(false)
-    }
-  }
-
   // All checked leases (regardless of status)
   const selectedLeases = useMemo(
     () => leases.filter((l) => checkedIds.has(l.id)),
@@ -844,12 +741,6 @@ export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
   // Activate is only meaningful for completed-but-not-yet-active leases
   const hasActivatable = useMemo(
     () => selectedLeases.some((l) => l.doc_status === 'completed' && !l.is_active),
-    [selectedLeases],
-  )
-
-  // Delete is allowed for any non-completed lease
-  const hasDeletable = useMemo(
-    () => selectedLeases.some((l) => l.doc_status !== 'completed'),
     [selectedLeases],
   )
 
@@ -873,79 +764,115 @@ export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
 
   // Client-side filtering
   const filtered = useMemo(() => leases.filter((l) => {
-    if (filters.name   && !l.lessee_name.toLowerCase().includes(filters.name.toLowerCase()))    return false
-    if (filters.status && l.doc_status !== filters.status)                                           return false
-    if (filters.year   && l.vehicle_year !== filters.year)                                       return false
-    if (filters.make   && l.vehicle_make !== filters.make)                                       return false
+    if (filters.search) {
+      const q = filters.search.toLowerCase()
+      const hay = [l.lessee_name, l.lessee_email, l.vehicle_vin, l.vehicle_year, l.vehicle_make, l.vehicle_model].join(' ').toLowerCase()
+      if (!hay.includes(q)) return false
+    }
+    if (filters.status && l.doc_status !== filters.status) return false
+    if (filters.year   && l.vehicle_year !== filters.year) return false
+    if (filters.make   && l.vehicle_make !== filters.make) return false
     if (filters.model  && !l.vehicle_model.toLowerCase().includes(filters.model.toLowerCase())) return false
     return true
   }), [leases, filters])
 
   const hasFilters = Object.values(filters).some(Boolean)
 
-  function resizeCol(i: number, delta: number) {
-    setColWidths((prev) => prev.map((w, idx) => idx === i ? Math.max(60, w + delta) : w))
+  function resizeCol(key: ColKey, delta: number) {
+    setColWidths((prev) => ({ ...prev, [key]: Math.max(60, (prev[key] ?? 120) + delta) }))
   }
 
+  // Ordered visible column definitions
+  const visibleDefs = visibleCols.map((k) => COLUMNS.find((c) => c.key === k)!).filter(Boolean)
+
   return (
-    <>
-      {/* ── Filters above the table ── */}
-      {!loading && leases.length > 0 && (
-        <FiltersBar
-          filters={filters}
-          onChange={setFilters}
-          statuses={statuses}
-          years={years}
-          makes={makes}
-          models={models}
-        />
-      )}
+    <div className="flex flex-col gap-4">
+      {/* ── Filters ── */}
+      <div className="flex flex-wrap gap-[17px] items-center">
+        <div className="relative">
+          <select
+            value={filters.status}
+            onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
+            className="input py-1.5 text-sm appearance-none pr-7"
+          >
+            <option value="">All statuses</option>
+            {statuses.map((s) => (
+              <option key={s} value={s}>{STATUS_LABELS[s as LeaseRecord['doc_status']] ?? s}</option>
+            ))}
+          </select>
+          <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+        </div>
+        <div className="relative">
+          <select value={filters.year} onChange={(e) => setFilters((f) => ({ ...f, year: e.target.value }))} className="input py-1.5 text-sm appearance-none pr-7">
+            <option value="">All years</option>
+            {years.map((y) => <option key={y} value={y}>{y}</option>)}
+          </select>
+          <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+        </div>
+        <div className="relative">
+          <select value={filters.make} onChange={(e) => setFilters((f) => ({ ...f, make: e.target.value }))} className="input py-1.5 text-sm appearance-none pr-7">
+            <option value="">All makes</option>
+            {makes.map((m) => <option key={m} value={m}>{m}</option>)}
+          </select>
+          <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+        </div>
+        <div className="relative">
+          <select value={filters.model} onChange={(e) => setFilters((f) => ({ ...f, model: e.target.value }))} className="input py-1.5 text-sm appearance-none pr-7">
+            <option value="">All models</option>
+            {models.map((m) => <option key={m} value={m}>{m}</option>)}
+          </select>
+          <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+        </div>
+        {hasFilters && (
+          <button onClick={() => setFilters(EMPTY_FILTERS)} className="inline-flex items-center gap-1.5 rounded-md border border-red-300 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-100 hover:border-red-400 transition-colors">
+            <X size={12} /> Clear filters
+          </button>
+        )}
+      </div>
 
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         {/* Header bar */}
-        <div className="flex items-center justify-between border-b border-gray-200 px-5 py-3.5">
-          <div>
+        <div className="flex items-center gap-3 border-b border-gray-200 px-5 py-3.5">
+          <div className="mr-auto">
             <h2 className="text-sm font-semibold text-gray-900">Lease Records</h2>
             <p className="text-xs text-gray-400 mt-0.5">
               {hasFilters ? `${filtered.length} of ${leases.length}` : leases.length} total
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowActivateModal(true)}
-              disabled={!hasActivatable}
-              className={clsx(
-                'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors',
-                hasActivatable
-                  ? 'bg-green-600 text-white hover:bg-green-700'
-                  : 'bg-gray-100 text-gray-400 cursor-not-allowed',
-              )}
-            >
-              <Zap size={13} />
-              {hasActivatable
-                ? `Activate (${selectedLeases.filter((l) => l.doc_status === 'completed' && !l.is_active).length})`
-                : 'Activate Leases'}
-            </button>
-            <button
-              onClick={() => setShowBulkDeleteModal(true)}
-              disabled={!hasDeletable}
-              className={clsx(
-                'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors',
-                hasDeletable
-                  ? 'bg-red-600 text-white hover:bg-red-700'
-                  : 'bg-gray-100 text-gray-400 cursor-not-allowed',
-              )}
-            >
-              <Trash2 size={13} />
-              {hasDeletable
-                ? `Delete (${selectedLeases.filter((l) => l.doc_status !== 'completed').length})`
-                : 'Delete'}
-            </button>
-            <button onClick={load} className="btn-secondary py-1.5 text-xs" disabled={loading}>
-              <RefreshCw size={13} className={clsx(loading && 'animate-spin')} />
-              Refresh
-            </button>
+          {/* Search */}
+          <div className="relative">
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search by name, email, VIN, vehicle…"
+              value={filters.search}
+              onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
+              className="input pl-7 py-1.5 text-sm w-80"
+            />
+            {filters.search && (
+              <button onClick={() => setFilters((f) => ({ ...f, search: '' }))} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <X size={13} />
+              </button>
+            )}
           </div>
+          <button
+            onClick={() => setShowActivateModal(true)}
+            disabled={!hasActivatable}
+            className={clsx(
+              'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors',
+              hasActivatable
+                ? 'bg-green-600 text-white hover:bg-green-700'
+                : 'bg-gray-100 text-gray-400 cursor-not-allowed',
+            )}
+          >
+            <Zap size={13} />
+            {hasActivatable
+              ? `Activate (${selectedLeases.filter((l) => l.doc_status === 'completed' && !l.is_active).length})`
+              : 'Activate Leases'}
+          </button>
+          <button onClick={() => setColumnsModalOpen(true)} className="btn-secondary py-1.5 text-xs flex items-center gap-1.5">
+            <Columns size={13} /> Columns
+          </button>
         </div>
 
         {/* Loading skeleton */}
@@ -984,7 +911,7 @@ export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
           <div className="flex flex-col items-center justify-center py-14 text-center">
             <p className="text-sm text-gray-500">No leases match your filters.</p>
             <button
-              onClick={() => setFilters({ name: '', status: '', year: '', make: '', model: '' })}
+              onClick={() => setFilters(EMPTY_FILTERS)}
               className="mt-2 text-xs text-brand-600 hover:underline"
             >
               Clear filters
@@ -996,62 +923,51 @@ export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
         {!loading && filtered.length > 0 && (
           <div className="overflow-x-auto">
             <table
-              style={{ tableLayout: 'fixed', width: colWidths.reduce((a, b) => a + b, 0) + 40 }}
+              style={{ tableLayout: 'fixed', width: visibleDefs.reduce((s, c) => s + colWidths[c.key], 0) + 40 + 70 + 100 }}
               className="border-collapse text-sm"
             >
               <thead>
                 <tr className="border-b border-gray-200">
-                  {/* Checkbox column — fixed 40 px, not resizable */}
-                  <th
-                    style={{ width: 40, minWidth: 40 }}
-                    className="border-r border-gray-200 bg-gray-50 px-3 py-2.5"
-                  >
+                  {/* Checkbox — 40 px fixed */}
+                  <th style={{ width: 40, minWidth: 40 }} className="border-r border-[#D6E4FF] bg-[#F5F9FF] px-3 py-2.5">
                     {(() => {
-                      // All non-active rows are selectable (completed → activate, others → delete)
-                      const selectable = filtered.filter((l) => !l.is_active)
-                      const allChecked = selectable.length > 0 && selectable.every((l) => checkedIds.has(l.id))
+                      const selectable  = filtered.filter((l) => !l.is_active)
+                      const allChecked  = selectable.length > 0 && selectable.every((l) => checkedIds.has(l.id))
                       const someChecked = selectable.some((l) => checkedIds.has(l.id))
                       return (
-                        <input
-                          type="checkbox"
-                          checked={allChecked}
+                        <input type="checkbox" checked={allChecked}
                           ref={(el) => { if (el) el.indeterminate = someChecked && !allChecked }}
                           disabled={selectable.length === 0}
-                          onChange={() => {
-                            if (allChecked) {
-                              setCheckedIds(new Set())
-                            } else {
-                              setCheckedIds(new Set(selectable.map((l) => l.id)))
-                            }
-                          }}
+                          onChange={() => setCheckedIds(allChecked ? new Set() : new Set(selectable.map((l) => l.id)))}
                           className="h-3.5 w-3.5 rounded border-gray-300 accent-green-600 disabled:opacity-30"
                           title={selectable.length === 0 ? 'No selectable leases' : 'Select all'}
                         />
                       )
                     })()}
                   </th>
-                  {/* All named columns */}
-                  {COL_HEADERS.map((h, i) => (
-                    <ResizableTh key={h} width={colWidths[i]} onResize={(d) => resizeCol(i, d)}>
-                      {h}
+                  {/* Details — 70 px fixed */}
+                  <th style={{ width: 70, minWidth: 70 }} className="border-r border-[#D6E4FF] bg-[#F5F9FF] px-3 py-2.5 text-xs font-bold uppercase tracking-wide text-gray-900">Details</th>
+                  {/* Visible resizable columns */}
+                  {visibleDefs.map((col) => (
+                    <ResizableTh key={col.key} width={colWidths[col.key]} onResize={(d) => resizeCol(col.key, d)}>
+                      {col.label}
                     </ResizableTh>
                   ))}
+                  {/* Actions — 100 px fixed */}
+                  <th style={{ width: 100, minWidth: 100 }} className="border-l border-[#D6E4FF] bg-[#F5F9FF] px-3 py-2.5 text-xs font-bold uppercase tracking-wide text-gray-900">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 bg-white">
                 {filtered.map((lease) => (
-                  <tr key={lease.id} className="hover:bg-gray-50 transition-colors">
-                    {/* Select checkbox */}
+                  <tr key={lease.id} className={clsx('hover:bg-gray-50 transition-colors', checkedIds.has(lease.id) && 'bg-brand-50')}>
+                    {/* Checkbox */}
                     <td className="border-r border-gray-100 px-3 py-2.5">
                       {lease.is_active ? (
                         <span title="Already activated" className="inline-flex items-center justify-center">
                           <CheckCircle2 size={15} className="text-green-500" />
                         </span>
                       ) : (
-                        <input
-                          type="checkbox"
-                          checked={checkedIds.has(lease.id)}
-                          onChange={() => toggleCheck(lease.id)}
+                        <input type="checkbox" checked={checkedIds.has(lease.id)} onChange={() => toggleCheck(lease.id)}
                           className="h-3.5 w-3.5 rounded border-gray-300 accent-green-600 cursor-pointer"
                           title={lease.doc_status === 'completed' ? 'Select to activate' : 'Select to delete'}
                         />
@@ -1059,78 +975,38 @@ export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
                     </td>
                     {/* Details */}
                     <td className="border-r border-gray-100 px-3 py-2.5">
-                      <button
-                        onClick={() => setSelected(lease)}
-                        title="View lease details"
-                        className="rounded p-1 text-teal-500 hover:bg-teal-50 transition-colors"
-                      >
+                      <button onClick={() => setSelected(lease)} title="View lease details"
+                        className="rounded p-1 text-teal-500 hover:bg-teal-50 transition-colors">
                         <Eye size={16} />
                       </button>
                     </td>
-                    {/* Customer Name */}
-                    <td className="border-r border-gray-100 px-3 py-2.5 overflow-hidden">
-                      <div className="font-medium text-gray-900 truncate">{lease.lessee_name}</div>
-                    </td>
-                    {/* Email */}
-                    <td className="border-r border-gray-100 px-3 py-2.5 overflow-hidden">
-                      <span className="text-xs text-gray-600 truncate block">{lease.lessee_email}</span>
-                    </td>
-                    {/* Vehicle */}
-                    <td className="border-r border-gray-100 px-3 py-2.5 overflow-hidden">
-                      <span className="truncate block text-gray-800">
-                        {lease.vehicle_year} {lease.vehicle_make} {lease.vehicle_model}
-                      </span>
-                    </td>
-                    {/* VIN */}
-                    <td className="border-r border-gray-100 px-3 py-2.5 overflow-hidden">
-                      <span className="font-mono text-xs text-gray-600 truncate block">{lease.vehicle_vin}</span>
-                    </td>
-                    {/* Lease Date (signing date) */}
-                    <td className="border-r border-gray-100 px-3 py-2.5 whitespace-nowrap text-xs text-gray-600">
-                      {fmtDate(lease.lease_date)}
-                    </td>
-                    {/* Lease Start (first payment date) */}
-                    <td className="border-r border-gray-100 px-3 py-2.5 whitespace-nowrap text-xs text-gray-600">
-                      {lease.first_payment_date ? fmtDate(lease.first_payment_date) : '—'}
-                    </td>
-                    {/* Lease End (calculated) */}
-                    <td className="border-r border-gray-100 px-3 py-2.5 whitespace-nowrap text-xs text-gray-600">
-                      {lease.first_payment_date && lease.num_payments
-                        ? leaseEndDate(lease.first_payment_date, lease.num_payments)
-                        : '—'}
-                    </td>
-                    {/* Monthly Payment */}
-                    <td className="border-r border-gray-100 px-3 py-2.5 whitespace-nowrap font-medium text-gray-900">
-                      {lease.total_monthly_payment ? fmt(lease.total_monthly_payment) : '—'}
-                    </td>
-                    {/* Lease Term */}
-                    <td className="border-r border-gray-100 px-3 py-2.5 whitespace-nowrap text-xs text-gray-600">
-                      {lease.num_payments} mo.
-                    </td>
-                    {/* Total */}
-                    <td className="border-r border-gray-100 px-3 py-2.5 whitespace-nowrap text-gray-600">
-                      {lease.total_of_payments ? fmt(lease.total_of_payments) : '—'}
-                    </td>
-                    {/* Doc Status */}
-                    <td className="border-r border-gray-100 px-3 py-2.5">
-                      <StatusBadge status={lease.doc_status} />
-                    </td>
-                    {/* Lease Agreement Docs */}
-                    <td className="px-3 py-2.5">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => setViewingPdf(lease)}
-                          title="View lease agreement"
-                          className="rounded p-1 text-teal-500 hover:bg-teal-50 transition-colors"
-                        >
-                          <Eye size={16} />
+                    {/* Visible columns */}
+                    {visibleDefs.map((col) => (
+                      <td key={col.key} className="border-r border-gray-100 px-3 py-2.5 overflow-hidden">
+                        {renderCell(col.key, lease)}
+                      </td>
+                    ))}
+                    {/* Actions */}
+                    <td className="border-l border-gray-100 px-3 py-2.5">
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => setViewingPdf(lease)} title="View lease documents"
+                          className="rounded p-1 text-teal-500 hover:bg-teal-50 transition-colors">
+                          <Eye size={15} />
                         </button>
-                        <button
-                          onClick={() => setDeletingLease(lease)}
-                          title="Delete lease agreement"
-                          className="rounded p-1 text-red-500 hover:bg-red-50 transition-colors"
-                        >
-                          <Trash2 size={16} />
+                        {(() => {
+                          const canEdit = lease.doc_status !== 'customer_signed' && lease.doc_status !== 'completed'
+                          return (
+                            <button onClick={() => canEdit && setEditingLease(lease)}
+                              title={canEdit ? 'Edit lease' : 'Cannot edit — lessee has signed'}
+                              disabled={!canEdit}
+                              className={clsx('rounded p-1 transition-colors', canEdit ? 'text-blue-500 hover:bg-blue-50' : 'text-gray-300 cursor-not-allowed')}>
+                              <Pencil size={15} />
+                            </button>
+                          )
+                        })()}
+                        <button onClick={() => setDeletingLease(lease)} title="Delete lease"
+                          className="rounded p-1 text-red-500 hover:bg-red-50 transition-colors">
+                          <Trash2 size={15} />
                         </button>
                       </div>
                     </td>
@@ -1151,16 +1027,17 @@ export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
         />
       )}
 
-      {showBulkDeleteModal && (
-        <BulkDeleteConfirmModal
-          leases={selectedLeases}
-          onConfirm={confirmBulkDelete}
-          onCancel={() => setShowBulkDeleteModal(false)}
-          deleting={bulkDeleting}
+      {toast && <Toast toast={toast} />}
+
+      {columnsModalOpen && (
+        <OrganizeColumnsModal
+          allColumns={COLUMNS.map((c) => ({ key: c.key, label: c.label }))}
+          defaultCols={DEFAULT_COLS}
+          visible={visibleCols}
+          onApply={(cols) => { setVisibleCols(cols as ColKey[]); setColumnsModalOpen(false) }}
+          onClose={() => setColumnsModalOpen(false)}
         />
       )}
-
-      {toast && <Toast toast={toast} />}
 
       {selected && <LeaseDetailModal lease={selected} onClose={() => setSelected(null)} />}
       {viewingPdf && (
@@ -1178,6 +1055,45 @@ export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
           deleting={deleteInProgress}
         />
       )}
-    </>
+
+      {/* ── Edit lease modal ── */}
+      {editingLease && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setEditingLease(null)}
+          />
+          {/* Modal panel */}
+          <div className="relative z-10 mx-auto my-8 w-full max-w-4xl rounded-xl bg-white shadow-2xl">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+              <div>
+                <h2 className="text-base font-semibold text-gray-900">Edit Lease</h2>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  {editingLease.lessee_name}
+                  {(editingLease.vehicle_year || editingLease.vehicle_make || editingLease.vehicle_model) && (
+                    <> &middot; {[editingLease.vehicle_year, editingLease.vehicle_make, editingLease.vehicle_model].filter(Boolean).join(' ')}</>
+                  )}
+                </p>
+              </div>
+              <button
+                onClick={() => setEditingLease(null)}
+                className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            {/* Form */}
+            <div className="px-6 py-6">
+              <LeaseForm
+                editRecord={editingLease}
+                onEditComplete={() => { setEditingLease(null); load() }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }

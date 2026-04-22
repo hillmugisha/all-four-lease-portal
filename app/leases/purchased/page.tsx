@@ -3,14 +3,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import SoldLeasesTable from '@/components/SoldLeasesTable'
 import SoldLeasesKPIs from '@/components/SoldLeasesKPIs'
-import { SoldLeaseRecord } from '@/lib/sold-lease-types'
+import { LeasePortfolioRecord } from '@/lib/lease-portfolio-types'
 import { BarChart2, Table2 } from 'lucide-react'
 import clsx from 'clsx'
 
 type Tab = 'reporting' | 'details'
 
 export default function PurchasedLeasesPage() {
-  const [leases, setLeases]   = useState<SoldLeaseRecord[]>([])
+  const [leases, setLeases]   = useState<LeasePortfolioRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<Tab>('reporting')
 
@@ -19,7 +19,7 @@ export default function PurchasedLeasesPage() {
     try {
       const res = await fetch('/api/sold-leases')
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data: SoldLeaseRecord[] = await res.json()
+      const data: LeasePortfolioRecord[] = await res.json()
       setLeases(data)
     } catch (err) {
       console.error('Failed to load sold leases:', err)
@@ -36,11 +36,11 @@ export default function PurchasedLeasesPage() {
   ]
 
   return (
-    <div className="px-8 py-8">
+    <div className="px-8 py-5 bg-white min-h-screen">
       {/* Page header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Purchased Leases</h1>
-        <p className="mt-1 text-sm text-gray-500">
+      <div className="pb-4 mb-4 border-b border-gray-200">
+        <h1 className="text-xl font-bold text-gray-900">Purchased Leases</h1>
+        <p className="mt-0.5 text-xs text-gray-500">
           Leases where the vehicle was sold or purchased at lease end.
         </p>
       </div>
@@ -88,7 +88,6 @@ export default function PurchasedLeasesPage() {
         <SoldLeasesTable
           leases={leases}
           loading={loading}
-          onRefresh={load}
         />
       )}
     </div>

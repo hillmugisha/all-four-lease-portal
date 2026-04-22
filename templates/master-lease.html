@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Master Vehicle Lease Agreement</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 10pt;
+      line-height: 1.45;
+      color: #000;
+      background: #fff;
+      padding: 48px 56px;
+      max-width: 850px;
+      margin: 0 auto;
+    }
+
+    h1.doc-title {
+      font-size: 14pt;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 18px;
+      letter-spacing: 0.02em;
+    }
+
+    .intro {
+      margin-bottom: 14px;
+    }
+
+    .intro p {
+      margin-bottom: 8px;
+      text-align: justify;
+    }
+
+    .intro p strong {
+      font-weight: bold;
+    }
+
+    .lessee-address-line {
+      border-bottom: 1px solid #000;
+      display: inline-block;
+      min-width: 340px;
+      margin-bottom: 2px;
+    }
+
+    .section-heading {
+      font-weight: bold;
+      margin-top: 14px;
+      margin-bottom: 4px;
+    }
+
+    .section-body {
+      text-align: justify;
+      margin-bottom: 8px;
+    }
+
+    .section-body p {
+      margin-bottom: 6px;
+    }
+
+    .sub-heading {
+      font-weight: bold;
+    }
+
+    .page-break {
+      page-break-before: always;
+    }
+
+    /* Signature block */
+    .sig-block {
+      margin-top: 32px;
+    }
+
+    .sig-block table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .sig-block td {
+      vertical-align: top;
+      padding: 0 20px 0 0;
+      width: 50%;
+    }
+
+    .sig-block td:last-child {
+      padding-right: 0;
+    }
+
+    .sig-party-label {
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    .sig-party-name {
+      font-style: italic;
+      font-weight: bold;
+      font-size: 10.5pt;
+      margin-bottom: 10px;
+    }
+
+    .sig-line {
+      border-bottom: 1px solid #000;
+      height: 24px;
+      margin-bottom: 6px;
+      min-width: 200px;
+    }
+
+    .sig-label {
+      font-size: 9pt;
+      color: #333;
+      margin-bottom: 14px;
+    }
+
+    /* Anchor strings for DocuSign — invisible in PDF rendering */
+    .ds-anchor {
+      color: white;
+      font-size: 1pt;
+      display: inline;
+      line-height: 0;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+
+  <h1 class="doc-title">MASTER VEHICLE LEASE AGREEMENT</h1>
+
+  <div class="intro">
+    <p>
+      <strong>THIS MASTER VEHICLE LEASE AGREEMENT</strong> and any executed addenda
+      (collectively the &ldquo;Agreement&rdquo;) is made and entered on
+      <strong>{{fmtDate lease.lease_date}}</strong> by and between
+      <strong>{{lessor.name}}</strong> (the &ldquo;Lessor&rdquo;), an Iowa Limited Liability Company,
+      located at {{lessor.address}}{{#if lessor.po_box}}, {{lessor.po_box}}{{/if}},
+      {{lessor.city}}, {{lessor.state}} {{lessor.zip}} and
+      (&ldquo;Lessee&rdquo;) <strong>{{lessee.name}}</strong>{{#if lessee.entity_type}},
+      a {{lessee.entity_type}}{{/if}},
+      located at
+      <span class="lessee-address-line">{{lessee.address}}, {{lessee.city}}, {{lessee.state}} {{lessee.zip}}</span>.
+    </p>
+    <p>
+      Lessor is engaged in the business of leasing motor vehicles
+      (&ldquo;Vehicles&rdquo;), and Lessee desires to lease Vehicles from Lessor.
+      This Agreement sets forth the terms and conditions by which Lessor will lease
+      Vehicles to Lessee. The lease terms and conditions for an individual motor
+      vehicle (a &ldquo;Vehicle&rdquo;) are set forth in a Vehicle Lease Schedule
+      (&ldquo;VLS&rdquo;) and incorporated into this Agreement by reference.
+    </p>
+    <p>
+      In consideration of the mutual covenants and conditions contained herein, and
+      intending to be legally bound, Lessor and Lessee hereby agree as follows:
+    </p>
+  </div>
+
+  <!-- Section 1 -->
+  <div class="section-heading">1. LEASE OF VEHICLES</div>
+  <div class="section-body">
+    <p>
+      Lessor agrees to lease to Lessee the Vehicles set forth in VLSs accepted by Lessor.
+      Lessee may, from time to time, execute and deliver to Lessor one or more vehicle lease
+      schedules (&ldquo;VLSs&rdquo;) specifying equipment, accessories, color and other details
+      desired for Vehicles. Upon Lessee&rsquo;s execution of a VLS, Lessor will order the
+      Vehicle(s) specified in the VLS from vehicle manufacturers. Lessor&rsquo;s obligation to
+      accept VLSs for any specific number of Vehicles or Lessor&rsquo;s obligation to supply
+      Vehicles is subject to the availability of such Vehicles. Lessor will use commercially
+      reasonable efforts to obtain Vehicles for which it has accepted VLSs. Lessor shall not be
+      liable to Lessee if the Vehicles specified in VLSs are not available. Acceptance of a
+      Vehicle by Lessee with equipment not specified in a VLS shall constitute acceptance of
+      such additional equipment by Lessee and Lessee agrees to pay for the cost of such
+      additional equipment. Lessee expressly acknowledges that it acquires no right, title or
+      interest in or to the Vehicles described in VLSs, except as a Lessee. As such, Lessee
+      agrees that it shall not attempt any private or public sale of such Vehicles under this
+      Agreement. Lessee additionally acknowledges that the Lessee will not be treated as owner
+      of the property subject to the Master Vehicle Lease Agreement for federal income tax
+      purposes. The creditworthiness of customer and guarantor is a material condition to this
+      agreement. Nothing herein shall be construed to require {{lessor.name}} to agree to lease
+      any vehicle to customer.
+    </p>
+  </div>
+
+  <!-- Section 2 -->
+  <div class="section-heading">2. LEASE TERM AND PAYMENTS</div>
+  <div class="section-body">
+    <p>
+      <span class="sub-heading">A. Lease Term.</span> The term of lease for each Vehicle shall
+      commence on the date the Vehicle is delivered to Lessee at the location agreed upon between
+      Lessor and Lessee in the VLS (the &ldquo;Date in Service&rdquo;). The initial term of the
+      lease shall be eighty four (84) months, at which time, Lessor shall own the Vehicles
+      assuming all payments have been made and all other obligations under the MLS are satisfied.
+      At the end of the lease term, and upon such conditions being met, Lessor shall provide
+      clean title to the Vehicles to Lessee. Notwithstanding the foregoing, in the event the MLA
+      or any individual lease is terminated prior to the end of the term, Lessee shall peaceably
+      deliver to Lessor such Vehicle(s). Any notice of termination by Lessee shall be any time
+      up to thirty (30) days prior to the expiration of the term of the MLA or any individual
+      lease term. Notwithstanding anything in the VLS, in no event shall the lease term be for
+      a period of less than twelve months and one day.
+    </p>
+    <p>
+      <span class="sub-heading">B. Lease Payments.</span> Lessee agrees to pay Lessor in advance
+      by the tenth (10<sup>th</sup>) day of each full calendar month, the monthly rental specified
+      in each VLS, plus applicable sales tax, use tax and other charges payable by Lessee as
+      specified in each VLS. All payments shall be made to Lessor at the address noted on the
+      invoice or at such other address as Lessor may direct by notice to Lessee. In the event a
+      VLS is terminated on a date other than its billing anniversary date during any year during
+      the term of such VLS, Lessee shall pay to Lessor, upon receipt of an invoice, the
+      difference between the finance charges included in the rental paid since the last previous
+      billing anniversary date for the Vehicle, and the actual finance charges incurred for such
+      period by Lessor relating to such Vehicle. Lessor may assess delinquent charges against
+      Lessee, at the highest rate of interest permitted by law, (but not more than eighteen
+      percent per annum), for any payments not received by the tenth (10<sup>th</sup>).
+    </p>
+    <p>
+      <span class="sub-heading">C. Prorations.</span> If the Date in Service or the Termination
+      date for a Vehicle occurs other than the first or last day of a month, the monthly rental
+      for such Vehicle shall be prorated for that month. Subject to the notice requirements
+      contained in Section 10 B (Return of Vehicles).
+    </p>
+    <p>
+      <span class="sub-heading">D. Lessee&rsquo;s Waiver of Defense.</span> Any sums payable by
+      Lessee to Lessor pursuant to this Agreement or any VLS shall not be subject to any defense,
+      setoff or counterclaim which Lessee may have against Lessor, any manufacturer or supplier
+      of the Vehicles for any reason whatsoever.
+    </p>
+  </div>
+
+  <!-- Section 3 -->
+  <div class="section-heading">3. FEES MAINTENANCE: NOTIFICATION</div>
+  <div class="section-body">
+    <p>
+      <span class="sub-heading">A. Fees and Taxes.</span> All Vehicles shall be registered,
+      licensed, and titled in the name of Lessor. Lessee agrees to pay all costs, fees and
+      expenses required in the licensing, inspection, registration or in obtaining any necessary
+      certificates for the Vehicles, courtesy delivery charges, as well as all taxes, including
+      sales tax, actual tax paid may be less due to credits taken by Lessor, use tax, rental tax,
+      leasing tax, ad valorem tax, excise tax, local tax and personal property taxes (except
+      federal or state income taxes of Lessor) imposed upon a Vehicle during the term of each
+      VLS. Lessor shall have the right to pay any such taxes or fees imposed on any such Vehicles
+      as well as any costs or expenses related to the purchase and lease of the Vehicle and lessee
+      agrees to reimburse Lessor for all such costs, fees, taxes and expenses, including any tax
+      credits utilized by Lessor and further any tax credits available to the Lessor arising from
+      the purchase or as a result of the ultimate disposition of the Vehicle shall be the sole
+      property of the Lessor.
+    </p>
+    <p>
+      <span class="sub-heading">B. Maintenance.</span> Lessee is responsible for the maintenance
+      and repair of each Vehicle and agrees to maintain each Vehicle at its own expense and in
+      compliance with all maintenance procedures required or recommended by the Vehicle&rsquo;s
+      manufacturer&rsquo;s warranty and service bulletins. All Vehicles shall be periodically
+      inspected, at Lessee&rsquo;s expense, as required by law. Lessee agrees that whenever any
+      governmental law, ordinance, regulation or required inspection requires any modification to
+      Vehicles or its equipment, Lessee will comply with such requirement at Lessee&rsquo;s expense.
+    </p>
+    <p>
+      <span class="sub-heading">C. Dangerous Conditions.</span> In the event Lessor is notified
+      by the manufacturer of a Vehicle that a possible defect or other possible unsafe condition
+      may exist in or any part of such Vehicle, Lessor agrees to mail a copy of such notification
+      to Lessee. Lessee agrees to notify the driver of the Vehicle and waives any right to receive
+      any additional notice from Lessor.
+    </p>
+  </div>
+
+  <!-- Section 4 -->
+  <div class="section-heading">4. USE OF VEHICLES</div>
+  <div class="section-body">
+    <p>
+      <span class="sub-heading">A.</span> Lessee represents and warrants to Lessor that the
+      Vehicles are leased for use in the United States for business and commercial purposes.
+    </p>
+    <p>
+      <span class="sub-heading">B.</span> Lessee agrees that the Vehicles shall be operated only
+      by licensed drivers over twenty-one (21) years of age and employed by or under the control
+      of Lessee. No driver of a Vehicle shall have the authority to act for or on behalf of Lessor
+      or deemed to be their agent, servant, or employee. Lessee shall not use the Vehicles for
+      transportation of persons or property for hire.
+    </p>
+    <p>
+      <span class="sub-heading">C.</span> Lessee covenants and agrees that the Vehicles shall be
+      used only for lawful purposes and shall be operated in compliance with all applicable laws.
+      Lessee agrees to hold {{lessor.name}} harmless from and against any and all fines,
+      forfeiture, confiscations or penalties assessed against such Vehicles and from any and all
+      damages suffered by Lessor from violations of any statute, law, ordinance, rule or
+      regulation relating thereto. Lessee agrees to pay Lessor a service charge of one hundred
+      twenty-five dollars ($125.00) per notice whenever it is necessary for Lessor to investigate
+      and forward warning or delinquency notices to Lessee for fines, citations or penalties not
+      paid by Lessee.
+    </p>
+    <p>
+      <span class="sub-heading">D.</span> Lessee shall not tamper with or permit any tampering
+      with or adjustment to the odometers of the Vehicles. Lessee agrees to indemnify and hold
+      {{lessor.name}} harmless from and against any and all actions, claims, suits, damages, costs
+      and expenses, including reasonable attorney&rsquo;s fee caused by or arising from any claimed
+      violations by Lessee, its drivers, agents, servants or employees, or anyone directed by them,
+      of the odometer laws of any state or Federal law, including the Odometer Disclosure Act
+      (Public Law 92-513, Title IV), the Motor Vehicle Information and Cost Savings Act, as amended
+      by the Truth in Mileage Act of 1986 (15 USC S1901 et seq.).
+    </p>
+    <p>
+      <span class="sub-heading">E.</span> Lessor may immediately terminate this Agreement if any
+      Vehicle is used in violation of the provisions of this Section 4 (Use of Vehicles).
+    </p>
+    <p>
+      <span class="sub-heading">F.</span> Lessee represents that more than 50% of the use of any
+      Vehicle subject to the Master Vehicle Lease Agreement will be in its trade or business.
+    </p>
+  </div>
+
+  <!-- Section 5 -->
+  <div class="section-heading">5. INSURANCE</div>
+  <div class="section-body">
+    <p><em>Reserved.</em></p>
+  </div>
+
+  <!-- Section 6 -->
+  <div class="section-heading">6. Operation of Vehicles Outside the United States.</div>
+  <div class="section-body">
+    <p>
+      Lessee agrees to obtain the above coverages and any other coverages required by law in the
+      event a Vehicle is temporarily operated outside the United States and shall be responsible
+      for all loss or damages arising from or occurring during or as a result of operation of a
+      Vehicle outside the United States.
+    </p>
+  </div>
+
+  <!-- Section 7 -->
+  <div class="section-heading">7. Indemnity.</div>
+  <div class="section-body">
+    <p>
+      In addition to any other specific indemnities in this Agreement, Lessee assumes liability
+      for and will indemnify, defend, protect, save and hold harmless {{lessor.name}} from and
+      against any and all liabilities, losses, damages, penalties, claims, actions, suits, costs,
+      expenses and disbursements, including court costs and legal expenses, of any kind and nature,
+      imposed on, incurred by or asserted against {{lessor.name}} in any way relating to or arising
+      out of this Agreement, the manufacture, purchase, ownership, delivery, lease, possession, use,
+      operation, condition, repair, return or other disposition of a Vehicle, including, without
+      limitation, any claim alleging latent and other defects whether or not discoverable by
+      {{lessor.name}}, and any other claim arising out of strict liability in tort, whether or not
+      in either instance relating to an event occurring during the term of this Agreement; and any
+      claim for patent or trademark infringement. Lessee agrees to give Lessor and Lessor agrees to
+      give Lessee notice of any claim or liability hereby indemnified against promptly upon learning
+      of such claim or liability.
+    </p>
+  </div>
+
+  <!-- Section 8 -->
+  <div class="section-heading">8. LOSS OR DAMAGE</div>
+  <div class="section-body">
+    <p>
+      <span class="sub-heading">A. Force Majeure Affecting Delivery.</span> Lessor shall not be
+      liable to Lessee for failure to deliver a Vehicle specified in a VLS if such failure results
+      from strikes, labor difficulties, acts of God or of a public enemy, acts of any Government,
+      fires, floods, epidemic, freight embargoes or any other cause beyond the control of Lessor.
+    </p>
+    <p>
+      <span class="sub-heading">B. Interruption of Service.</span> Lessee&rsquo;s responsibility
+      for payments of all charges due for each Vehicle under the terms of a VLS and this Agreement
+      shall continue without abatement during the time a Vehicle is confiscated, stolen, converted,
+      destroyed, damaged, or during the time required for any repair, adjustment or servicing of
+      such Vehicle. In the event of irreparable damage to or theft of a Vehicle, all payments shall
+      continue and cease only upon payment to Lessor by or on behalf of Lessee the Depreciated Book
+      Value (as defined in Section 10E (Return of Vehicles)) of the Vehicle as of the date of the
+      loss. Lessor is not responsible for providing temporary Vehicle replacements while Vehicles
+      are out of service for maintenance of repairs, for interruption of service or if a Vehicle is
+      stolen or confiscated.
+    </p>
+    <p>
+      <span class="sub-heading">C. LIABILITY OF LESSOR.</span> LESSOR SHALL NOT BE LIABLE TO
+      LESSEE, ITS OFFICERS, DIRECTORS, BOARD OF REGENTS, EMPLOYEES, AFFILIATES OR SUBSIDIARIES,
+      AGENTS, OR TO ANY PERSON, FOR ANY BUSINESS LOSS, ANY LOSS OF USE, LOSS OF ANY VEHICLE, LOSS
+      OF TIME OR INCONVENIENCE OR INTERRUPTION OF OR DAMAGE TO BUSINESS OR PROFITS, OR FOR OTHER
+      DAMAGES OF ANY KIND OR NATURE, PAID OR INCURRED BY LESSEE CAUSED BY THE CONFISCATION, THEFT,
+      CONVERSION, DESTRUCTION, LOSS, REPAIR, ADJUSTMENT, SERVICING, REPLACEMENT OR ANY
+      INTERRUPTION IN THE OPERATION OR AVAILABILITY FOR ANY REASON OF ANY VEHICLE LEASED UNDER
+      THIS AGREEMENT.
+    </p>
+  </div>
+
+  <!-- Section 9 -->
+  <div class="section-heading">9. TERM OF AGREEMENT.</div>
+  <div class="section-body">
+    <p>
+      Subject to the notice provisions contained in Section 10B (Return of Vehicles), the terms
+      and conditions of this Agreement shall continue in full force and effect and shall be binding
+      upon the Lessee until the return of all Vehicles to the custody of Lessor. Lessee&rsquo;s
+      obligations to self-insure Vehicles shall survive termination of this Agreement.
+    </p>
+  </div>
+
+  <!-- Section 10 -->
+  <div class="section-heading">10. RETURN OF VEHICLES</div>
+  <div class="section-body">
+    <p>
+      <span class="sub-heading">A. Documents.</span> Unless, the VLS term has expired and Lessee
+      takes possession of the Vehicle(s) via title transfer from Lessor, upon the expiration or
+      termination of the VLS term for each Vehicle, Lessee shall deliver possession of such Vehicle
+      to Lessor at a mutually agreeable location, together with the Vehicle&rsquo;s license plates,
+      registration certificates, and other similar documents. Lessee shall execute or cause to be
+      executed and delivered to Lessor an odometer disclosure statement in the form supplied by
+      Lessor, disclosing the accurate mileage of the Vehicle in accordance with the Motor Vehicle
+      information and Cost Savings Act, as amended by the Truth in Mileage Act of 1986 (15 USC
+      s1901 et seq.) and the regulations promulgated there under (the &ldquo;Acts&rdquo;). Failure
+      to complete the odometer disclosure statement or the making of a false statement on the
+      odometer disclosure statement could result in the imposition of fines and/or imprisonment in
+      accordance with the Acts.
+    </p>
+    <p>
+      <span class="sub-heading">B. Notice of Termination.</span> Lessee shall give Lessor not less
+      than thirty (30) days written notice of the return of any Vehicle. Vehicles shall be returned
+      to the custody of Lessor no later than five (5) days after expiration of the notice period.
+      In the event Lessee gives Lessor less than thirty (30) day notice prior to the return of a
+      Vehicle, Lessee&rsquo;s obligations pertaining to such Vehicle shall continue through the end
+      of such required thirty (30) day notice period notwithstanding the return of the Vehicle to
+      Lessor.
+    </p>
+    <p>
+      <span class="sub-heading">C. Excess Wear and Tear.</span> Vehicles shall be returned without
+      any physical damage or mechanical malfunctions less reasonable wear and tear. Lessee will be
+      responsible to reimburse Lessor for remedying any unrepaired or unsatisfactorily repaired
+      physical damage or mechanical malfunctions.
+    </p>
+    <p>
+      <span class="sub-heading">D. Net Sales price.</span> The Net Sales Price of a Vehicle is
+      defined as the net proceeds realized by Lessor from the sale of the Vehicle, after deducting
+      all costs and expenses incurred in connection with such sale. Lessee agrees that Lessor may
+      incur such expenses as Lessor deems suitable, in its sole discretion, for reconditioning,
+      transferring to another location, obtaining current license plates, auction or broker&rsquo;s
+      fees, and such other expenses which may reasonably be incurred in connection with the disposal
+      of Vehicles. All such expenses shall be deducted from the sale proceeds in arriving at the
+      Net Sale Price for the Vehicle.
+    </p>
+    <p>
+      <span class="sub-heading">E. Depreciated Book Value.</span> The depreciated Book Value of a
+      Vehicle is defined as the original capitalized cost of the Vehicle as specified in the VLS,
+      less accumulated depreciation at the rate specified in the VLS, for the number of months the
+      Vehicle was in the possession of Lessee.
+    </p>
+    <p>
+      <span class="sub-heading">F. Disposal of Vehicles.</span> Upon the return of a Vehicle to
+      Lessor, Lessor shall use reasonable efforts to sell such Vehicle for a reasonable wholesale
+      price, as determined by Lessor in its sole discretion. If the Net Sales Price of the Vehicle
+      is greater than its Depreciated Book Value, a credit will be issued to Lessee for such
+      difference, less a $195.00 Disposition Fee. No such credit for a Net Sales Price greater than
+      Depreciated Book Value shall be given Lessee if Lessee is then in default on any payments due
+      Lessor or in any of its obligations under this Agreement. If the Net Sales Price of the
+      Vehicle is less than the Depreciated Book Value of such Vehicle, Lessee will be invoiced for
+      the difference, plus a $195.00 Disposition Fee, and shall pay Lessor such difference upon
+      receipt of the invoice.
+    </p>
+  </div>
+
+  <!-- Section 11 -->
+  <div class="section-heading">11. DEFAULT OF LESSEE.</div>
+  <div class="section-body">
+    <p>
+      <span class="sub-heading">A. Events of Default.</span> Lessee shall be deemed in default of
+      this Agreement should Lessee default on any payments required to be made by Lessee, default
+      in performance of any other covenant, term or condition of this Agreement, if Lessee or any
+      guarantor of this Agreement files a petition in bankruptcy or makes an assignment for the
+      benefit of creditors, if proceedings in bankruptcy are instituted against Lessee or any
+      guarantor of this Agreement, Lessee, or any guarantor of this Agreement is adjudicated a
+      bankrupt, if a receiver is appointed for Lessee, or any guarantor of this Agreement, if
+      Lessee permits or suffers any distress, attachment, levy or execution against any of its
+      property.
+    </p>
+    <p>
+      <span class="sub-heading">B. Lessor&rsquo;s Remedies.</span> In the event of any default by
+      Lessee of its obligations hereunder, Lessor may, at its option, and without notice or demand
+      on Lessee, declare this Agreement and each VLS terminated. Upon termination, Lessee shall
+      remain liable for and shall pay to Lessor all sums due Lessor as of the date of termination
+      and, in addition, monthly rental payments sufficient to satisfy the minimum number of monthly
+      payments required for any terminated VLS. Whether or not such payment is made, Lessor may
+      repossess the Vehicles and obtain and retain all payments previously made and required. Lessor
+      shall have the right to recover the Vehicle(s) without the need for filing any legal action by
+      Lessor Against Lessee for replevin of return of vehicles to Lessor. In the event of default,
+      Lessee consents and agrees that Lessor may enter upon property of Lessee to recover
+      Vehicle(s). In the event of default, Lessor may recover possession of Vehicle(s) wherever the
+      Vehicle(s) may be found so long as the recovery of the Vehicle(s) does not constitute a breach
+      of the peace or violate the property rights of third parties. The proceeds of disposition of
+      the Vehicles shall be distributed as required by Section 10 F (Return of Vehicles). Any
+      repossession or resale of the Vehicles shall not bar an action for a deficiency, and the
+      bringing of an action for any sums owed, with an entry of judgment against Lessee, shall not
+      bar Lessor&rsquo;s right to repossess the Vehicle(s). The rights and remedies of Lessor are
+      in addition to those provided by law. Lessor shall have no obligation to exercise any such
+      remedy, and the exercise of any remedy shall not release Lessee from any of its obligations.
+      Lessee shall pay Lessor on demand all expenses of collection and repossession, including court
+      costs and reasonable attorney&rsquo;s fees incurred by Lessor in pursuing claims against
+      Lessee.
+    </p>
+  </div>
+
+  <!-- Section 12 -->
+  <div class="section-heading">12. DISCLAIMER OF WARRANTY</div>
+  <div class="section-body">
+    <p>
+      EXCEPT AS OTHERWISE EXPRESSLY PROVIDED BY THIS AGREEMENT, NEITHER {{lessor.name}} NOR LESSOR
+      MAKE ANY EXPRESS OR IMPLIED WARRANTY AS TO ANY MATTER WHATSOEVER, INCLUDING, WITHOUT
+      LIMITATION, THE CONDITION OF THE VEHICLES OR THEIR MERCHANTABILITY OR FITNESS FOR ANY
+      PARTICULAR PURPOSE. NO DEFECT OF THE VEHICLES SHALL RELIEVE LESSEE OF ANY OF ITS OBLIGATIONS
+      UNDER THIS AGREEMENT. THE ONLY WARRANTY AVAILABLE TO LESSOR IS THAT OF THE ORIGINAL EQUIPMENT
+      MANUFACTURER.
+    </p>
+  </div>
+
+  <!-- Section 13 -->
+  <div class="section-heading">13. SECURITY INTEREST</div>
+  <div class="section-body">
+    <p>
+      {{lessor.name}} or Lessor may grant a security interest in one or more of the Vehicles or
+      VLSs and all sums due hereunder or there under to one or more lending institutions (the
+      &ldquo;Lenders&rdquo;). All right, title and interest of {{lessor.name}} or Lessor to the
+      extent assigned shall inure to the benefit of such Lenders, their successor and assigns.
+      Lessee will not assert against such Lenders any defense, set-off or counterclaim with respect
+      to the obligations of Lessee hereunder, including Lessee&rsquo;s obligation for payments and
+      other amounts due hereunder or under any VLSs notwithstanding any claim Lessee may have
+      against Lessor. Lessee may assert such claims only in an independent action against Lessor.
+      Lessee will execute and acknowledge, upon notice from Lessor, such financing statements and
+      other instruments as may, in the opinion of Lessor, be desirable to give effect to this
+      Section 13, or to record and protect Lessor&rsquo;s title against any who might claim such
+      title through Lessee. Lessee will not suffer or permit a lien to attach to this Agreement or
+      any Vehicle, whether for repairs to the Vehicle or otherwise.
+    </p>
+  </div>
+
+  <!-- Section 14 -->
+  <div class="section-heading">14. GENERAL</div>
+  <div class="section-body">
+    <p>
+      <span class="sub-heading">A. Amendment.</span> This Agreement and any duly executed VLSs and
+      other amendments and addenda that may be executed from time to time referencing this Agreement
+      may be modified only in a writing duly executed by both parties.
+    </p>
+    <p>
+      <span class="sub-heading">B. Headings: Construction.</span> The titles of the various
+      sections in this Agreement are intended to facilitate reference only and shall not be employed
+      in construction of any provision of this Agreement. The words &ldquo;Lessee,&rdquo;
+      &ldquo;its,&rdquo; or &ldquo;their,&rdquo; shall be construed to mean a singular, plural,
+      masculine, feminine or neuter, as the case may be.
+    </p>
+    <p>
+      <span class="sub-heading">C. Waiver.</span> The failure of either party to insist upon the
+      performance of any term or condition of this Agreement, or to exercise any right or privilege
+      conferred by this Agreement, shall not constitute a waiver by either party of any such term
+      or condition.
+    </p>
+    <p>
+      <span class="sub-heading">D. Severability.</span> Should any part, term or provision of this
+      Agreement be decided by any court to be illegal, unenforceable or in conflict with any
+      applicable law, the validity of the remaining portions, terms, or provisions of this Agreement
+      shall not be affected.
+    </p>
+    <p>
+      <span class="sub-heading">E. Benefit.</span> This Agreement shall be binding upon the
+      parties, their respective successors, legal representatives, and assigns.
+    </p>
+    <p>
+      <span class="sub-heading">F. Lessee&rsquo;s Rights.</span> It is understood and agreed that
+      in the event Lessor fails or is unable to perform its obligations hereunder, or in the event
+      Lessor&rsquo;s interest in any Vehicle shall be levied upon, taken in execution or subjected
+      to encumbrances other than to Lenders, or in the event Lessor becomes insolvent or bankrupt
+      or makes an assignment for the benefit of creditors or consents to the appointment of a
+      trustee or receiver, or a trustee or receiver is appointed for Lessor for a substantial
+      portion of its property without its consent, or bankruptcy, reorganization, arrangement,
+      insolvency or liquidation proceedings are instituted by or against Lessor, then in any such
+      event, Lessee shall have the option to terminate this Agreement and to purchase any or all
+      Vehicles leased hereunder on payment of all payments due to the date thereof plus the
+      Depreciated Book Value of the Vehicles purchased or, notwithstanding such default or
+      insolvency, to continue this Agreement in full force and effect.
+    </p>
+    <p>
+      <span class="sub-heading">G. Governing Law: Venue.</span> This Agreement shall be deemed to
+      have been made in and shall be construed in accordance with the laws of the Venue for any
+      action related to this Agreement shall be in an appropriate court in any county selected by
+      Lessor. Lessee hereby agrees to submit to such jurisdiction and waives any and all defenses
+      of lack of jurisdiction.
+    </p>
+    <p>
+      <span class="sub-heading">H. Notices.</span> Any notice required or permitted to be given
+      hereunder shall be deemed to have been given only if in writing and delivered by personal
+      delivery, or forwarded, charges fully prepaid, by Federal Express or any other similar
+      overnight delivery service, or United States certified or registered mail, return receipt
+      requested, addressed to the party to be notified at the address appearing at the head of this
+      Agreement or to such other address as the party to be notified may have, by ten (10) days
+      prior written notice, so specified. All notices shall be deemed given when personally
+      delivered or so forwarded.
+    </p>
+    <p>
+      <span class="sub-heading">I. Effective Date.</span> This Agreement shall not become effective
+      and binding upon the parties hereto until accepted and executed by an officer of Lessor.
+    </p>
+    <p>
+      <span class="sub-heading">J. Entire Agreement.</span> The terms and conditions attached to
+      this MLA and any VLSs shall constitute the entire agreement between Lessor and Lessee with
+      respect to the subject matter hereof and shall supersede and render void any and all terms and
+      conditions contained in Lessee&rsquo;s purchase order(s) or other ordering documents,
+      regardless of when such purchase order(s) or other ordering documents were or are issued. In
+      the event of any conflict, inconsistency, or discrepancy between the terms and conditions of
+      this Agreement and any terms and conditions contained in Lessee&rsquo;s purchase order(s) or
+      other ordering documents, the terms and conditions of this Agreement shall govern and control,
+      and terms in Lessee&rsquo;s purchase order(s) or other ordering documents shall be deemed null
+      and void and of no force or effect. No terms or conditions set forth in any purchase order(s)
+      or other ordering documents issued by Lessee shall modify, amend, or otherwise alter the terms
+      and conditions of this Agreement, regardless of whether such purchase order(s) or other
+      ordering documents are acknowledged or accepted by Lessor. Lessee acknowledges and agrees that
+      by executing this MLA or submitting any purchase order(s) or other ordering documents in
+      connection with this Agreement, Lessee accepts the terms and conditions of this Agreement as
+      controlling and binding, notwithstanding any contrary provisions in Lessee&rsquo;s purchase
+      order(s) or other ordering documents.
+    </p>
+    <p>
+      <span class="sub-heading">K. Counterparts.</span> This Agreement may be executed in
+      counterparts, each of which shall be deemed an original. Lessor and Lessee may provide the
+      other with a fully executed copy of this Agreement by electronic means, and Lessor and Lessee
+      agree that an executed Agreement received from the other electronically shall be deemed the
+      original, executed Agreement of the transmitting party.
+    </p>
+  </div>
+
+  <!-- Signature block -->
+  <div class="sig-block">
+    <p style="margin-bottom: 16px;">
+      <strong>IN WITNESS WHEREOF,</strong> the parties hereto have caused these presents to be
+      executed by their authorized representatives as of the date first above written.
+    </p>
+    <table>
+      <tr>
+        <td>
+          <div class="sig-party-label">LESSEE</div>
+          <div class="sig-party-name">{{lessee.name}}</div>
+
+          <div style="margin-bottom: 4px; font-size: 9pt; color: #444;">Signature:</div>
+          <div class="sig-line">
+            <span class="ds-anchor">\mla_lessee_sign\</span>
+          </div>
+
+          <div style="margin-bottom: 4px; font-size: 9pt; color: #444;">Print Name:</div>
+          <div class="sig-line">
+            <span class="ds-anchor">\mla_lessee_name\</span>
+          </div>
+
+          <div style="margin-bottom: 4px; font-size: 9pt; color: #444;">Title:</div>
+          <div class="sig-line" style="padding-top: 4px; font-size: 10pt;">
+            {{#if signatures.lessee_signer_title}}{{signatures.lessee_signer_title}}{{/if}}<span class="ds-anchor">\mla_lessee_title\</span>
+          </div>
+
+          <div style="margin-bottom: 4px; font-size: 9pt; color: #444;">Dated:</div>
+          <div class="sig-line">
+            <span class="ds-anchor">\mla_lessee_date\</span>
+          </div>
+        </td>
+        <td>
+          <div class="sig-party-label">LESSOR</div>
+          <div class="sig-party-name">{{signatures.lessor_name}} (Lessor)</div>
+
+          <div style="margin-bottom: 4px; font-size: 9pt; color: #444;">Signature:</div>
+          <div class="sig-line">
+            <span class="ds-anchor">\mla_lessor_sign\</span>
+          </div>
+
+          <div style="margin-bottom: 4px; font-size: 9pt; color: #444;">Print Name:</div>
+          <div class="sig-line" style="padding-top: 4px; font-size: 10pt;">
+            {{signatures.lessor_signer_name}}
+          </div>
+
+          <div style="margin-bottom: 4px; font-size: 9pt; color: #444;">Title:</div>
+          <div class="sig-line" style="padding-top: 4px; font-size: 10pt;">
+            {{signatures.lessor_signer_title}}
+          </div>
+
+          <div style="margin-bottom: 4px; font-size: 9pt; color: #444;">Dated:</div>
+          <div class="sig-line">
+            <span class="ds-anchor">\mla_lessor_date\</span>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+
+</body>
+</html>

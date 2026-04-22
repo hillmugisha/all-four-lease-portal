@@ -10,7 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import docusign from 'docusign-esign'
 import { getDocuSignClient, getAccountId } from '@/lib/docusign'
-import { getSupabase } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,7 +19,7 @@ export async function GET(
   { params }: { params: { id: string } },
 ) {
   try {
-    const { data: lease, error } = await getSupabase()
+    const { data: lease, error } = await getSupabaseAdmin()
       .from('leases')
       .select('docusign_envelope_id, lessee_name, vehicle_vin')
       .eq('id', params.id)

@@ -5,9 +5,18 @@
  */
 
 import type { LeaseRecord } from '@/lib/types'
-import type { LeaseTemplateData } from '@/lib/lease-types'
+import type { LeaseTemplateData, MasterLeaseVehicleEntry } from '@/lib/lease-types'
 
 export function recordToTemplateData(r: LeaseRecord): LeaseTemplateData {
+  // Parse vehicles_json for master leases
+  let vehicles: MasterLeaseVehicleEntry[] | undefined
+  if (r.is_master_lease && r.vehicles_json) {
+    try {
+      vehicles = JSON.parse(r.vehicles_json as string) as MasterLeaseVehicleEntry[]
+    } catch {
+      vehicles = []
+    }
+  }
   const hasTradeIn = !!(r.tradein_make && r.tradein_make.trim())
 
   // cap_cost_reduction: 0 in DB means no reduction (N/A), positive = real reduction
@@ -44,7 +53,8 @@ export function recordToTemplateData(r: LeaseRecord): LeaseTemplateData {
       email:            r.lessee_email,
       signer_name:      r.customer_signer_name ?? '',
       co_signer_name:   null,
-      entity_type:      'LLC',   // default; update if your form captures entity type
+      entity_type:      r.lessee_type === 'individual' ? null : 'LLC',
+      location:         r.lessee_location ?? null,
     },
 
     vehicle: {
@@ -136,11 +146,25 @@ export function recordToTemplateData(r: LeaseRecord): LeaseTemplateData {
     },
 
     signatures: {
-      lessee_signer_name:    r.customer_signer_name ?? r.lessee_name,
+      lessee_signer_name:    r.customer_signer_name  ?? r.lessee_name,
+      lessee_signer_title:   r.customer_signer_title ?? null,
       co_lessee_signer_name: r.co_lessee_signer_name ?? null,
       lessor_name:           r.lessor_name,
       lessor_signer_name:    r.lessor_signer_name  ?? 'Jim Liverseed',
       lessor_signer_title:   r.lessor_signer_title ?? 'Lease Sales Consultant',
     },
+
+    ach: {
+      billing_address: r.ach_billing_address ?? r.lessee_address ?? null,
+      billing_city:    r.ach_billing_city    ?? ([r.lessee_city, r.lessee_state, r.lessee_zip].filter(Boolean).join('  ') || null),
+      billing_phone:   r.ach_billing_phone   ?? r.lessee_phone ?? null,
+      billing_email:   r.ach_billing_email   ?? r.lessee_email ?? null,
+      bank_name:       r.ach_bank_name       ?? null,
+      routing_number:  r.ach_routing_number  ?? null,
+      account_number:  r.ach_account_number  ?? null,
+      account_type:    r.ach_account_type    ?? null,
+    },
+
+    ...(vehicles !== undefined ? { vehicles } : {}),
   }
 }

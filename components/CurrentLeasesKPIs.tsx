@@ -1,21 +1,21 @@
 'use client'
 
 import { useMemo } from 'react'
-import { CurrentLeaseRecord } from '@/lib/current-lease-types'
+import { LeasePortfolioRecord } from '@/lib/lease-portfolio-types'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList,
 } from 'recharts'
 
 interface DrillFilters {
-  make:         string
-  customerType: string
-  term:         string
-  expiryBucket: string
-  lender:       string
+  make:         string[]
+  customerType: string[]
+  term:         string[]
+  expiryBucket: string[]
+  lender:       string[]
 }
 
 interface Props {
-  leases: CurrentLeaseRecord[]
+  leases: LeasePortfolioRecord[]
   onViewAll?: () => void
   onDrillDown?: (filters: Partial<DrillFilters>) => void
 }
@@ -163,7 +163,7 @@ export default function CurrentLeasesKPIs({ leases, onViewAll, onDrillDown }: Pr
     const counts: Record<string, number> = {}
     let missing = 0
     for (const l of leases) {
-      const lender = (l.lender_lessor ?? '').trim()
+      const lender = (l.lender ?? '').trim()
       if (!lender) { missing++; continue }
       counts[lender] = (counts[lender] ?? 0) + 1
     }
@@ -245,7 +245,7 @@ export default function CurrentLeasesKPIs({ leases, onViewAll, onDrillDown }: Pr
                 dataKey="count"
                 radius={[4, 4, 0, 0]}
                 cursor={onDrillDown ? 'pointer' : undefined}
-                onClick={(data) => onDrillDown?.({ expiryBucket: data.label })}
+                onClick={(data) => { const lbl = (data as { label?: string }).label; if (lbl) onDrillDown?.({ expiryBucket: [lbl] }) }}
               >
                 {upcomingData.map((entry) => (
                   <Cell key={entry.label} fill={EXPIRY_COLORS[entry.label]} />
@@ -289,7 +289,7 @@ export default function CurrentLeasesKPIs({ leases, onViewAll, onDrillDown }: Pr
                 dataKey="value"
                 radius={[0, 4, 4, 0]}
                 cursor={onDrillDown ? 'pointer' : undefined}
-                onClick={(data) => onDrillDown?.({ make: data.name })}
+                onClick={(data) => { const n = (data as { name?: string }).name; if (n) onDrillDown?.({ make: [n] }) }}
               >
                 {byMakeData.map((_, i) => (
                   <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
@@ -333,7 +333,7 @@ export default function CurrentLeasesKPIs({ leases, onViewAll, onDrillDown }: Pr
                 dataKey="value"
                 radius={[0, 4, 4, 0]}
                 cursor={onDrillDown ? 'pointer' : undefined}
-                onClick={(data) => onDrillDown?.({ customerType: data.name })}
+                onClick={(data) => { const n = (data as { name?: string }).name; if (n) onDrillDown?.({ customerType: [n] }) }}
               >
                 {byTypeData.map((_, i) => (
                   <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
@@ -371,7 +371,7 @@ export default function CurrentLeasesKPIs({ leases, onViewAll, onDrillDown }: Pr
                 fill={BRAND}
                 radius={[4, 4, 0, 0]}
                 cursor={onDrillDown ? 'pointer' : undefined}
-                onClick={(data) => onDrillDown?.({ term: data.name })}
+                onClick={(data) => { const n = (data as { name?: string }).name; if (n) onDrillDown?.({ term: [n] }) }}
               >
                 <LabelList dataKey="value" position="top" style={{ fontSize: 11, fill: '#374151', fontWeight: 600 }} />
               </Bar>
@@ -412,7 +412,7 @@ export default function CurrentLeasesKPIs({ leases, onViewAll, onDrillDown }: Pr
                 dataKey="value"
                 radius={[0, 4, 4, 0]}
                 cursor={onDrillDown ? 'pointer' : undefined}
-                onClick={(data) => onDrillDown?.({ lender: data.name })}
+                onClick={(data) => { const n = (data as { name?: string }).name; if (n) onDrillDown?.({ lender: [n] }) }}
               >
                 {byLenderData.map((_, i) => (
                   <Cell key={i} fill={PALETTE[i % PALETTE.length]} />

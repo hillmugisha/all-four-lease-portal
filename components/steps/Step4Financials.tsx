@@ -8,6 +8,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react'
 
 interface Props {
   form: UseFormReturn<LeaseFormData>
+  isMasterLease?: boolean
 }
 
 // ─── Collapsible section wrapper ─────────────────────────────────────────────
@@ -24,16 +25,16 @@ function CollapsibleSection({
   const [open, setOpen] = useState(defaultOpen)
 
   return (
-    <div className="rounded-lg border border-gray-200 overflow-hidden">
+    <div className="rounded-lg border border-[#D6E4FF] overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between bg-gray-50 px-4 py-3 text-left hover:bg-gray-100 transition-colors"
+        className="flex w-full items-center justify-between bg-[#F5F9FF] px-4 py-3 text-left hover:bg-[#EBF2FF] transition-colors"
       >
-        <span className="text-sm font-semibold text-gray-800">{title}</span>
+        <span className="text-sm font-bold text-[#1E3A8A]">{title}</span>
         {open
-          ? <ChevronDown size={16} className="text-gray-400 shrink-0" />
-          : <ChevronRight size={16} className="text-gray-400 shrink-0" />
+          ? <ChevronDown size={16} className="text-[#1E3A8A]/50 shrink-0" />
+          : <ChevronRight size={16} className="text-[#1E3A8A]/50 shrink-0" />
         }
       </button>
       {open && (
@@ -163,7 +164,12 @@ function CalcSummary({ form }: { form: UseFormReturn<LeaseFormData> }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function Step4Financials({ form }: Props) {
+export default function Step4Financials({ form, isMasterLease }: Props) {
+  // Read live vehicle data from form state so edits from Step 3 are reflected here
+  const rawJson = form.watch('vehicles_json') ?? '[]'
+  let masterLeaseVehicles: import('@/lib/types').VehicleOnOrderSummary[] = []
+  try { masterLeaseVehicles = JSON.parse(rawJson) } catch { /* keep empty */ }
+
   return (
     <div className="space-y-5">
       <div>
@@ -172,6 +178,46 @@ export default function Step4Financials({ form }: Props) {
           Expand each section to fill in the deal details. Monthly payment calculates automatically on the right.
         </p>
       </div>
+
+      {/* Master lease: collapsed vehicle list */}
+      {isMasterLease && masterLeaseVehicles.length > 0 && (
+        <details className="rounded-lg border border-blue-200 overflow-hidden">
+          <summary className="flex cursor-pointer items-center justify-between bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800 hover:bg-blue-100 transition-colors list-none">
+            <span>Vehicles Covered by this Master Lease ({masterLeaseVehicles.length})</span>
+            <ChevronDown size={15} className="shrink-0" />
+          </summary>
+          <div className="overflow-x-auto border-t border-blue-200">
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="bg-blue-50">
+                  <th className="px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-blue-700">#</th>
+                  <th className="px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-blue-700">Year</th>
+                  <th className="px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-blue-700">Make</th>
+                  <th className="px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-blue-700">Model</th>
+                  <th className="px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-blue-700">VIN</th>
+                  <th className="px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-blue-700">Color</th>
+                  <th className="px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-blue-700">Body Style</th>
+                  <th className="px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-blue-700">Odometer</th>
+                </tr>
+              </thead>
+              <tbody>
+                {masterLeaseVehicles.map((v, i) => (
+                  <tr key={v.id} className="border-t border-blue-100 bg-white text-gray-600">
+                    <td className="px-4 py-2">{i + 1}</td>
+                    <td className="px-4 py-2">{v.model_year ?? '—'}</td>
+                    <td className="px-4 py-2">{v.oem ?? '—'}</td>
+                    <td className="px-4 py-2">{v.vehicle_line ?? '—'}</td>
+                    <td className="px-4 py-2 font-mono text-xs">{v.vin ?? '—'}</td>
+                    <td className="px-4 py-2">{v.color ?? '—'}</td>
+                    <td className="px-4 py-2">{v.body_style || '—'}</td>
+                    <td className="px-4 py-2">{v.odometer != null ? `${v.odometer} mi` : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left: collapsible sections */}

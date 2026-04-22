@@ -211,8 +211,6 @@
       font-size: 4pt;
       line-height: 0;
       display: inline-block;
-      width: 0;
-      overflow: hidden;
     }
 
     /* ── Customer fill-in hint text ── */
@@ -272,25 +270,25 @@
     <tr>
       <td class="field-label">Billing Address:</td>
       <td class="field-value">
-        <span class="anchor-invisible">\ach_billing_address\</span><span class="field-hint">Street address</span>
+        <span class="anchor-invisible">\ach_billing_address\</span>{{#if ach.billing_address}}{{ach.billing_address}}{{else}}<span class="field-hint">Street address</span>{{/if}}
       </td>
     </tr>
     <tr>
       <td class="field-label">City, State, Zip:</td>
       <td class="field-value">
-        <span class="anchor-invisible">\ach_billing_city\</span><span class="field-hint">City, State  ZIP</span>
+        <span class="anchor-invisible">\ach_billing_city\</span>{{#if ach.billing_city}}{{ach.billing_city}}{{else}}<span class="field-hint">City, State  ZIP</span>{{/if}}
       </td>
     </tr>
     <tr>
       <td class="field-label">Phone #:</td>
       <td class="field-value">
-        <span class="anchor-invisible">\ach_billing_phone\</span><span class="field-hint">(xxx) xxx-xxxx</span>
+        <span class="anchor-invisible">\ach_billing_phone\</span>{{#if ach.billing_phone}}{{ach.billing_phone}}{{else}}<span class="field-hint">(xxx) xxx-xxxx</span>{{/if}}
       </td>
     </tr>
     <tr>
       <td class="field-label">Email:</td>
       <td class="field-value">
-        <span class="anchor-invisible">\ach_billing_email\</span><span class="field-hint">email@example.com</span>
+        <span class="anchor-invisible">\ach_billing_email\</span>{{#if ach.billing_email}}{{ach.billing_email}}{{else}}<span class="field-hint">email@example.com</span>{{/if}}
       </td>
     </tr>
   </table>
@@ -300,18 +298,18 @@
     <tr>
       <td class="freq-label"><b>Frequency:</b></td>
       <td class="freq-option">
-        <span class="anchor-invisible">\ach_freq_weekly\</span>&#x2610;&nbsp;Weekly
+        <span class="anchor-invisible">\ach_freq_weekly\</span>Weekly
       </td>
       <td class="freq-option">
-        <span class="anchor-invisible">\ach_freq_monthly\</span>&#x2610;&nbsp;Monthly
+        <span class="anchor-invisible">\ach_freq_monthly\</span>Monthly
       </td>
       <td class="freq-option">
-        <span class="anchor-invisible">\ach_freq_annually\</span>&#x2610;&nbsp;Annually
+        <span class="anchor-invisible">\ach_freq_annually\</span>Annually
       </td>
       <td style="padding-right:8px;"></td>
       <td class="num-payments-label"><b>Number of Payments:</b></td>
       <td class="num-payments-value">
-        <span class="anchor-invisible">\ach_num_payments\</span>- {{financials.num_payments}}
+        <span class="anchor-invisible">\ach_num_payments\</span>{{financials.num_payments}}
       </td>
     </tr>
   </table>
@@ -323,27 +321,27 @@
     <tr>
       <td class="bank-label">Depository Bank:</td>
       <td class="bank-value">
-        <span class="anchor-invisible">\ach_bank_name\</span><span class="field-hint">Bank name</span>
+        <span class="anchor-invisible">\ach_bank_name\</span>{{#if ach.bank_name}}{{ach.bank_name}}{{else}}<span class="field-hint">Bank name</span>{{/if}}
       </td>
     </tr>
     <tr>
       <td class="bank-label">Routing Number:</td>
       <td class="bank-value">
-        <span class="anchor-invisible">\ach_routing\</span><span class="field-hint">9-digit routing number</span>
+        <span class="anchor-invisible">\ach_routing\</span>{{#if ach.routing_number}}{{ach.routing_number}}{{else}}<span class="field-hint">9-digit routing number</span>{{/if}}
       </td>
     </tr>
     <tr>
       <td class="bank-label">Account Number:</td>
       <td class="bank-value">
-        <span class="anchor-invisible">\ach_account\</span><span class="field-hint">Account number</span>
+        <span class="anchor-invisible">\ach_account\</span>{{#if ach.account_number}}{{ach.account_number}}{{else}}<span class="field-hint">Account number</span>{{/if}}
       </td>
     </tr>
     <tr>
       <td class="bank-label">Account Type:</td>
       <td style="padding: 4px 0; vertical-align: bottom; font-size:9pt;">
-        <span class="anchor-invisible">\ach_account_type_checking\</span>&#x2610;&nbsp;Checking
+        <span class="anchor-invisible">\ach_account_type_checking\</span>{{#if (eq ach.account_type 'checking')}}<u>Checking</u>{{else}}Checking{{/if}}
         &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-        <span class="anchor-invisible">\ach_account_type_savings\</span>&#x2610;&nbsp;Savings
+        <span class="anchor-invisible">\ach_account_type_savings\</span>{{#if (eq ach.account_type 'savings')}}<u>Savings</u>{{else}}Savings{{/if}}
       </td>
     </tr>
   </table>

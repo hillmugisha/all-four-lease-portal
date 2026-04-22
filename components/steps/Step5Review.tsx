@@ -2,12 +2,13 @@
 
 import { useState } from 'react'
 import { UseFormReturn } from 'react-hook-form'
-import { LeaseFormData, FinancialInputs } from '@/lib/types'
+import { LeaseFormData, FinancialInputs, VehicleOnOrderSummary } from '@/lib/types'
 import { calculateLease, fmt, fmtDate, ordinal } from '@/lib/calculations'
 import { Pencil, Check } from 'lucide-react'
 
 interface Props {
   form: UseFormReturn<LeaseFormData>
+  isMasterLease?: boolean
 }
 
 // ─── Safe display helpers ─────────────────────────────────────────────────────
@@ -130,8 +131,14 @@ function Section({
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function Step5Review({ form }: Props) {
+export default function Step5Review({ form, isMasterLease }: Props) {
   const data = form.watch()
+
+  // Read live vehicle data from form state so edits from Step 3 are reflected here
+  let masterLeaseVehicles: VehicleOnOrderSummary[] = []
+  if (isMasterLease) {
+    try { masterLeaseVehicles = JSON.parse(data.vehicles_json ?? '[]') } catch { /* keep empty */ }
+  }
   const { register } = form
 
   const [editingSection, setEditingSection] = useState<string | null>(null)
@@ -181,6 +188,87 @@ export default function Step5Review({ form }: Props) {
           Confirm everything looks correct. Click <strong>Edit</strong> on any section to update it inline.
         </p>
       </div>
+
+      {/* ── Vehicle / Vehicles (full width, above the 2-col grid) ────────── */}
+      {isMasterLease && masterLeaseVehicles.length > 0 ? (
+        <div className="rounded-lg border border-gray-200 p-4">
+          <p className="text-sm font-semibold text-gray-700 mb-3">
+            Vehicles ({masterLeaseVehicles.length})
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  <th className="px-3 py-2 text-left text-xs font-bold uppercase tracking-wide text-gray-500">#</th>
+                  <th className="px-3 py-2 text-left text-xs font-bold uppercase tracking-wide text-gray-500">Year</th>
+                  <th className="px-3 py-2 text-left text-xs font-bold uppercase tracking-wide text-gray-500">Make</th>
+                  <th className="px-3 py-2 text-left text-xs font-bold uppercase tracking-wide text-gray-500">Model</th>
+                  <th className="px-3 py-2 text-left text-xs font-bold uppercase tracking-wide text-gray-500">VIN</th>
+                  <th className="px-3 py-2 text-left text-xs font-bold uppercase tracking-wide text-gray-500">Color</th>
+                  <th className="px-3 py-2 text-left text-xs font-bold uppercase tracking-wide text-gray-500">Body Style</th>
+                  <th className="px-3 py-2 text-left text-xs font-bold uppercase tracking-wide text-gray-500">Odometer</th>
+                </tr>
+              </thead>
+              <tbody>
+                {masterLeaseVehicles.map((v, i) => (
+                  <tr key={v.id} className="border-t border-gray-100">
+                    <td className="px-3 py-2 text-gray-500">{i + 1}</td>
+                    <td className="px-3 py-2 text-gray-700">{v.model_year ?? '—'}</td>
+                    <td className="px-3 py-2 text-gray-700">{v.oem ?? '—'}</td>
+                    <td className="px-3 py-2 text-gray-700">{v.vehicle_line ?? '—'}</td>
+                    <td className="px-3 py-2 font-mono text-xs text-gray-700">{v.vin ?? '—'}</td>
+                    <td className="px-3 py-2 text-gray-700">{v.color ?? '—'}</td>
+                    <td className="px-3 py-2 text-gray-700">{v.body_style || '—'}</td>
+                    <td className="px-3 py-2 text-gray-700">{v.odometer != null ? `${v.odometer} mi` : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        <Section
+          title="Vehicle"
+          sectionKey="vehicle"
+          editingSection={editingSection}
+          onToggle={setEditingSection}
+          readView={<>
+            <Row label="Condition"  value={safe(data.condition)} />
+            <Row label="Year"       value={safe(data.year)} />
+            <Row label="Make"       value={safe(data.make)} />
+            <Row label="Model"      value={safe(data.model)} />
+            {data.bodyStyle && <Row label="Body Style" value={safe(data.bodyStyle)} />}
+            <Row label="VIN"        value={safe(data.vin)} />
+            <Row label="Odometer"   value={safe(data.odometer) ? `${data.odometer} mi` : undefined} />
+          </>}
+          editView={<>
+            <EditRow label="Condition">
+              <select {...register('condition')} className={selectCls}>
+                <option value="NEW">NEW</option>
+                <option value="USED">USED</option>
+              </select>
+            </EditRow>
+            <EditRow label="Year">
+              <input {...register('year')} maxLength={4} className={inputCls} />
+            </EditRow>
+            <EditRow label="Make">
+              <input {...register('make')} className={inputCls} />
+            </EditRow>
+            <EditRow label="Model">
+              <input {...register('model')} className={inputCls} />
+            </EditRow>
+            <EditRow label="Body Style">
+              <input {...register('bodyStyle')} className={inputCls} />
+            </EditRow>
+            <EditRow label="VIN">
+              <input {...register('vin')} maxLength={17} className={inputCls} />
+            </EditRow>
+            <EditRow label="Odometer (mi)">
+              <input {...register('odometer')} type="number" min={0} className={inputCls} />
+            </EditRow>
+          </>}
+        />
+      )}
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
 
@@ -252,49 +340,6 @@ export default function Step5Review({ form }: Props) {
             </EditRow>
             <EditRow label="Email">
               <input {...register('email')} type="email" className={inputCls} />
-            </EditRow>
-          </>}
-        />
-
-        {/* ── Vehicle ─────────────────────────────────────────────────────── */}
-        <Section
-          title="Vehicle"
-          sectionKey="vehicle"
-          editingSection={editingSection}
-          onToggle={setEditingSection}
-          readView={<>
-            <Row label="Condition"  value={safe(data.condition)} />
-            <Row label="Year"       value={safe(data.year)} />
-            <Row label="Make"       value={safe(data.make)} />
-            <Row label="Model"      value={safe(data.model)} />
-            {data.bodyStyle && <Row label="Body Style" value={safe(data.bodyStyle)} />}
-            <Row label="VIN"        value={safe(data.vin)} />
-            <Row label="Odometer"   value={safe(data.odometer) ? `${data.odometer} mi` : undefined} />
-          </>}
-          editView={<>
-            <EditRow label="Condition">
-              <select {...register('condition')} className={selectCls}>
-                <option value="NEW">NEW</option>
-                <option value="USED">USED</option>
-              </select>
-            </EditRow>
-            <EditRow label="Year">
-              <input {...register('year')} maxLength={4} className={inputCls} />
-            </EditRow>
-            <EditRow label="Make">
-              <input {...register('make')} className={inputCls} />
-            </EditRow>
-            <EditRow label="Model">
-              <input {...register('model')} className={inputCls} />
-            </EditRow>
-            <EditRow label="Body Style">
-              <input {...register('bodyStyle')} className={inputCls} />
-            </EditRow>
-            <EditRow label="VIN">
-              <input {...register('vin')} maxLength={17} className={inputCls} />
-            </EditRow>
-            <EditRow label="Odometer (mi)">
-              <input {...register('odometer')} type="number" min={0} className={inputCls} />
             </EditRow>
           </>}
         />
@@ -463,17 +508,15 @@ export default function Step5Review({ form }: Props) {
       </div>
 
       {/* ── Summary highlight ──────────────────────────────────────────────── */}
-      <div className="rounded-xl border-2 border-brand-200 bg-brand-50 p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div>
-          <p className="text-sm text-brand-700 font-medium">Total Monthly Payment</p>
-          <p className="text-3xl font-bold text-brand-900">{safeFmt(c.totalMonthlyPayment)}</p>
-          <p className="text-sm text-brand-600 mt-0.5">
-            × {data.numPayments || '—'} months = {safeFmt(c.totalOfPayments)}
-          </p>
+      <div className="rounded-lg border border-brand-200 bg-brand-50 px-5 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">Total Monthly Payment</p>
+          <p className="text-2xl font-bold text-brand-700">{safeFmt(c.totalMonthlyPayment)}</p>
+          <p className="text-xs text-brand-500">× {data.numPayments || '—'} months = {safeFmt(c.totalOfPayments)}</p>
         </div>
         <div className="text-right">
-          <p className="text-sm text-brand-700 font-medium">Amount Due at Signing</p>
-          <p className="text-2xl font-bold text-brand-900">{safeFmt(c.amountDueAtSigning)}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">Amount Due at Signing</p>
+          <p className="text-2xl font-bold text-brand-700">{safeFmt(c.amountDueAtSigning)}</p>
         </div>
       </div>
 

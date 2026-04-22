@@ -1,12 +1,15 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import VehiclesOnOrderTable from '@/components/VehiclesOnOrderTable'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import VehiclesOnOrderTable, { VehiclesOnOrderTableHandle } from '@/components/VehiclesOnOrderTable'
 import { VehicleOnOrderRecord } from '@/lib/vehicles-on-order-types'
+import { FilePlus } from 'lucide-react'
 
 export default function VehiclesOnOrderPage() {
-  const [vehicles, setVehicles] = useState<VehicleOnOrderRecord[]>([])
-  const [loading, setLoading]   = useState(true)
+  const [vehicles, setVehicles]       = useState<VehicleOnOrderRecord[]>([])
+  const [loading, setLoading]         = useState(true)
+  const [hasSelection, setHasSelection] = useState(false)
+  const tableRef                      = useRef<VehiclesOnOrderTableHandle>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -25,18 +28,30 @@ export default function VehiclesOnOrderPage() {
   useEffect(() => { load() }, [load])
 
   return (
-    <div className="px-8 py-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Vehicles on Order</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Reserved and in-transit vehicles — stock and sold orders.
-        </p>
+    <div className="px-8 py-5 bg-white min-h-screen">
+      <div className="pb-4 mb-4 border-b border-gray-200 flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Vehicles On Order</h1>
+          <p className="mt-0.5 text-xs text-gray-500">
+            All Four &amp; NIE Stock and Sold orders pulling directly from the SHAED Pritchard Portal
+          </p>
+        </div>
+        <button
+          onClick={() => tableRef.current?.createLease()}
+          disabled={!hasSelection}
+          className="btn-primary py-2 px-4 text-sm flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+          title={hasSelection ? 'Generate lease for selected vehicle' : 'Select a vehicle to generate a lease'}
+        >
+          <FilePlus size={15} /> Create New Lease
+        </button>
       </div>
 
       <VehiclesOnOrderTable
+        ref={tableRef}
         vehicles={vehicles}
         loading={loading}
         onRefresh={load}
+        onSelectionChange={(count) => setHasSelection(count > 0)}
       />
     </div>
   )

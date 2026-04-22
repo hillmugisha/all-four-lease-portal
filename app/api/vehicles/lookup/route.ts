@@ -11,7 +11,7 @@
  *   { found: false }
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabase } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ found: false })
   }
 
-  const supabase = getSupabase()
+  const supabase = getSupabaseAdmin()
 
   // 1. Search leases table first (most complete data)
   const { data: lease } = await supabase

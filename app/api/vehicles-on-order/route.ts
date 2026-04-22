@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getSupabase } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,7 +11,7 @@ export async function GET() {
     let from = 0
 
     while (true) {
-      const { data, error } = await getSupabase()
+      const { data, error } = await getSupabaseAdmin()
         .from('Vehicles_On_Order')
         .select('*')
         .order('id', { ascending: true })

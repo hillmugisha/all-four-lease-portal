@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { renderLease } from '@/lib/lease-renderer'
+import { renderLease, renderMasterLease } from '@/lib/lease-renderer'
 import { recordToTemplateData } from '@/lib/lease-adapter'
 import { LeaseRecord } from '@/lib/types'
 
@@ -12,8 +12,11 @@ export async function POST(req: NextRequest) {
   try {
     const { record } = (await req.json()) as { record: LeaseRecord }
 
-    // Render the Handlebars template to HTML
-    const html = renderLease(recordToTemplateData(record))
+    // Use master lease template when flagged
+    const templateData = recordToTemplateData(record)
+    const html = record.is_master_lease
+      ? renderMasterLease(templateData)
+      : renderLease(templateData)
 
     // Launch headless Chrome and print to PDF
     const puppeteer = await import('puppeteer')

@@ -3,24 +3,24 @@
 import { useState, useEffect, useCallback } from 'react'
 import CurrentLeasesTable from '@/components/CurrentLeasesTable'
 import CurrentLeasesKPIs from '@/components/CurrentLeasesKPIs'
-import { CurrentLeaseRecord } from '@/lib/current-lease-types'
+import { LeasePortfolioRecord } from '@/lib/lease-portfolio-types'
 import clsx from 'clsx'
 import { BarChart2, Table2 } from 'lucide-react'
 
 type Tab = 'reporting' | 'details'
 
 export default function CurrentLeasesPage() {
-  const [leases, setLeases] = useState<CurrentLeaseRecord[]>([])
+  const [leases, setLeases] = useState<LeasePortfolioRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<Tab>('reporting')
-  const [drillFilters, setDrillFilters] = useState<Record<string, string> | null>(null)
+  const [drillFilters, setDrillFilters] = useState<Record<string, string[]> | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
       const res = await fetch('/api/current-leases')
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data: CurrentLeaseRecord[] = await res.json()
+      const data: LeasePortfolioRecord[] = await res.json()
       setLeases(data)
     } catch (err) {
       console.error('Failed to load current leases:', err)
@@ -49,11 +49,11 @@ export default function CurrentLeasesPage() {
   ]
 
   return (
-    <div className="px-8 py-8">
+    <div className="px-8 py-5 bg-white min-h-screen">
       {/* Page header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Lease Pipeline &amp; Renewals</h1>
-        <p className="mt-1 text-sm text-gray-500">
+      <div className="pb-4 mb-4 border-b border-gray-200">
+        <h1 className="text-xl font-bold text-gray-900">Lease Pipeline &amp; Renewals</h1>
+        <p className="mt-0.5 text-xs text-gray-500">
           Track expirations, identify renewal opportunities, and manage your active portfolio.
         </p>
       </div>
@@ -85,7 +85,7 @@ export default function CurrentLeasesPage() {
           leases={leases}
           onViewAll={() => setActiveTab('details')}
           onDrillDown={(filters) => {
-            setDrillFilters(filters as Record<string, string>)
+            setDrillFilters(filters as Record<string, string[]>)
             setActiveTab('details')
           }}
         />
@@ -95,7 +95,6 @@ export default function CurrentLeasesPage() {
         <CurrentLeasesTable
           leases={leases}
           loading={loading}
-          onRefresh={load}
           initialFilters={drillFilters}
         />
       )}

@@ -5,6 +5,18 @@
  * The renderer formats everything for display.
  */
 
+// Minimal vehicle summary used in master lease vehicle list
+export interface MasterLeaseVehicleEntry {
+  id:           number
+  vin:          string | null
+  model_year:   string | null
+  oem:          string | null
+  vehicle_line: string | null
+  color:        string | null
+  body_style?:  string | null
+  odometer?:    string | null
+}
+
 export interface LeaseTemplateData {
   lease:     LeaseInfo
   lessor:    LessorInfo
@@ -16,6 +28,9 @@ export interface LeaseTemplateData {
   cap_items: CapItemsInfo
   optional:  OptionalProductsInfo
   signatures: SignaturesInfo
+  ach:       AchTemplateData
+  /** Populated only for master lease agreements */
+  vehicles?: MasterLeaseVehicleEntry[]
 }
 
 export interface LeaseInfo {
@@ -48,6 +63,8 @@ export interface LesseeInfo {
   co_signer_name?: string | null
   /** Drives checkbox: "Corporation" | "Partnership" | "LLC" | "Sole Proprietorship" | null (individual) */
   entity_type?: 'Corporation' | 'Partnership' | 'LLC' | 'Sole Proprietorship' | null
+  /** Optional business location descriptor */
+  location?: string | null
 }
 
 export interface VehicleInfo {
@@ -165,9 +182,21 @@ export interface OptionalProductsInfo {
 }
 
 export interface SignaturesInfo {
-  lessee_signer_name:   string
+  lessee_signer_name:    string
+  lessee_signer_title?:  string | null
   co_lessee_signer_name?: string | null
-  lessor_name:          string
-  lessor_signer_name:   string
-  lessor_signer_title:  string
+  lessor_name:           string
+  lessor_signer_name:    string
+  lessor_signer_title:   string
+}
+
+export interface AchTemplateData {
+  billing_address: string | null
+  billing_city:    string | null
+  billing_phone:   string | null
+  billing_email:   string | null
+  bank_name:       string | null
+  routing_number:  string | null
+  account_number:  string | null
+  account_type:    'checking' | 'savings' | null
 }

@@ -19,16 +19,26 @@ create table if not exists leases (
   lessor_zip      text not null default '50428',
 
   -- ─── Lessee ───────────────────────────────────────────────────────────────
-  lessee_name     text not null,
-  lessee_address  text not null,
-  lessee_city     text not null,
-  lessee_state    text not null,
-  lessee_zip      text not null,
-  lessee_phone    text,
-  lessee_email    text not null,
+  lessee_name       text not null,
+  lessee_address    text not null,
+  lessee_city       text not null,
+  lessee_state      text not null,
+  lessee_zip        text not null,
+  lessee_phone      text,
+  lessee_email      text not null,
+  lessee_type       text,
+  lessee_first_name text,
+  lessee_last_name  text,
+  lessee_location   text,
 
   -- ─── Lease ────────────────────────────────────────────────────────────────
-  lease_date      date not null,
+  lease_date          date not null,
+  lease_type          text,
+  contract_structure  text,
+  customer_type       text,
+  vehicle_use         text,
+  department          text,
+  department_other    text,
 
   -- ─── Vehicle ──────────────────────────────────────────────────────────────
   vehicle_condition  text not null check (vehicle_condition in ('NEW', 'USED')),
@@ -112,7 +122,21 @@ create table if not exists leases (
   customer_signer_name   text,
   customer_signer_email  text,
   docusign_envelope_id   text,
-  signed_at              timestamptz
+  signed_at              timestamptz,
+
+  -- ─── ACH Authorization pre-fill fields ───────────────────────────────────
+  ach_billing_address    text,
+  ach_billing_city       text,
+  ach_billing_phone      text,
+  ach_billing_email      text,
+  ach_bank_name          text,
+  ach_routing_number     text,
+  ach_account_number     text,
+  ach_account_type       text check (ach_account_type in ('checking', 'savings')),
+
+  -- ─── Master Lease Agreement ───────────────────────────────────────────────
+  is_master_lease        boolean       not null default false,
+  vehicles_json          jsonb
 );
 
 -- ─── Auto-update updated_at on any row change ─────────────────────────────────
@@ -161,6 +185,31 @@ from leases
 order by created_at desc;
 
 -- ═══════════════════════════════════════════════════════════════════════════
+-- lease_documents — uploaded files attached to lease rows
+-- Before running: create a private Supabase Storage bucket named
+-- "lease-documents" in the Supabase Dashboard (Storage → New Bucket).
+-- Then add a storage RLS policy allowing all operations (to match the
+-- existing open-access pattern on other tables).
+-- ═══════════════════════════════════════════════════════════════════════════
+
+create table if not exists lease_documents (
+  id            uuid        default gen_random_uuid() primary key,
+  created_at    timestamptz default now(),
+  lease_id      uuid        not null,
+  table_name    text        not null check (table_name in ('leases', 'current_lease_info', 'expired_leases', 'sold_leases')),
+  doc_type      text        not null check (doc_type in ('lease_agreement', 'finance_document', 'other')),
+  file_name     text        not null,
+  storage_path  text        not null
+);
+
+alter table lease_documents enable row level security;
+
+drop policy if exists "Allow all for lease_documents" on lease_documents;
+
+create policy "Allow all for lease_documents" on lease_documents
+  for all using (true) with check (true);
+
+-- ═══════════════════════════════════════════════════════════════════════════
 -- current_lease_info — imported from Active Leases.xlsx
 -- Run in: Supabase Dashboard > SQL Editor > New query
 -- ═══════════════════════════════════════════════════════════════════════════
@@ -175,7 +224,6 @@ create table if not exists current_lease_info (
   customer_type                       text,
   customer_name                       text,
   location_driver                     text,
-  payment_method                      text,
   billing_address                     text,
   billing_city                        text,
   billing_state                       text,
@@ -203,7 +251,6 @@ create table if not exists current_lease_info (
   insurance_expiration_date           text,
   ttl_state                           text,
   ttl_mo                              numeric(12,2),
-  lease_depreciation_months           numeric(12,6),
 
   -- ── Financials (Customer-Facing) ─────────────────────────────────────────────
   net_cap_cost                        numeric(12,2),
@@ -228,7 +275,11 @@ create table if not exists current_lease_info (
 
   -- ── Status ───────────────────────────────────────────────────────────────────
   lease_status                        text          default 'Active'
-                                      check (lease_status in ('Active', 'Expired', 'Terminated', 'Purchased'))
+                                      check (lease_status in ('Active', 'Expired', 'Terminated', 'Purchased')),
+
+  -- ── Portal link (set when activated from the lease portal) ──────────────────
+  -- Run once if column is missing: ALTER TABLE current_lease_info ADD COLUMN IF NOT EXISTS portal_lease_id uuid;
+  portal_lease_id                     uuid
 );
 
 -- ═══════════════════════════════════════════════════════════════════════════
@@ -248,7 +299,6 @@ create table if not exists expired_leases (
   customer_type                       text,
   customer_name                       text,
   location_driver                     text,
-  payment_method                      text,
   billing_address                     text,
   billing_city                        text,
   billing_state                       text,
@@ -316,7 +366,6 @@ create table if not exists sold_leases (
   customer_type                       text,
   customer_name                       text,
   location_driver                     text,
-  payment_method                      text,
   billing_address                     text,
   billing_city                        text,
   billing_state                       text,
@@ -330,7 +379,6 @@ create table if not exists sold_leases (
   model                               text,
   color                               text,
   vin                                 text,
-  vin8                                text,
   sold_odometer                       numeric(12,2),
   odometer_date                       text,
   plate_number                        text,
@@ -364,3 +412,25 @@ create table if not exists sold_leases (
   monthly_depreciation_lender         numeric(12,2),
   lender_int_rate_pct                 numeric(10,6)
 );
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- audit_logs — immutable record of all mutations in the portal
+-- ═══════════════════════════════════════════════════════════════════════════
+
+create table if not exists audit_logs (
+  id          uuid        primary key default gen_random_uuid(),
+  created_at  timestamptz not null    default now(),
+  user_email  text        not null,
+  action      text        not null,
+  resource_id text,
+  details     jsonb
+);
+
+create index if not exists audit_logs_created_at_idx on audit_logs (created_at desc);
+create index if not exists audit_logs_user_email_idx on audit_logs (user_email);
+create index if not exists audit_logs_action_idx     on audit_logs (action);
+
+alter table audit_logs enable row level security;
+drop policy if exists "Allow all for audit_logs" on audit_logs;
+create policy "Allow all for audit_logs" on audit_logs
+  for all using (true) with check (true);

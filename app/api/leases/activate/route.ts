@@ -1,13 +1,13 @@
 /**
  * POST /api/leases/activate
  *
- * Promotes one or more completed LeaseRecords into the current_lease_info
- * table so they appear in the Current Leases dashboard.
+ * Promotes one or more completed LeaseRecords into the pritchard_lease_portfolio
+ * table (lease_status = 'Active') so they appear in the Current Leases dashboard.
  *
  * Rules:
  *   – All supplied IDs must have doc_status = 'completed' (422 otherwise).
  *   – Idempotent: leases already marked is_active = true are silently skipped.
- *   – Each inserted current_lease_info row is mapped from the portal lease.
+ *   – Each inserted pritchard_lease_portfolio row is mapped from the portal lease.
  *
  * Required DB columns (run once if missing):
  *   ALTER TABLE leases ADD COLUMN IF NOT EXISTS is_active    boolean      DEFAULT false;
@@ -15,8 +15,10 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import docusign from 'docusign-esign'
+import { logAudit } from '@/lib/audit'
+import { getUserEmailFromRequest } from '@/lib/auth-user'
 import { getDocuSignClient, getAccountId } from '@/lib/docusign'
-import { getSupabase } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import type { LeaseRecord } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -50,7 +52,7 @@ function toCurrentLeaseRow(l: LeaseRecord) {
     customer_type:    null as string | null,
 
     // Vehicle
-    year:              l.vehicle_year,
+    model_year:        l.vehicle_year,
     make:              l.vehicle_make,
     model:             l.vehicle_model,
     vin:               l.vehicle_vin,
@@ -58,28 +60,31 @@ function toCurrentLeaseRow(l: LeaseRecord) {
     odometer:          l.vehicle_odometer ? Number(l.vehicle_odometer) : null,
 
     // Lease terms
-    new_swap_addition: 'New',
+    onboard_type:      'New',
     lease_start_date:  l.first_payment_date,
     lease_end_date:    l.first_payment_date && l.num_payments
       ? calcLeaseEnd(l.first_payment_date, l.num_payments)
       : null,
-    term:              l.num_payments,
-    annual_miles:      l.miles_per_year       ?? null,
-    lease_end_mile_fee: l.excess_mileage_rate ?? null,
+    term:              String(l.num_payments),
+    annual_miles_limit:  l.miles_per_year       ?? null,
+    lease_end_mile_fee:  l.excess_mileage_rate  ?? null,
 
     // Financials (customer-facing)
     net_cap_cost:          l.adjusted_cap_cost        ?? null,
-    mon_dep:               l.base_monthly_payment     ?? null,
-    mon_interest:          monthlyInterest,
+    monthly_depreciation:  l.base_monthly_payment     ?? null,
+    monthly_interest:      monthlyInterest,
     monthly_tax:           l.monthly_sales_tax > 0
       ? String(l.monthly_sales_tax)
       : null,
-    mon_payment:           l.total_monthly_payment    ?? null,
-    residual_resale_quote: l.residual_value           ?? null,
-    upfront_tax_paid:      l.amount_due_at_signing    ?? null,
+    monthly_payment:       l.total_monthly_payment    ?? null,
+    lease_end_residual:    l.residual_value            ?? null,
+    tax_paid_upfront:      l.amount_due_at_signing     ?? null,
 
     // Status
     lease_status: 'Active',
+
+    // Portal link — used to auto-attach signed PDF
+    portal_lease_id: l.id,
   }
 }
 
@@ -93,7 +98,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No lease IDs provided' }, { status: 400 })
     }
 
-    const supabase = getSupabase()
+    const supabase = getSupabaseAdmin()
 
     // 1. Fetch the requested leases
     const { data: leases, error: fetchErr } = await supabase
@@ -162,12 +167,13 @@ export async function POST(req: NextRequest) {
 
     const now = new Date().toISOString()
 
-    // 4. Insert rows into current_lease_info
+    // 4. Insert rows into pritchard_lease_portfolio, capturing generated IDs
     const rows = toActivate.map(toCurrentLeaseRow)
 
-    const { error: insertErr } = await supabase
-      .from('current_lease_info')
+    const { data: inserted, error: insertErr } = await supabase
+      .from('pritchard_lease_portfolio')
       .insert(rows)
+      .select('id, portal_lease_id')
 
     if (insertErr) return NextResponse.json({ error: insertErr.message }, { status: 500 })
 
@@ -178,6 +184,63 @@ export async function POST(req: NextRequest) {
       .in('id', toActivate.map((l) => l.id))
 
     if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 })
+
+    // 6. Auto-attach signed PDF from DocuSign for portal leases (best-effort — never blocks activation)
+    try {
+      const apiClient = await getDocuSignClient()
+      const accountId = getAccountId()
+      const envelopesApi = new docusign.EnvelopesApi(apiClient)
+
+      await Promise.allSettled(
+        (inserted ?? [])
+          .filter(row => row.portal_lease_id)
+          .map(async (row) => {
+            const portalLease = toActivate.find(l => l.id === row.portal_lease_id)
+            if (!portalLease?.docusign_envelope_id) return
+            try {
+              const pdfBytes = (await envelopesApi.getDocument(
+                accountId,
+                portalLease.docusign_envelope_id,
+                'combined',
+                {},
+              )) as unknown as Buffer
+
+              const uid         = crypto.randomUUID()
+              const safeName    = (portalLease.lessee_name ?? '').replace(/[^a-zA-Z0-9-]/g, '-')
+              const fileName    = `lease-${safeName}-${portalLease.vehicle_vin ?? ''}.pdf`
+              const storagePath = `pritchard_lease_portfolio/${row.id}/lease_agreement/${uid}.pdf`
+
+              const { error: uploadErr } = await supabase.storage
+                .from('lease-documents')
+                .upload(storagePath, new Uint8Array(pdfBytes), { contentType: 'application/pdf' })
+
+              if (uploadErr) {
+                console.error('[activate] storage upload failed:', uploadErr.message)
+                return
+              }
+
+              await supabase.from('lease_documents').insert({
+                lease_id:     row.id,
+                table_name:   'pritchard_lease_portfolio',
+                doc_type:     'lease_agreement',
+                file_name:    fileName,
+                storage_path: storagePath,
+              })
+            } catch (e) {
+              console.error(`[activate] auto-attach failed for row ${row.id}:`, e)
+            }
+          }),
+      )
+    } catch (e) {
+      console.error('[activate] DocuSign auto-attach step failed (non-fatal):', e)
+    }
+
+    const userEmail = getUserEmailFromRequest(req)
+    await logAudit(userEmail, 'lease.activated', undefined, {
+      lease_ids: toActivate.map((l) => l.id),
+      count:     toActivate.length,
+      skipped:   leases.length - toActivate.length,
+    })
 
     return NextResponse.json({
       activated: toActivate.length,

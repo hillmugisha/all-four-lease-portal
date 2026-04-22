@@ -61,6 +61,7 @@ Handlebars.registerHelper('checked', (v: unknown) => v ? '[X]' : '[&nbsp;&nbsp;&
 Handlebars.registerHelper('checkedIf', (a: unknown, b: unknown) =>
   String(a) === String(b) ? '&#x2611;' : '&#x2610;'
 )
+Handlebars.registerHelper('eq', (a: unknown, b: unknown) => a === b)
 // {{fmtRate 0.25}} → "$0.25"
 Handlebars.registerHelper('fmtRate', (n: unknown) =>
   (n as number).toLocaleString('en-US', { style: 'currency', currency: 'USD' })
@@ -71,7 +72,7 @@ Handlebars.registerHelper('minus', (a: unknown, b: unknown) => Number(a) - Numbe
 // ─── Build computed view model ────────────────────────────────────────────────
 
 function buildViewModel(data: LeaseTemplateData) {
-  const { lease, lessor, lessee, vehicle, financials, signing, tradein, cap_items, optional, signatures } = data
+  const { lease, lessor, lessee, vehicle, financials, signing, tradein, cap_items, optional, signatures, ach } = data
 
   // Itemization totals
   const itemLines = [
@@ -193,6 +194,7 @@ function buildViewModel(data: LeaseTemplateData) {
       },
     },
     signatures,
+    ach,
   }
 }
 
@@ -209,7 +211,7 @@ let _logoDataUri: string | null = null
 
 function getLogoDataUri(): string {
   if (_logoDataUri !== null) return _logoDataUri
-  const logoPath = path.join(process.cwd(), 'logo.webp')
+  const logoPath = path.join(process.cwd(), 'All Four logo.webp')
   if (fs.existsSync(logoPath)) {
     const buf = fs.readFileSync(logoPath)
     _logoDataUri = `data:image/webp;base64,${buf.toString('base64')}`
@@ -271,5 +273,16 @@ export function renderAchAuthorizationForLessor(data: LeaseTemplateData): string
     return renderNieAchAuthorization(data)
   }
   return renderAchAuthorization(data)
+}
+
+// ─── Master Lease Agreement renderer ─────────────────────────────────────────
+
+export function renderMasterLease(data: LeaseTemplateData): string {
+  const vm = {
+    ...buildViewModel(data),
+    // Pass vehicles array through for any future template use
+    vehicles: data.vehicles ?? [],
+  }
+  return compileTemplate('master-lease.html')(vm)
 }
 

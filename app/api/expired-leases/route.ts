@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getSupabase } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,10 +11,11 @@ export async function GET() {
     let from = 0
 
     while (true) {
-      const { data, error } = await getSupabase()
-        .from('expired_leases')
+      const { data, error } = await getSupabaseAdmin()
+        .from('pritchard_lease_portfolio')
         .select('*')
-        .order('expired_date', { ascending: false })
+        .eq('lease_status', 'Expired')
+        .order('out_of_service_date', { ascending: false })
         .range(from, from + BATCH - 1)
 
       if (error) return NextResponse.json({ error: error.message }, { status: 500 })

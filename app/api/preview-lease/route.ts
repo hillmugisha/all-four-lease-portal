@@ -11,7 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { renderLease } from '@/lib/lease-renderer'
 import { recordToTemplateData } from '@/lib/lease-adapter'
-import { getSupabase } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import type { LeaseRecord } from '@/lib/types'
 import schemaExample from '@/lib/lease-schema.json'
 import type { LeaseTemplateData } from '@/lib/lease-types'
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
 
     if (id) {
       // Load a real record from Supabase
-      const { data: record, error } = await getSupabase()
+      const { data: record, error } = await getSupabaseAdmin()
         .from('leases')
         .select('*')
         .eq('id', id)

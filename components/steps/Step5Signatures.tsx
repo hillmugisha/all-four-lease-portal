@@ -30,17 +30,32 @@ export default function Step5Signatures({ form }: Props) {
     name: 'lesseeSignatories',
   })
 
+  const lesseeType      = watch('lesseeType') ?? 'business'
+  const lesseeName      = watch('lesseeName') ?? ''
+  const lesseeFirstName = watch('lesseeFirstName') ?? ''
+  const lesseeLastName  = watch('lesseeLastName')  ?? ''
+  const lesseeDisplayName = lesseeType === 'individual'
+    ? `${lesseeFirstName} ${lesseeLastName}`.trim()
+    : lesseeType === 'business'
+    ? lesseeName
+    : ''
+
   // Pre-populate first signatory from lessee info if blank
   useEffect(() => {
     const sigs = form.getValues('lesseeSignatories')
     if (!sigs?.[0]?.firstName && !sigs?.[0]?.email) {
-      const lesseeName = form.getValues('lesseeName') ?? ''
+      const lesseeType = form.getValues('lesseeType') ?? 'business'
       const email = form.getValues('email') ?? ''
-      const parts = lesseeName.trim().split(/\s+/)
-      setValue('lesseeSignatories.0.firstName', parts[0] ?? '')
-      setValue('lesseeSignatories.0.lastName', parts.slice(1).join(' '))
-      setValue('lesseeSignatories.0.email', email)
+      if (lesseeType === 'individual') {
+        setValue('lesseeSignatories.0.firstName', form.getValues('lesseeFirstName') ?? '')
+        setValue('lesseeSignatories.0.lastName',  form.getValues('lesseeLastName')  ?? '')
+        setValue('lesseeSignatories.0.email', email)
+      } else {
+        // Business: don't try to split company name — only set email
+        setValue('lesseeSignatories.0.email', email)
+      }
     }
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -133,6 +148,10 @@ export default function Step5Signatures({ form }: Props) {
       ? `${coLessee.firstName} ${coLessee.lastName}`.trim() || null
       : null
 
+    const lessee_name = raw.lesseeType === 'individual'
+      ? `${raw.lesseeFirstName ?? ''} ${raw.lesseeLastName ?? ''}`.trim()
+      : raw.lesseeName ?? ''
+
     const record: LeaseRecord = {
       id: 'preview',
       created_at: new Date().toISOString(),
@@ -146,7 +165,11 @@ export default function Step5Signatures({ form }: Props) {
       lessor_state:   raw.lessorState?.toUpperCase() ?? '',
       lessor_zip:     raw.lessorZip,
 
-      lessee_name:    raw.lesseeName,
+      lessee_name,
+      lessee_type:       (raw.lesseeType || 'business') as 'business' | 'individual',
+      lessee_first_name: raw.lesseeFirstName  || null,
+      lessee_last_name:  raw.lesseeLastName   || null,
+      lessee_location:   raw.location         || null,
       lessee_address: raw.address,
       lessee_city:    raw.city,
       lessee_state:   raw.state?.toUpperCase() ?? '',
@@ -203,12 +226,16 @@ export default function Step5Signatures({ form }: Props) {
 
       customer_signer_name:  lesseePrimaryName,
       customer_signer_email: primary?.email ?? raw.email,
+      customer_signer_title: primary?.jobTitle || null,
       co_lessee_signer_name: coLesseeName,
       lessor_signer_name:    raw.lessorSignatoryName || null,
       lessor_signer_title:   raw.lessorSignatoryTitle || null,
 
       docusign_envelope_id: null,
       signed_at:            null,
+
+      is_master_lease: raw.is_master_lease ?? false,
+      vehicles_json:   raw.vehicles_json   || null,
     }
 
     try {
@@ -249,6 +276,16 @@ export default function Step5Signatures({ form }: Props) {
         {/* ── Lessee Signatories ─────────────────────────────────────────────── */}
         <div>
           <h3 className="text-sm font-semibold text-gray-700 mb-3">Lessee Signatories</h3>
+
+          {/* Lessee type indicator */}
+          <div className="rounded-lg border border-[#D6E4FF] bg-[#F5F9FF] px-4 py-3 mb-4 flex items-center gap-3">
+            <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
+              {lesseeType === 'individual' ? 'Individual' : 'Business'}
+            </span>
+            <span className="text-sm text-gray-700 font-medium">
+              {lesseeDisplayName || <span className="text-gray-400 italic">No lessee name entered</span>}
+            </span>
+          </div>
 
           {/* Multiple signatories question */}
           <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 mb-4">
@@ -321,7 +358,15 @@ export default function Step5Signatures({ form }: Props) {
                       <p className="field-error">{errors.lesseeSignatories[index]!.lastName!.message}</p>
                     )}
                   </div>
-                  <div className="sm:col-span-2">
+                  <div>
+                    <label className="label">Job Title</label>
+                    <input
+                      {...register(`lesseeSignatories.${index}.jobTitle`)}
+                      className="input"
+                      placeholder="e.g. Fleet Manager"
+                    />
+                  </div>
+                  <div>
                     <label className="label">Email <span className="req">*</span></label>
                     <input
                       {...register(`lesseeSignatories.${index}.email`, {

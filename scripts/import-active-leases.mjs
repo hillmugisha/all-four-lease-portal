@@ -1,6 +1,6 @@
 /**
  * import-active-leases.mjs
- * Reads Active Leases.xlsx and bulk-inserts into Supabase current_lease_info table.
+ * Reads Active Leases.xlsx and bulk-inserts into Supabase pritchard_lease_portfolio table.
  *
  * Usage:
  *   node scripts/import-active-leases.mjs
@@ -33,11 +33,11 @@ try {
 }
 
 const SUPABASE_URL  = process.env.NEXT_PUBLIC_SUPABASE_URL  || envVars['NEXT_PUBLIC_SUPABASE_URL']
-const SUPABASE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY || envVars['SUPABASE_SERVICE_ROLE_KEY']
-                   || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || envVars['NEXT_PUBLIC_SUPABASE_ANON_KEY']
+const SUPABASE_KEY  = process.env.SUPABASE_SECRET_KEY || envVars['SUPABASE_SECRET_KEY']
+                   || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || envVars['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY']
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
-  console.error('Missing Supabase credentials. Check .env.local for NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or ANON_KEY)')
+  console.error('Missing Supabase credentials. Check .env.local for NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY (or ANON_KEY)')
   process.exit(1)
 }
 
@@ -86,71 +86,70 @@ const DATE_COLS = new Set([17, 19, 20, 22, 39, 40])
 const NUM_COLS = new Set([
   18,  // odometer
   23,  // net_cap_cost
-  24,  // mon_dep
-  25,  // mon_interest
+  24,  // monthly_depreciation
+  25,  // monthly_interest
   // 26: monthly_tax — kept as text (can be "Paid Upfront", "Exempt", etc.)
-  27,  // mon_payment
-  28,  // residual_resale_quote
-  29,  // annual_miles
+  27,  // monthly_payment
+  28,  // lease_end_residual
+  29,  // annual_miles_limit
   30,  // lease_end_mile_fee
-  32,  // ttl_mo
-  34,  // lease_depreciation_months
-  36,  // upfront_tax_paid
-  41,  // monthly_payment
-  42,  // lender_net_cap_cost
-  43,  // balloon_residual
-  44,  // monthly_depreciation_lender
-  45,  // lender_int_rate_pct
+  // 32: registration_date — stored as text
+  36,  // tax_paid_upfront
+  41,  // monthly_liability_payment
+  42,  // funding_amount
+  43,  // balloon_payment
+  44,  // monthly_depreciation_sl
+  45,  // lender_interest_rate
 ])
 
 // Column index → DB field name
 const COL_MAP = [
-  'new_swap_addition',          // 0   New/Swap/Addition
-  'company',                    // 1   Company
+  'onboard_type',               // 0   New/Swap/Addition
+  'company_name',               // 1   Company
   'customer_type',              // 2   Customer Type
   'customer_name',              // 3   Customer Name
-  'location_driver',            // 4   Location / Driver
-  'payment_method',             // 5   Payment Method
+  'driver',                     // 4   Location / Driver
+  null,                         // 5   Payment Method (removed)
   'billing_address',            // 6   Billing Address
   'billing_city',               // 7   Billing City
   'billing_state',              // 8   Billing State
   'billing_zip_code',           // 9   Billing Zip Code
   'phone',                      // 10  Phone #
   'email_address',              // 11  Email Address
-  'year',                       // 12  Year
+  'model_year',                 // 12  Year
   'make',                       // 13  Make
   'model',                      // 14  Model
   'color',                      // 15  Color
   'vin',                        // 16  VIN
-  'ndvr_delivery_date',         // 17  NDVR/Delivery Date        (date)
+  'ndvr_date',                  // 17  NDVR/Delivery Date        (date)
   'odometer',                   // 18  Odometer                  (num)
   'odometer_date',              // 19  Odometer Date             (date)
   'lease_start_date',           // 20  Lease Start Date          (date)
   'term',                       // 21  Term
   'lease_end_date',             // 22  Lease End Date            (date)
   'net_cap_cost',               // 23  Net Cap Cost              (num)
-  'mon_dep',                    // 24  Mon Dep                   (num)
-  'mon_interest',               // 25  Mon Interest              (num)
+  'monthly_depreciation',       // 24  Mon Dep                   (num)
+  'monthly_interest',           // 25  Mon Interest              (num)
   'monthly_tax',                // 26  Monthly Tax               (text)
-  'mon_payment',                // 27  Mon Payment               (num)
-  'residual_resale_quote',      // 28  Residual / Resale Quote   (num)
-  'annual_miles',               // 29  Annual Miles              (num)
+  'monthly_payment',            // 27  Mon Payment               (num)
+  'lease_end_residual',         // 28  Residual / Resale Quote   (num)
+  'annual_miles_limit',         // 29  Annual Miles              (num)
   'lease_end_mile_fee',         // 30  Lease End Mile Fee        (num)
-  'ttl_state',                  // 31  TTL State
-  'ttl_mo',                     // 32  TTL Mo                    (num)
+  'title_state',                // 31  TTL State
+  'registration_date',          // 32  TTL Mo                    (text)
   'plate_number',               // 33  Plate #
-  'lease_depreciation_months',  // 34  Lease Depreciation (months) (num)
+  null,                         // 34  Lease Depreciation (months) (removed)
   'insurance_expiration_date',  // 35  Copy of Ins (DATE of Expiration) — special handling
-  'upfront_tax_paid',           // 36  Upfront Tax Paid          (num)
-  'lender_lessor',              // 37  Lender / Lessor
-  'loan_lease_number',          // 38  Loan / Lease #
-  'loan_lease_start_date',      // 39  Loan / Lease Start Date   (date)
-  'loan_lease_end_date',        // 40  Loan / Lease End Date     (date)
-  'monthly_payment',            // 41  Monthly Payment           (num)
-  'lender_net_cap_cost',        // 42  Net Cap Cost (lender)     (num)
-  'balloon_residual',           // 43  Balloon / Residual        (num)
-  'monthly_depreciation_lender',// 44  Monthly Depreciation      (num)
-  'lender_int_rate_pct',        // 45  Lender Int. Rate %        (num)
+  'tax_paid_upfront',           // 36  Upfront Tax Paid          (num)
+  'lender',                     // 37  Lender / Lessor
+  'lender_loan_lease_number',   // 38  Loan / Lease #
+  'liability_start_date',       // 39  Loan / Lease Start Date   (date)
+  'liability_end_date',         // 40  Loan / Lease End Date     (date)
+  'monthly_liability_payment',  // 41  Monthly Payment           (num)
+  'funding_amount',             // 42  Net Cap Cost (lender)     (num)
+  'balloon_payment',            // 43  Balloon / Residual        (num)
+  'monthly_depreciation_sl',    // 44  Monthly Depreciation      (num)
+  'lender_interest_rate',       // 45  Lender Int. Rate %        (num)
   'lender_term',                // 46  Term (lender)
 ]
 
@@ -174,6 +173,7 @@ async function main() {
     const record = { lease_status: 'Active' }
 
     COL_MAP.forEach((field, idx) => {
+      if (!field) return
       // insurance_expiration_date handled below
       if (idx === 35) return
 
@@ -211,7 +211,7 @@ async function main() {
   let inserted = 0
   for (let i = 0; i < records.length; i += BATCH) {
     const chunk = records.slice(i, i + BATCH)
-    const { error } = await supabase.from('current_lease_info').insert(chunk)
+    const { error } = await supabase.from('pritchard_lease_portfolio').insert(chunk)
     if (error) {
       console.error(`Error inserting batch ${i}–${i + chunk.length}:`, error.message)
       console.error('First row of failed batch:', JSON.stringify(chunk[0], null, 2))
@@ -221,7 +221,7 @@ async function main() {
     process.stdout.write(`\rInserted ${inserted} / ${records.length}`)
   }
 
-  console.log(`\n✓ Done — ${inserted} records inserted into current_lease_info`)
+  console.log(`\n✓ Done — ${inserted} records inserted into pritchard_lease_portfolio`)
 }
 
 main().catch(err => {

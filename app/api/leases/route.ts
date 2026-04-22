@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabase } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { calculateLease } from '@/lib/calculations'
 import { FinancialInputs } from '@/lib/types'
+import { logAudit } from '@/lib/audit'
+import { getUserEmailFromRequest } from '@/lib/auth-user'
 
 export const dynamic = 'force-dynamic'
 
 // GET /api/leases — return all lease records
 export async function GET() {
   try {
-    const { data, error } = await getSupabase()
+    const { data, error } = await getSupabaseAdmin()
       .from('leases')
       .select('*')
       .or('is_active.is.null,is_active.eq.false')
@@ -75,13 +77,21 @@ export async function POST(req: NextRequest) {
       official_fees_taxes:         calc.officialFeesTaxes,
     }
 
-    const { data, error } = await getSupabase()
+    const { data, error } = await getSupabaseAdmin()
       .from('leases')
       .insert(payload)
       .select()
       .single()
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+    const userEmail = getUserEmailFromRequest(req)
+    await logAudit(userEmail, 'lease.created', data.id, {
+      lessee:  data.lessee_name,
+      lessor:  data.lessor_name,
+      vehicle: `${data.vehicle_year} ${data.vehicle_make} ${data.vehicle_model}`,
+    })
+
     return NextResponse.json(data, { status: 201 })
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 400 })

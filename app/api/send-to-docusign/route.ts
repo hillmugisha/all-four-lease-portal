@@ -15,11 +15,13 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import docusign from 'docusign-esign'
+import { logAudit } from '@/lib/audit'
+import { getUserEmailFromRequest } from '@/lib/auth-user'
 import { getDocuSignClient, getAccountId } from '@/lib/docusign'
-import { renderLease, renderInsuranceAck, renderAchAuthorizationForLessor } from '@/lib/lease-renderer'
+import { renderLease, renderMasterLease, renderInsuranceAck, renderAchAuthorizationForLessor } from '@/lib/lease-renderer'
 import { recordToTemplateData } from '@/lib/lease-adapter'
 import { calculateLease } from '@/lib/calculations'
-import { getSupabase } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import type { LeaseFormData, FinancialInputs, LeaseRecord } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -71,7 +73,13 @@ function buildRecord(raw: LeaseFormData): Omit<LeaseRecord, 'id' | 'created_at' 
     lessor_state:   (raw.lessorState ?? '').toUpperCase(),
     lessor_zip:     raw.lessorZip,
 
-    lessee_name:    raw.lesseeName,
+    lessee_name:       raw.lesseeType === 'individual'
+                         ? `${raw.lesseeFirstName ?? ''} ${raw.lesseeLastName ?? ''}`.trim()
+                         : raw.lesseeName ?? '',
+    lessee_type:       raw.lesseeType || 'business',
+    lessee_first_name: raw.lesseeFirstName  || null,
+    lessee_last_name:  raw.lesseeLastName   || null,
+    lessee_location:   raw.location         || null,
     lessee_address: raw.address,
     lessee_city:    raw.city,
     lessee_state:   (raw.state ?? '').toUpperCase(),
@@ -126,8 +134,12 @@ function buildRecord(raw: LeaseFormData): Omit<LeaseRecord, 'id' | 'created_at' 
     amount_due_at_signing:       c.amountDueAtSigning,
     official_fees_taxes:         c.officialFeesTaxes,
 
-    lessor_signer_title: raw.lessorSignatoryTitle || null,
-    lessor_signer_name:  raw.lessorSignatoryName  || null,
+    lessor_signer_title:   raw.lessorSignatoryTitle            || null,
+    lessor_signer_name:    raw.lessorSignatoryName             || null,
+    customer_signer_title: raw.lesseeSignatories?.[0]?.jobTitle || null,
+
+    is_master_lease: raw.is_master_lease ?? false,
+    vehicles_json:   raw.vehicles_json   || null,
   }
 }
 
@@ -151,7 +163,11 @@ async function renderToPdf(html: string): Promise<Buffer> {
 }
 
 async function generatePdf(record: LeaseRecord): Promise<Buffer> {
-  return renderToPdf(renderLease(recordToTemplateData(record)))
+  const templateData = recordToTemplateData(record)
+  const html = record.is_master_lease
+    ? renderMasterLease(templateData)
+    : renderLease(templateData)
+  return renderToPdf(html)
 }
 
 async function generateInsurancePdf(record: LeaseRecord): Promise<Buffer> {
@@ -168,7 +184,7 @@ function signTab(anchorString: string, documentId?: string): docusign.SignHere {
   return {
     anchorString,
     anchorXOffset:            '0',
-    anchorYOffset:            '-32',
+    anchorYOffset:            '-18',
     anchorUnits:              'pixels',
     anchorIgnoreIfNotPresent: 'true',
     ...(documentId ? { documentId } : {}),
@@ -217,11 +233,14 @@ async function createEnvelope(
     ? `${primary.firstName} ${primary.lastName}`.trim()
     : record.lessee_name
   const lesseeEmail = primary?.email || record.lessee_email
+  const isMasterLease = !!record.is_master_lease
 
-  // ── Document 1: Lease Agreement ──
+  // ── Document 1: Lease Agreement (or Master Lease Agreement) ──
   const leaseDoc: docusign.Document = {
     documentBase64: leasePdfBytes.toString('base64'),
-    name:           `Lease Agreement — ${lesseeName}`,
+    name:           isMasterLease
+      ? `Master Vehicle Lease Agreement — ${record.lessee_name}`
+      : `Lease Agreement — ${lesseeName}`,
     fileExtension:  'pdf',
     documentId:     '1',
   }
@@ -251,44 +270,84 @@ async function createEnvelope(
     routingOrder: '1',
     tabs: {
       signHereTabs: [
-        signTab('\\lessee1_sign\\',    '1'),   // Lease Agreement
+        // Master lease uses \mla_lessee_sign\; regular lease uses \lessee1_sign\
+        isMasterLease
+          ? signTab('\\mla_lessee_sign\\',  '1')
+          : signTab('\\lessee1_sign\\',     '1'),
         signTab('\\ins_lessee1_sign\\', '2'),  // Insurance Acknowledgement
         signTab('\\ach_lessee_sign\\',  '3'),  // ACH Authorization
       ],
       dateSignedTabs: [
-        dateTab('\\lessee1_date\\',    '1'),
+        isMasterLease
+          ? dateTab('\\mla_lessee_date\\',  '1')
+          : dateTab('\\lessee1_date\\',     '1'),
         dateTab('\\ins_lessee1_date\\', '2'),
         dateTab('\\ach_lessee_date\\',  '3'),
       ],
-      textTabs: [
-        // Insurance Agent fields (Document 2) — lessee fills in at signing
-        textTab('\\ins_agent_name\\',    '2', true),
-        textTab('\\ins_agent_address\\', '2', true),
-        textTab('\\ins_agent_city\\',    '2', true),
-        textTab('\\ins_agent_phone\\',   '2', true),
-        // Insurance Company fields (Document 2)
-        textTab('\\ins_co_name\\',       '2', true),
-        textTab('\\ins_co_policy\\',     '2', true),
-        textTab('\\ins_co_effective\\',  '2', true),
-        textTab('\\ins_co_coverage\\',   '2', true),
-        // ACH Authorization fields (Document 3) — lessee fills in at signing
-        { ...textTab('\\ach_billing_address\\', '3', true), tabLabel: 'Billing Address',    width: '300', height: '16' },
-        { ...textTab('\\ach_billing_city\\',    '3', true), tabLabel: 'City, State, Zip',   width: '300', height: '16' },
-        { ...textTab('\\ach_billing_phone\\',   '3', true), tabLabel: 'Phone Number',       width: '160', height: '16' },
-        { ...textTab('\\ach_billing_email\\',   '3', true), tabLabel: 'Email Address',      width: '240', height: '16' },
-        { ...textTab('\\ach_num_payments\\',    '3', true), tabLabel: 'Number of Payments', width: '60',  height: '16', value: String(record.num_payments) },
-        { ...textTab('\\ach_bank_name\\',       '3', true), tabLabel: 'Depository Bank',    width: '300', height: '16' },
-        { ...textTab('\\ach_routing\\',         '3', true), tabLabel: 'Routing Number',     width: '180', height: '16' },
-        { ...textTab('\\ach_account\\',         '3', true), tabLabel: 'Account Number',     width: '200', height: '16' },
+      // Auto-populate "Printed Name of Lessee" on Insurance doc with signer's name
+      fullNameTabs: [
+        {
+          anchorString:            '\\ins_printed_name\\',
+          anchorXOffset:           '0',
+          anchorYOffset:           '-4',
+          anchorUnits:             'pixels',
+          anchorIgnoreIfNotPresent:'true',
+          documentId:              '2',
+          tabLabel:                'Printed Name of Lessee',
+        },
       ],
-      checkboxTabs: [
-        // Frequency checkboxes (Document 3)
-        { anchorString: '\\ach_freq_weekly\\',   documentId: '3', anchorUnits: 'pixels', anchorXOffset: '0', anchorYOffset: '-2', anchorIgnoreIfNotPresent: 'true' },
-        { anchorString: '\\ach_freq_monthly\\',  documentId: '3', anchorUnits: 'pixels', anchorXOffset: '0', anchorYOffset: '-2', anchorIgnoreIfNotPresent: 'true' },
-        { anchorString: '\\ach_freq_annually\\', documentId: '3', anchorUnits: 'pixels', anchorXOffset: '0', anchorYOffset: '-2', anchorIgnoreIfNotPresent: 'true' },
-        // Account type checkboxes (Document 3)
-        { anchorString: '\\ach_account_type_checking\\', documentId: '3', anchorUnits: 'pixels', anchorXOffset: '0', anchorYOffset: '-2', anchorIgnoreIfNotPresent: 'true' },
-        { anchorString: '\\ach_account_type_savings\\',  documentId: '3', anchorUnits: 'pixels', anchorXOffset: '0', anchorYOffset: '-2', anchorIgnoreIfNotPresent: 'true' },
+      textTabs: [
+        // Master lease adds lessee name + title fields on Doc 1
+        ...(isMasterLease ? [
+          { ...textTab('\\mla_lessee_name\\',  '1', true), tabLabel: 'MLA Lessee Print Name' },
+          {
+            ...textTab('\\mla_lessee_title\\', '1', true),
+            tabLabel: 'MLA Lessee Title',
+            ...(record.customer_signer_title ? { value: record.customer_signer_title } : {}),
+          },
+        ] : []),
+        // ── Insurance Agent fields (Doc 2) — each has a unique tabLabel ──
+        { ...textTab('\\ins_agent_name\\',    '2', true), tabLabel: 'Insurance Agent Name' },
+        { ...textTab('\\ins_agent_address\\', '2', true), tabLabel: 'Insurance Agent Address' },
+        { ...textTab('\\ins_agent_city\\',    '2', true), tabLabel: 'Insurance Agent City St Zip' },
+        { ...textTab('\\ins_agent_phone\\',   '2', true), tabLabel: 'Insurance Agent Phone' },
+        // ── Insurance Company fields (Doc 2) — each has a unique tabLabel ──
+        { ...textTab('\\ins_co_name\\',       '2', true), tabLabel: 'Insurance Company Name' },
+        { ...textTab('\\ins_co_policy\\',     '2', true), tabLabel: 'Insurance Policy Number' },
+        { ...textTab('\\ins_co_effective\\',  '2', true), tabLabel: 'Insurance Effective Date' },
+        { ...textTab('\\ins_co_coverage\\',   '2', true), tabLabel: 'Insurance Coverage Amount' },
+        // ── ACH Billing fields (Doc 3) ──
+        { ...textTab('\\ach_billing_address\\', '3', true),  tabLabel: 'ACH Billing Address',    width: '300', height: '16' },
+        { ...textTab('\\ach_billing_city\\',    '3', true),  tabLabel: 'ACH City State Zip',      width: '300', height: '16' },
+        { ...textTab('\\ach_billing_phone\\',   '3', true),  tabLabel: 'ACH Phone Number',        width: '160', height: '16' },
+        { ...textTab('\\ach_billing_email\\',   '3', true),  tabLabel: 'ACH Email Address',       width: '240', height: '16' },
+        { ...textTab('\\ach_num_payments\\',    '3', false), tabLabel: 'ACH Number of Payments',  width: '60',  height: '16', value: String(record.num_payments), locked: 'true' },
+        // ── ACH Depository Bank fields (Doc 3) ──
+        { ...textTab('\\ach_bank_name\\', '3', true), tabLabel: 'ACH Depository Bank',   width: '300', height: '16' },
+        { ...textTab('\\ach_routing\\',   '3', true), tabLabel: 'ACH Routing Number',    width: '180', height: '16' },
+        { ...textTab('\\ach_account\\',   '3', true), tabLabel: 'ACH Account Number',    width: '200', height: '16' },
+      ],
+      // ── Radio groups: mutually exclusive selection ──
+      radioGroupTabs: [
+        // Payment frequency — only one can be selected
+        {
+          documentId: '3',
+          groupName:  'ach_frequency',
+          radios: [
+            { anchorString: '\\ach_freq_weekly\\',   anchorXOffset: '0', anchorYOffset: '-2', anchorUnits: 'pixels', anchorIgnoreIfNotPresent: 'true', value: 'Weekly' },
+            { anchorString: '\\ach_freq_monthly\\',  anchorXOffset: '0', anchorYOffset: '-2', anchorUnits: 'pixels', anchorIgnoreIfNotPresent: 'true', value: 'Monthly' },
+            { anchorString: '\\ach_freq_annually\\', anchorXOffset: '0', anchorYOffset: '-2', anchorUnits: 'pixels', anchorIgnoreIfNotPresent: 'true', value: 'Annually' },
+          ],
+        },
+        // Account type — only one can be selected
+        {
+          documentId: '3',
+          groupName:  'ach_account_type',
+          radios: [
+            { anchorString: '\\ach_account_type_checking\\', anchorXOffset: '0', anchorYOffset: '-2', anchorUnits: 'pixels', anchorIgnoreIfNotPresent: 'true', value: 'Checking' },
+            { anchorString: '\\ach_account_type_savings\\',  anchorXOffset: '0', anchorYOffset: '-2', anchorUnits: 'pixels', anchorIgnoreIfNotPresent: 'true', value: 'Savings' },
+          ],
+        },
       ],
     },
   }
@@ -322,15 +381,17 @@ async function createEnvelope(
       recipientId:  String(nextId),
       routingOrder: '2',
       tabs: {
-        signHereTabs:   [signTab('\\lessor_sign\\', '1')],
-        dateSignedTabs: [dateTab('\\lessor_date\\', '1')],
+        signHereTabs:   [isMasterLease ? signTab('\\mla_lessor_sign\\', '1') : signTab('\\lessor_sign\\', '1')],
+        dateSignedTabs: [isMasterLease ? dateTab('\\mla_lessor_date\\', '1') : dateTab('\\lessor_date\\', '1')],
       },
     })
   }
 
   // ── Envelope ──
   const envelopeDefinition: docusign.EnvelopeDefinition = {
-    emailSubject: `Please sign your lease agreement — ${record.vehicle_year} ${record.vehicle_make} ${record.vehicle_model}`,
+    emailSubject: isMasterLease
+      ? `Please sign the Master Vehicle Lease Agreement — ${record.lessee_name}`
+      : `Please sign your lease agreement — ${record.vehicle_year} ${record.vehicle_make} ${record.vehicle_model}`,
     documents:    [leaseDoc, insuranceDoc, achDoc],
     recipients:   { signers },
     status:       'sent',
@@ -353,7 +414,7 @@ export async function POST(req: NextRequest) {
     const recordData = buildRecord(formData)
 
     // 2. Save to Supabase first so we have an ID even if DocuSign fails
-    const { data: saved, error: insertError } = await getSupabase()
+    const { data: saved, error: insertError } = await getSupabaseAdmin()
       .from('leases')
       .insert(recordData)
       .select()
@@ -386,10 +447,22 @@ export async function POST(req: NextRequest) {
     const envelopeId = await createEnvelope(leasePdfBytes, insurancePdfBytes, achPdfBytes, formData, savedRecord)
 
     // 5. Persist envelope ID and mark as sent
-    await getSupabase()
+    await getSupabaseAdmin()
       .from('leases')
       .update({ doc_status: 'sent', docusign_envelope_id: envelopeId })
       .eq('id', savedRecord.id)
+
+    const userEmail = getUserEmailFromRequest(req)
+    const primary   = formData.lesseeSignatories?.[0]
+    const coLessee  = formData.lesseeSignatories?.[1]
+    await logAudit(userEmail, 'lease.sent_to_docusign', savedRecord.id, {
+      envelope_id: envelopeId,
+      signers: [
+        primary?.email   || savedRecord.lessee_email,
+        coLessee?.email,
+        formData.lessorSignatoryEmail,
+      ].filter(Boolean),
+    })
 
     return NextResponse.json({ envelopeId, leaseId: savedRecord.id }, { status: 201 })
   } catch (err) {

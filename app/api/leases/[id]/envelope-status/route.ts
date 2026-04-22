@@ -25,7 +25,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import docusign from 'docusign-esign'
 import { getDocuSignClient, getAccountId } from '@/lib/docusign'
-import { getSupabase } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
 export const dynamic = 'force-dynamic'
 
@@ -54,7 +54,7 @@ export async function GET(
   { params }: { params: { id: string } },
 ) {
   try {
-    const { data: lease, error } = await getSupabase()
+    const { data: lease, error } = await getSupabaseAdmin()
       .from('leases')
       .select('docusign_envelope_id, doc_status')
       .eq('id', params.id)
@@ -98,14 +98,14 @@ export async function GET(
     // doc_status is updated first in its own query so a missing signed_at column
     // can never prevent the status from being saved.
     if (effectiveStatus !== lease.doc_status) {
-      await getSupabase()
+      await getSupabaseAdmin()
         .from('leases')
         .update({ doc_status: effectiveStatus })
         .eq('id', params.id)
 
       // signed_at is optional — best-effort only
       if (effectiveStatus === 'completed') {
-        await getSupabase()
+        await getSupabaseAdmin()
           .from('leases')
           .update({ signed_at: new Date().toISOString() })
           .eq('id', params.id)

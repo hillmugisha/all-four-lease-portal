@@ -1,13 +1,17 @@
 'use client'
 
-import { useState, useMemo, useRef, useCallback } from 'react'
+import { useState, useMemo, useRef, useEffect, forwardRef, useImperativeHandle } from 'react'
+import { usePersistedColumns } from '@/lib/usePersistedColumns'
+import { useRouter } from 'next/navigation'
 import { VehicleOnOrderRecord } from '@/lib/vehicles-on-order-types'
-import { Eye, RefreshCw, X, Search, ChevronDown, ChevronLeft, ChevronRight, Download } from 'lucide-react'
+import { Columns, X, Search, ChevronDown, ChevronLeft, ChevronRight, Eye, FilePlus, PlusCircle } from 'lucide-react'
+import OrganizeColumnsModal from '@/components/OrganizeColumnsModal'
+import VehiclesOnOrderKPIs from '@/components/VehiclesOnOrderKPIs'
 import clsx from 'clsx'
 import * as XLSX from 'xlsx'
 import { DR, MS } from '@/lib/table-utils'
 
-const PAGE_SIZE = 100
+const PAGE_SIZE = 50
 
 // ─── SHAED Status badge ───────────────────────────────────────────────────────
 
@@ -138,7 +142,7 @@ function ResizableTh({
 }) {
   const startX = useRef<number | null>(null)
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+  function handleMouseDown(e: React.MouseEvent) {
     e.preventDefault()
     startX.current = e.clientX
     function onMove(ev: MouseEvent) {
@@ -153,13 +157,13 @@ function ResizableTh({
     }
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)
-  }, [onResize])
+  }
 
   return (
     <th
       style={{ width, minWidth: 60, position: 'relative' }}
       className={clsx(
-        'select-none border-r border-gray-200 bg-gray-50 px-3 py-2.5 text-left text-xs font-bold uppercase tracking-wide text-gray-500',
+        'select-none border-r border-[#D6E4FF] bg-[#F5F9FF] px-3 py-2.5 text-left text-xs font-bold uppercase tracking-wide text-gray-900',
         className
       )}
     >
@@ -214,60 +218,139 @@ const COLUMNS: ColDef[] = [
   { key: 'order_date',                      label: 'Order Date',                      default: false, width: 120 },
   { key: 'color',                           label: 'Color',                           default: false, width: 180 },
   { key: 'ship_to_location',                label: 'Ship To Location',                default: false, width: 260 },
-  { key: 'target_production_week',          label: 'Target Production Wk',           default: false, width: 160 },
-  { key: 'customer_invoice_number',         label: 'Customer Invoice #',             default: false, width: 150 },
+  { key: 'target_production_week',          label: 'Target Production Wk',            default: false, width: 160 },
+  { key: 'customer_invoice_number',         label: 'Customer Invoice #',              default: false, width: 150 },
   { key: 'invoice_amount',                  label: 'Invoice Amount',                  default: false, width: 130 },
   { key: 'invoice_date',                    label: 'Invoice Date',                    default: false, width: 120 },
-  { key: 'invoice_due_date',               label: 'Invoice Due Date',                default: false, width: 130 },
+  { key: 'invoice_due_date',               label: 'Invoice Due Date',                 default: false, width: 130 },
   { key: 'payment_date',                    label: 'Payment Date',                    default: false, width: 120 },
   { key: 'upfitter_name',                   label: 'Upfitter Name',                   default: false, width: 150 },
-  { key: 'date_received_at_upfitter',       label: 'Rcvd at Upfitter',               default: false, width: 140 },
+  { key: 'date_received_at_upfitter',       label: 'Rcvd at Upfitter',                default: false, width: 140 },
   { key: 'upfit_status',                    label: 'Upfit Status',                    default: false, width: 130 },
-  { key: 'estimated_upfit_completion_date', label: 'Est. Upfit Completion',           default: false, width: 160 },
-  { key: 'actual_upfit_completion_date',    label: 'Actual Upfit Completion',         default: false, width: 160 },
-  { key: 'logistics_status',                label: 'Logistics Status',                default: false, width: 140 },
-  { key: 'expected_delivery_date',          label: 'Expected Delivery',               default: false, width: 140 },
-  { key: 'stage',                           label: 'Stage',                           default: false, width: 100 },
-  { key: 'inventory_type',                  label: 'Inventory Type',                  default: false, width: 120 },
+  { key: 'estimated_upfit_completion_date', label: 'Est. Upfit Completion',            default: false, width: 160 },
+  { key: 'actual_upfit_completion_date',    label: 'Actual Upfit Completion',          default: false, width: 160 },
+  { key: 'logistics_status',                label: 'Logistics Status',                 default: false, width: 140 },
+  { key: 'expected_delivery_date',          label: 'Expected Delivery',                default: false, width: 140 },
+  { key: 'stage',                           label: 'Stage',                            default: false, width: 100 },
+  { key: 'inventory_type',                  label: 'Inventory Type',                   default: false, width: 120 },
 ]
 
-const DEFAULT_WIDTHS = Object.fromEntries(COLUMNS.map((c) => [c.key, c.width])) as Record<ColKey, number>
+const DEFAULT_COLS: ColKey[]                  = COLUMNS.filter((c) => c.default).map((c) => c.key)
+const DEFAULT_WIDTHS: Record<ColKey, number>  = Object.fromEntries(COLUMNS.map((c) => [c.key, c.width])) as Record<ColKey, number>
 
 // ─── Filters ──────────────────────────────────────────────────────────────────
 
 interface Filters {
   search:        string
-  inventoryType: string
-  stage:         string
-  shaedStatus:   string
-  customerName:  string
+  inventoryType: string[]
+  stage:         string[]
+  year:          string[]
+  make:          string[]
+  model:         string[]
+  shaedStatus:   string[]
 }
 
 const EMPTY_FILTERS: Filters = {
-  search: '', inventoryType: '', stage: '', shaedStatus: '', customerName: '',
+  search: '', inventoryType: [], stage: [], year: [], make: [], model: [], shaedStatus: [],
 }
 
-function FilterSelect({
-  label, value, onChange, options, placeholder,
+function MultiSelectFilter({
+  label, selected, onChange, options,
 }: {
-  label: string; value: string; onChange: (v: string) => void; options: string[]; placeholder: string
+  label:    string
+  selected: string[]
+  onChange: (v: string[]) => void
+  options:  string[]
 }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [open])
+
+  function toggleOption(opt: string) {
+    if (selected.includes(opt)) onChange(selected.filter((s) => s !== opt))
+    else onChange([...selected, opt])
+  }
+
   return (
-    <div className="min-w-[130px]">
-      <label className="mb-1 block text-xs font-medium text-gray-500">{label}</label>
-      <div className="relative">
-        <select
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="input py-1.5 text-sm appearance-none pr-7 w-full"
-        >
-          <option value="">{placeholder}</option>
-          {options.map((o) => <option key={o} value={o}>{o}</option>)}
-        </select>
-        <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-      </div>
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className={clsx(
+          'inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors',
+          open
+            ? 'border-brand-500 bg-white text-gray-900 shadow-sm'
+            : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+        )}
+      >
+        <span>{label}</span>
+        {selected.length > 0 && (
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-600 text-[10px] font-bold text-white leading-none">
+            {selected.length}
+          </span>
+        )}
+        <ChevronDown size={13} className={clsx('text-gray-400 transition-transform', open && 'rotate-180')} />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-full z-30 mt-1 min-w-[180px] rounded-lg border border-gray-200 bg-white shadow-lg py-1">
+          <label className="flex cursor-pointer items-center gap-2.5 px-3 py-1.5 hover:bg-gray-50">
+            <input
+              type="checkbox"
+              checked={selected.length === 0}
+              onChange={() => onChange([])}
+              className="h-3.5 w-3.5 rounded border-gray-300 accent-brand-600"
+            />
+            <span className="text-sm text-gray-700">All</span>
+          </label>
+          {options.map((opt) => (
+            <label key={opt} className="flex cursor-pointer items-center gap-2.5 px-3 py-1.5 hover:bg-gray-50">
+              <input
+                type="checkbox"
+                checked={selected.includes(opt)}
+                onChange={() => toggleOption(opt)}
+                className="h-3.5 w-3.5 rounded border-gray-300 accent-brand-600"
+              />
+              <span className="text-sm text-gray-700 whitespace-nowrap">{opt}</span>
+            </label>
+          ))}
+        </div>
+      )}
     </div>
   )
+}
+
+function applyFilters(
+  vehicles: VehicleOnOrderRecord[],
+  f: Filters,
+  exclude?: keyof Filters,
+): VehicleOnOrderRecord[] {
+  const q = exclude === 'search' ? '' : f.search.toLowerCase()
+  return vehicles.filter((v) => {
+    if (exclude !== 'inventoryType' && f.inventoryType.length > 0 && !f.inventoryType.includes(v.inventory_type ?? '')) return false
+    if (exclude !== 'stage'         && f.stage.length > 0         && !f.stage.includes(v.stage ?? ''))                   return false
+    if (exclude !== 'year'          && f.year.length > 0          && !f.year.includes(v.model_year ?? ''))                return false
+    if (exclude !== 'make'          && f.make.length > 0          && !f.make.includes(v.oem ?? ''))                       return false
+    if (exclude !== 'model'         && f.model.length > 0         && !f.model.includes(v.vehicle_line ?? ''))             return false
+    if (exclude !== 'shaedStatus'   && f.shaedStatus.length > 0   && !f.shaedStatus.includes(v.shaed_status ?? ''))       return false
+    if (q) {
+      const hay = [v.stock_number, v.oem, v.oem_order_number, v.vin, v.vehicle_line, v.customer_name, v.oem_status, v.chassis_eta].join(' ').toLowerCase()
+      if (!hay.includes(q)) return false
+    }
+    return true
+  })
+}
+
+function distinct(arr: VehicleOnOrderRecord[], key: (v: VehicleOnOrderRecord) => string | null): string[] {
+  return Array.from(new Set(arr.map(key).filter((x): x is string => x !== null)))
 }
 
 // ─── Excel export ─────────────────────────────────────────────────────────────
@@ -322,297 +405,441 @@ function Cell({ col, vehicle }: { col: ColKey; vehicle: VehicleOnOrderRecord }) 
   return <span className={clsx(col === 'vin' && 'font-mono text-xs')}>{v ?? '—'}</span>
 }
 
+// ─── Public handle type ───────────────────────────────────────────────────────
+
+export interface VehiclesOnOrderTableHandle {
+  createLease: () => void
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function VehiclesOnOrderTable({
-  vehicles,
-  loading,
-  onRefresh,
-}: {
-  vehicles: VehicleOnOrderRecord[]
-  loading:  boolean
-  onRefresh: () => void
-}) {
-  const [filters, setFilters]         = useState<Filters>(EMPTY_FILTERS)
-  const [page, setPage]               = useState(1)
-  const [selected, setSelected]       = useState<VehicleOnOrderRecord | null>(null)
-  const [colWidths, setColWidths]     = useState<Record<ColKey, number>>(DEFAULT_WIDTHS)
-  const [visibleCols, setVisibleCols] = useState<Set<ColKey>>(
-    new Set(COLUMNS.filter((c) => c.default).map((c) => c.key))
-  )
-  const [eyeOpen, setEyeOpen] = useState(false)
-  const eyeRef = useRef<HTMLDivElement>(null)
+const VehiclesOnOrderTable = forwardRef<
+  VehiclesOnOrderTableHandle,
+  {
+    vehicles:          VehicleOnOrderRecord[]
+    loading:           boolean
+    onRefresh:         () => void
+    onSelectionChange?: (count: number) => void
+  }
+>(function VehiclesOnOrderTable({ vehicles, loading, onRefresh: _onRefresh, onSelectionChange }, ref) {
+  const router = useRouter()
+  const [filters, setFilters]               = useState<Filters>(EMPTY_FILTERS)
+  const [page, setPage]                     = useState(1)
+  const [selected, setSelected]             = useState<VehicleOnOrderRecord | null>(null)
+  const [colWidths, setColWidths]           = useState<Record<ColKey, number>>(DEFAULT_WIDTHS)
+  const [visibleCols, setVisibleCols]       = usePersistedColumns('cols:vehicles-on-order', DEFAULT_COLS)
+  const [columnsModalOpen, setColumnsModalOpen] = useState(false)
+  const [checkedIds, setCheckedIds]         = useState<Set<number>>(new Set())
+  const [masterLeaseModalOpen, setMasterLeaseModalOpen] = useState(false)
+  const [pendingVehicles, setPendingVehicles] = useState<VehicleOnOrderRecord[]>([])
 
-  // Close eye dropdown on outside click
-  const handleEyeBlur = useCallback((e: React.FocusEvent) => {
-    if (!eyeRef.current?.contains(e.relatedTarget as Node)) setEyeOpen(false)
-  }, [])
+  const filtered       = useMemo(() => applyFilters(vehicles, filters),                    [vehicles, filters])
+  const inventoryTypes = useMemo(() => distinct(applyFilters(vehicles, filters, 'inventoryType'), (v) => v.inventory_type).sort(), [vehicles, filters])
+  const stages         = useMemo(() => distinct(applyFilters(vehicles, filters, 'stage'),         (v) => v.stage).sort(),          [vehicles, filters])
+  const years          = useMemo(() => distinct(applyFilters(vehicles, filters, 'year'),          (v) => v.model_year).sort((a, b) => b.localeCompare(a)), [vehicles, filters])
+  const makes          = useMemo(() => distinct(applyFilters(vehicles, filters, 'make'),          (v) => v.oem).sort(),             [vehicles, filters])
+  const models         = useMemo(() => distinct(applyFilters(vehicles, filters, 'model'),         (v) => v.vehicle_line).sort(),    [vehicles, filters])
+  const shaedStatuses  = useMemo(() => distinct(applyFilters(vehicles, filters, 'shaedStatus'),   (v) => v.shaed_status).sort(),    [vehicles, filters])
 
-  // Unique filter options derived from data
-  const inventoryTypes = useMemo(() => [...new Set(vehicles.map((v) => v.inventory_type).filter(Boolean))].sort() as string[], [vehicles])
-  const stages         = useMemo(() => [...new Set(vehicles.map((v) => v.stage).filter(Boolean))].sort() as string[], [vehicles])
-  const shaedStatuses  = useMemo(() => [...new Set(vehicles.map((v) => v.shaed_status).filter(Boolean))].sort() as string[], [vehicles])
-  const customerNames  = useMemo(() => [...new Set(vehicles.map((v) => v.customer_name).filter(Boolean))].sort() as string[], [vehicles])
-
-  // Apply filters
-  const filtered = useMemo(() => {
-    const { search, inventoryType, stage, shaedStatus, customerName } = filters
-    const q = search.toLowerCase()
-    return vehicles.filter((v) => {
-      if (inventoryType && v.inventory_type !== inventoryType) return false
-      if (stage        && v.stage          !== stage)         return false
-      if (shaedStatus  && v.shaed_status   !== shaedStatus)   return false
-      if (customerName && v.customer_name  !== customerName)  return false
-      if (q) {
-        const hay = [
-          v.stock_number, v.oem, v.oem_order_number, v.vin,
-          v.vehicle_line, v.customer_name, v.oem_status, v.chassis_eta,
-        ].join(' ').toLowerCase()
-        if (!hay.includes(q)) return false
-      }
-      return true
-    })
-  }, [vehicles, filters])
+  const hasDropdownFilters = filters.inventoryType.length > 0 || filters.stage.length > 0 || filters.year.length > 0 || filters.make.length > 0 || filters.model.length > 0 || filters.shaedStatus.length > 0
 
   const totalPages  = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const currentPage = Math.min(page, totalPages)
   const paginated   = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
-  const hasFilters = Object.values(filters).some(Boolean)
+  const pageNumbers = useMemo((): (number | string)[] => {
+    const visible = Array.from({ length: totalPages }, (_, i) => i + 1)
+      .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 2)
+    const result: (number | string)[] = []
+    visible.forEach((p, idx) => {
+      if (idx > 0 && p - (visible[idx - 1]) > 1) result.push('…')
+      result.push(p)
+    })
+    return result
+  }, [totalPages, currentPage])
+
+  const allChecked  = filtered.length > 0 && filtered.every((v) => checkedIds.has(v.id))
+  const someChecked = filtered.some((v) => checkedIds.has(v.id))
+
+  function toggleAll() {
+    setCheckedIds(allChecked ? new Set() : new Set(filtered.map((v) => v.id)))
+  }
+  function toggleId(id: number) {
+    setCheckedIds((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next })
+  }
+
+  useEffect(() => {
+    onSelectionChange?.(checkedIds.size)
+  }, [checkedIds, onSelectionChange])
+
+  // Mutable ref so useImperativeHandle always calls the latest version
+  const handleGenerateLeaseRef = useRef<() => void>(() => {})
+
+  function handleGenerateLease() {
+    const sel = filtered.filter((v) => checkedIds.has(v.id))
+    if (sel.length === 0) return
+    if (sel.length > 1) {
+      setPendingVehicles(sel)
+      setMasterLeaseModalOpen(true)
+      return
+    }
+    routeToSingleLease(sel[0])
+  }
+
+  handleGenerateLeaseRef.current = handleGenerateLease
+
+  useImperativeHandle(ref, () => ({
+    createLease: () => handleGenerateLeaseRef.current(),
+  }), [])
+
+  function routeToSingleLease(vehicle: VehicleOnOrderRecord) {
+    const params = new URLSearchParams()
+    if (vehicle.vin)          params.set('vin',   vehicle.vin)
+    if (vehicle.model_year)   params.set('year',  vehicle.model_year)
+    if (vehicle.oem)          params.set('make',  vehicle.oem)
+    if (vehicle.vehicle_line) params.set('model', vehicle.vehicle_line)
+    router.push(`/new-lease?${params.toString()}`)
+  }
+
+  function confirmMasterLease() {
+    const summaries = pendingVehicles.map((v) => ({
+      id:           v.id,
+      vin:          v.vin ?? null,
+      model_year:   v.model_year ?? null,
+      oem:          v.oem ?? null,
+      vehicle_line: v.vehicle_line ?? null,
+      color:        v.color ?? null,
+    }))
+    sessionStorage.setItem('masterLeaseVehicles', JSON.stringify(summaries))
+    setMasterLeaseModalOpen(false)
+    router.push('/new-lease?masterLease=true')
+  }
+
+  function declineMasterLease() {
+    const first = pendingVehicles[0]
+    setMasterLeaseModalOpen(false)
+    if (first) routeToSingleLease(first)
+  }
 
   function resize(key: ColKey, delta: number) {
     setColWidths((prev) => ({ ...prev, [key]: Math.max(60, (prev[key] ?? 120) + delta) }))
   }
 
-  function toggleCol(key: ColKey) {
-    setVisibleCols((prev) => {
-      const next = new Set(prev)
-      next.has(key) ? next.delete(key) : next.add(key)
-      return next
-    })
-  }
-
-  const visibleDefs = COLUMNS.filter((c) => visibleCols.has(c.key))
+  const visibleDefs = visibleCols
+    .map((k) => COLUMNS.find((c) => c.key === k)!)
+    .filter(Boolean)
 
   return (
     <div className="flex flex-col gap-4">
 
-      {/* ── Toolbar ── */}
-      <div className="flex flex-wrap items-end gap-3">
+      {/* ── Total Vehicles banner ── */}
+      <div className="rounded-lg border border-brand-200 bg-brand-50 px-5 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">Total Vehicles On Order</p>
+          <p className="text-2xl font-bold text-brand-700">{vehicles.length.toLocaleString()}</p>
+        </div>
+      </div>
 
-        {/* Search */}
-        <div className="relative min-w-[200px] flex-1">
-          <label className="mb-1 block text-xs font-medium text-gray-500">Search</label>
+      {/* ── KPI status cards ── */}
+      <div>
+        <VehiclesOnOrderKPIs
+          vehicles={vehicles}
+          onFilterByStatus={(statuses) => {
+            setFilters((f) => ({ ...f, shaedStatus: statuses }))
+            setPage(1)
+          }}
+        />
+      </div>
+
+      {/* ── Filter dropdowns ── */}
+      <div className="flex flex-wrap items-center gap-[17px] mt-4">
+        <MultiSelectFilter
+          label="Inventory Type"
+          selected={filters.inventoryType}
+          onChange={(v) => { setFilters((f) => ({ ...f, inventoryType: v })); setPage(1) }}
+          options={inventoryTypes}
+        />
+        <MultiSelectFilter
+          label="Stage"
+          selected={filters.stage}
+          onChange={(v) => { setFilters((f) => ({ ...f, stage: v })); setPage(1) }}
+          options={stages}
+        />
+        <MultiSelectFilter
+          label="Year"
+          selected={filters.year}
+          onChange={(v) => { setFilters((f) => ({ ...f, year: v })); setPage(1) }}
+          options={years}
+        />
+        <MultiSelectFilter
+          label="Make"
+          selected={filters.make}
+          onChange={(v) => { setFilters((f) => ({ ...f, make: v })); setPage(1) }}
+          options={makes}
+        />
+        <MultiSelectFilter
+          label="Model"
+          selected={filters.model}
+          onChange={(v) => { setFilters((f) => ({ ...f, model: v })); setPage(1) }}
+          options={models}
+        />
+        <MultiSelectFilter
+          label="SHAED Status"
+          selected={filters.shaedStatus}
+          onChange={(v) => { setFilters((f) => ({ ...f, shaedStatus: v })); setPage(1) }}
+          options={shaedStatuses}
+        />
+        {hasDropdownFilters && (
+          <button
+            onClick={() => { setFilters(EMPTY_FILTERS); setPage(1) }}
+            className="inline-flex items-center gap-1.5 rounded-md border border-red-300 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-100 hover:border-red-400 transition-colors"
+          >
+            <X size={12} /> Clear filters
+          </button>
+        )}
+      </div>
+
+      {/* ── Table card ── */}
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+
+        {/* Toolbar: count left · search + buttons right */}
+        <div className="flex items-center gap-3 border-b border-gray-200 px-5 py-3">
+          <p className="text-xs text-gray-500 shrink-0 mr-auto">
+            {filtered.length.toLocaleString()} of {vehicles.length.toLocaleString()} vehicles
+          </p>
+
+          {/* Search */}
           <div className="relative">
             <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
             <input
               type="text"
-              placeholder="Stock #, VIN, OEM, vehicle line…"
+              placeholder="Search by Stock #, VIN, OEM…"
               value={filters.search}
               onChange={(e) => { setFilters((f) => ({ ...f, search: e.target.value })); setPage(1) }}
-              className="input pl-7 py-1.5 text-sm w-full"
+              className="input pl-7 py-1.5 text-sm w-80"
             />
+            {filters.search && (
+              <button
+                onClick={() => { setFilters((f) => ({ ...f, search: '' })); setPage(1) }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X size={13} />
+              </button>
+            )}
           </div>
+
+          <button
+            onClick={() => setColumnsModalOpen(true)}
+            className="btn-secondary py-1.5 text-xs flex items-center gap-1.5"
+          >
+            <Columns size={13} /> Columns
+          </button>
+          <button disabled className="inline-flex items-center gap-1.5 rounded-md border border-brand-600 bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm opacity-40 cursor-not-allowed">
+            <PlusCircle size={13} /> Add Vehicle
+          </button>
+          <button onClick={() => exportToExcel(filtered)} className="btn-secondary py-1.5 text-xs flex items-center gap-1.5">
+            <FilePlus size={13} /> Export
+          </button>
         </div>
 
-        {/* Inventory Type */}
-        <FilterSelect
-          label="Inventory Type"
-          value={filters.inventoryType}
-          onChange={(v) => { setFilters((f) => ({ ...f, inventoryType: v })); setPage(1) }}
-          options={inventoryTypes}
-          placeholder="All types"
-        />
-
-        {/* Stage */}
-        <FilterSelect
-          label="Stage"
-          value={filters.stage}
-          onChange={(v) => { setFilters((f) => ({ ...f, stage: v })); setPage(1) }}
-          options={stages}
-          placeholder="All stages"
-        />
-
-        {/* Customer Name */}
-        <FilterSelect
-          label="Customer Name"
-          value={filters.customerName}
-          onChange={(v) => { setFilters((f) => ({ ...f, customerName: v })); setPage(1) }}
-          options={customerNames}
-          placeholder="All customers"
-        />
-
-        {/* SHAED Status */}
-        <div className="min-w-[170px]">
-          <label className="mb-1 block text-xs font-medium text-gray-500">SHAED Status</label>
-          <div className="relative">
-            <select
-              value={filters.shaedStatus}
-              onChange={(e) => { setFilters((f) => ({ ...f, shaedStatus: e.target.value })); setPage(1) }}
-              className="input py-1.5 text-sm appearance-none pr-7 w-full"
-            >
-              <option value="">All statuses</option>
-              {shaedStatuses.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-            <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-          </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm border-collapse" style={{ tableLayout: 'fixed' }}>
+            <thead>
+              <tr>
+                <th style={{ width: 40, minWidth: 40 }} className="border-r border-[#D6E4FF] bg-[#F5F9FF] px-3 py-2.5">
+                  <input
+                    type="checkbox"
+                    checked={allChecked}
+                    ref={(el) => { if (el) el.indeterminate = someChecked && !allChecked }}
+                    onChange={toggleAll}
+                    className="h-3.5 w-3.5 rounded border-gray-300"
+                  />
+                </th>
+                <th style={{ width: 70, minWidth: 70 }} className="border-r border-[#D6E4FF] bg-[#F5F9FF] px-3 py-2.5 text-xs font-bold uppercase tracking-wide text-gray-900">Details</th>
+                {visibleDefs.map((col) => (
+                  <ResizableTh
+                    key={col.key}
+                    width={colWidths[col.key]}
+                    onResize={(d) => resize(col.key, d)}
+                  >
+                    {col.label}
+                  </ResizableTh>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                Array.from({ length: 8 }).map((_, i) => (
+                  <tr key={i} className="border-t border-gray-100">
+                    <td className="px-3 py-2.5" />
+                    <td className="px-3 py-2.5" />
+                    {visibleDefs.map((col) => (
+                      <td key={col.key} className="px-3 py-2.5">
+                        <div className="h-3 rounded bg-gray-100 animate-pulse" />
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              ) : paginated.length === 0 ? (
+                <tr>
+                  <td colSpan={visibleDefs.length + 2} className="px-6 py-12 text-center text-sm text-gray-400">
+                    No vehicles match the current search.
+                  </td>
+                </tr>
+              ) : (
+                paginated.map((vehicle) => (
+                  <tr
+                    key={vehicle.id}
+                    className={clsx(
+                      'border-t border-gray-100 hover:bg-gray-50 transition-colors',
+                      checkedIds.has(vehicle.id) && 'bg-brand-50'
+                    )}
+                  >
+                    <td className="border-r border-gray-100 px-3 py-2.5">
+                      <input
+                        type="checkbox"
+                        checked={checkedIds.has(vehicle.id)}
+                        onChange={() => toggleId(vehicle.id)}
+                        className="h-3.5 w-3.5 rounded border-gray-300"
+                      />
+                    </td>
+                    <td className="px-3 py-2.5 text-center">
+                      <button
+                        onClick={() => setSelected(vehicle)}
+                        className="rounded p-1 text-teal-500 hover:bg-teal-50 transition-colors"
+                        title="View details"
+                      >
+                        <Eye size={14} />
+                      </button>
+                    </td>
+                    {visibleDefs.map((col) => (
+                      <td
+                        key={col.key}
+                        className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2.5 text-gray-700"
+                        style={{ maxWidth: colWidths[col.key] }}
+                        title={vehicle[col.key] ?? undefined}
+                      >
+                        <Cell col={col.key} vehicle={vehicle} />
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
 
-        {/* Clear filters */}
-        {hasFilters && (
-          <div className="self-end">
-            <button onClick={() => { setFilters(EMPTY_FILTERS); setPage(1) }} className="btn-secondary py-1.5 text-xs">
-              <X size={12} /> Clear
-            </button>
+        {/* ── Pagination ── */}
+        {!loading && totalPages > 1 && (
+          <div className="flex items-center justify-between border-t border-gray-200 px-5 py-3">
+            <p className="text-xs text-gray-500">
+              Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filtered.length)} of {filtered.length}
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage(1)}
+                disabled={currentPage === 1}
+                className="rounded px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                «
+              </button>
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="inline-flex items-center gap-0.5 rounded px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft size={13} /> Prev
+              </button>
+
+              {pageNumbers.map((p, i) =>
+                typeof p === 'string' ? (
+                  <span key={`ellipsis-${i}`} className="px-1 text-xs text-gray-400">…</span>
+                ) : (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className={clsx(
+                      'min-w-[28px] rounded px-2 py-1 text-xs font-medium',
+                      currentPage === p
+                        ? 'bg-brand-600 text-white'
+                        : 'text-gray-600 hover:bg-gray-100'
+                    )}
+                  >
+                    {p}
+                  </button>
+                )
+              )}
+
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="inline-flex items-center gap-0.5 rounded px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Next <ChevronRight size={13} />
+              </button>
+              <button
+                onClick={() => setPage(totalPages)}
+                disabled={currentPage === totalPages}
+                className="rounded px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                »
+              </button>
+            </div>
           </div>
         )}
 
-        {/* Spacer */}
-        <div className="flex-1" />
-
-        {/* Column visibility */}
-        <div className="self-end relative" ref={eyeRef} onBlur={handleEyeBlur} tabIndex={-1}>
-          <button
-            onClick={() => setEyeOpen((o) => !o)}
-            className="btn-secondary py-1.5 text-xs flex items-center gap-1.5"
-          >
-            <Eye size={14} /> Columns
-          </button>
-          {eyeOpen && (
-            <div className="absolute right-0 top-full mt-1 z-30 w-64 rounded-lg border border-gray-200 bg-white shadow-lg p-3 max-h-80 overflow-y-auto">
-              <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Toggle Columns</p>
-              {COLUMNS.map((col) => (
-                <label key={col.key} className="flex items-center gap-2 py-1 cursor-pointer text-sm text-gray-700 hover:text-gray-900">
-                  <input
-                    type="checkbox"
-                    checked={visibleCols.has(col.key)}
-                    onChange={() => toggleCol(col.key)}
-                    className="rounded border-gray-300 text-brand-600 focus:ring-brand-500"
-                  />
-                  {col.label}
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Export */}
-        <div className="self-end">
-          <button onClick={() => exportToExcel(filtered)} className="btn-secondary py-1.5 text-xs flex items-center gap-1.5">
-            <Download size={14} /> Export
-          </button>
-        </div>
-
-        {/* Refresh */}
-        <div className="self-end">
-          <button onClick={onRefresh} className="btn-secondary py-1.5 text-xs flex items-center gap-1.5" disabled={loading}>
-            <RefreshCw size={14} className={clsx(loading && 'animate-spin')} /> Refresh
-          </button>
-        </div>
       </div>
-
-      {/* ── Results summary ── */}
-      <p className="text-xs text-gray-500">
-        Showing {filtered.length.toLocaleString()} of {vehicles.length.toLocaleString()} vehicles
-        {hasFilters && <> &nbsp;·&nbsp; <button className="text-brand-600 hover:underline" onClick={() => setFilters(EMPTY_FILTERS)}>Clear filters</button></>}
-      </p>
-
-      {/* ── Table ── */}
-      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
-        <table className="w-full text-sm border-collapse" style={{ tableLayout: 'fixed' }}>
-          <thead>
-            <tr>
-              <th className="w-10 border-r border-gray-200 bg-gray-50 px-3 py-2.5" />
-              {visibleDefs.map((col) => (
-                <ResizableTh
-                  key={col.key}
-                  width={colWidths[col.key]}
-                  onResize={(d) => resize(col.key, d)}
-                >
-                  {col.label}
-                </ResizableTh>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              Array.from({ length: 8 }).map((_, i) => (
-                <tr key={i} className="border-t border-gray-100">
-                  <td className="px-3 py-2.5" />
-                  {visibleDefs.map((col) => (
-                    <td key={col.key} className="px-3 py-2.5">
-                      <div className="h-3 rounded bg-gray-100 animate-pulse" />
-                    </td>
-                  ))}
-                </tr>
-              ))
-            ) : paginated.length === 0 ? (
-              <tr>
-                <td colSpan={visibleDefs.length + 1} className="px-6 py-12 text-center text-sm text-gray-400">
-                  No vehicles match the current filters.
-                </td>
-              </tr>
-            ) : (
-              paginated.map((vehicle) => (
-                <tr
-                  key={vehicle.id}
-                  className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
-                >
-                  <td className="px-3 py-2.5 text-center">
-                    <button
-                      onClick={() => setSelected(vehicle)}
-                      className="rounded p-1 text-gray-400 hover:bg-gray-200 hover:text-gray-700 transition-colors"
-                      title="View details"
-                    >
-                      <Eye size={14} />
-                    </button>
-                  </td>
-                  {visibleDefs.map((col) => (
-                    <td
-                      key={col.key}
-                      className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2.5 text-gray-700"
-                      style={{ maxWidth: colWidths[col.key] }}
-                      title={vehicle[col.key] ?? undefined}
-                    >
-                      <Cell col={col.key} vehicle={vehicle} />
-                    </td>
-                  ))}
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* ── Pagination ── */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between text-sm text-gray-500">
-          <span>Page {currentPage} of {totalPages}</span>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="rounded p-1.5 hover:bg-gray-100 disabled:opacity-40"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className="rounded p-1.5 hover:bg-gray-100 disabled:opacity-40"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* ── Detail modal ── */}
       {selected && (
         <VehicleDetailModal vehicle={selected} onClose={() => setSelected(null)} />
       )}
+
+      {/* ── Organize Columns modal ── */}
+      {columnsModalOpen && (
+        <OrganizeColumnsModal
+          allColumns={COLUMNS}
+          defaultCols={DEFAULT_COLS}
+          visible={visibleCols}
+          onApply={(cols) => setVisibleCols(cols as ColKey[])}
+          onClose={() => setColumnsModalOpen(false)}
+        />
+      )}
+
+      {/* ── Master Lease modal ── */}
+      {masterLeaseModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          onClick={(e) => e.target === e.currentTarget && setMasterLeaseModalOpen(false)}
+        >
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMasterLeaseModalOpen(false)} />
+          <div className="relative z-10 w-full max-w-md rounded-xl bg-white shadow-2xl p-6">
+            <h2 className="text-base font-semibold text-gray-900 mb-2">
+              Create New Lease for {pendingVehicles.length} Vehicles
+            </h2>
+            <p className="text-sm text-gray-600 mb-5">
+              You&apos;ve selected <strong>{pendingVehicles.length} vehicles</strong>. Are you creating a
+              Master Vehicle Lease Agreement (MLA) that covers all of them under one contract?
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={confirmMasterLease}
+                className="btn-primary w-full justify-center"
+              >
+                Yes &mdash; Create Master Lease Agreement
+              </button>
+              <button
+                onClick={declineMasterLease}
+                className="btn-secondary w-full justify-center"
+              >
+                No &mdash; Individual Lease (first vehicle only)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
-}
+})
+
+export default VehiclesOnOrderTable

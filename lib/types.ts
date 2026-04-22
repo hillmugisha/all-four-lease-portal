@@ -12,18 +12,35 @@ export interface LessorInfo {
 export interface LesseeInfo {
   // Lease classification (required before preview/send)
   leaseType: string
+  contractStructure: string
   customerType: string
   vehicleUse: string
   department?: string       // only when customerType = 'Internal'
   departmentOther?: string  // only when department = 'Other'
 
-  lesseeName: string
+  // Business vs individual selector — empty string means not yet chosen
+  lesseeType: 'business' | 'individual' | ''
+
+  // Business fields
+  lesseeName: string        // Business name
+  location?: string         // Optional business location descriptor
+
+  // Individual fields
+  lesseeFirstName?: string
+  lesseeLastName?: string
+
+  // Shared contact fields
   address: string
   city: string
   state: string
   zip: string
   phone: string
   email: string
+
+  // Billing contact — form-only, NOT saved to DB or templates
+  billingContactFirstName?: string
+  billingContactLastName?: string
+  billingContactEmail?: string
 }
 
 export interface VehicleInfo {
@@ -84,6 +101,7 @@ export interface SignatoryEntry {
   firstName: string
   lastName: string
   email: string
+  jobTitle?: string
 }
 
 export interface SignaturesInfo {
@@ -93,8 +111,24 @@ export interface SignaturesInfo {
   lessorSignatoryTitle: string
 }
 
+// Summary of a vehicle from the Vehicles on Order table, used for master leases
+export interface VehicleOnOrderSummary {
+  id:           number
+  vin:          string | null
+  model_year:   string | null
+  oem:          string | null
+  vehicle_line: string | null
+  color:        string | null
+  // Editable fields added by the sales person in the Vehicle step
+  body_style?:  string | null
+  odometer?:    string | null
+}
+
 // All steps combined into one lease record
-export type LeaseFormData = LessorInfo & LesseeInfo & VehicleInfo & FinancialInputs & SignaturesInfo
+export type LeaseFormData = LessorInfo & LesseeInfo & VehicleInfo & FinancialInputs & SignaturesInfo & {
+  is_master_lease?: boolean
+  vehicles_json?:   string   // JSON-stringified VehicleOnOrderSummary[]
+}
 
 // ─── Calculated fields (derived from FinancialInputs) ────────────────────────
 
@@ -137,6 +171,18 @@ export interface LeaseRecord {
   lessee_zip: string
   lessee_phone: string | null
   lessee_email: string
+  lessee_type?: 'business' | 'individual' | null
+  lessee_first_name?: string | null
+  lessee_last_name?: string | null
+  lessee_location?: string | null
+
+  // Lease classification
+  lease_type?:          string | null
+  contract_structure?:  string | null
+  customer_type?:       string | null
+  vehicle_use?:         string | null
+  department?:          string | null
+  department_other?:    string | null
 
   // Lease
   lease_date: string
@@ -194,10 +240,25 @@ export interface LeaseRecord {
   lessor_signer_title?:   string | null
   customer_signer_name?:  string | null
   customer_signer_email?: string | null
+  customer_signer_title?: string | null
   co_lessee_signer_name?: string | null  // in-memory only, never inserted
   lessor_signer_name?:    string | null
   docusign_envelope_id?:  string | null
   signed_at?:             string | null
+
+  // ACH Authorization fields — filled by sales person before sending
+  ach_billing_address?: string | null
+  ach_billing_city?:    string | null
+  ach_billing_phone?:   string | null
+  ach_billing_email?:   string | null
+  ach_bank_name?:       string | null
+  ach_routing_number?:  string | null
+  ach_account_number?:  string | null
+  ach_account_type?:    'checking' | 'savings' | null
+
+  // Master Lease Agreement fields
+  is_master_lease?: boolean | null
+  vehicles_json?:   string | null   // JSON-stringified VehicleOnOrderSummary[]
 
   // Activation — set when a completed lease is promoted to Current Leases
   is_active?:    boolean | null

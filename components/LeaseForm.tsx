@@ -4,6 +4,97 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
 import { LeaseFormData, LeaseRecord } from '@/lib/types'
+
+// ─── Map a saved LeaseRecord back to form fields for editing ─────────────────
+function recordToFormData(record: LeaseRecord): Partial<LeaseFormData> {
+  // Prefer the stored signer name; fall back to the lessee name so first/last are never blank
+  const rawSignerName = (record.customer_signer_name ?? record.lessee_name ?? '').trim()
+  const lastSpace     = rawSignerName.lastIndexOf(' ')
+  const signerFirst   = lastSpace > 0 ? rawSignerName.slice(0, lastSpace) : rawSignerName
+  const signerLast    = lastSpace > 0 ? rawSignerName.slice(lastSpace + 1) : ''
+
+  return {
+    // Lessor
+    lessorName:    record.lessor_name,
+    lessorAddress: record.lessor_address,
+    lessorPoBox:   record.lessor_po_box   ?? '',
+    lessorCity:    record.lessor_city,
+    lessorState:   record.lessor_state,
+    lessorZip:     record.lessor_zip,
+
+    // Lease classification
+    leaseType:         record.lease_type          ?? 'Core',
+    contractStructure: record.contract_structure  ?? 'Closed-End Lease',
+    customerType:      record.customer_type       ?? 'Business',
+    vehicleUse:        record.vehicle_use         ?? 'Standard Customer Use',
+    department:        record.department          ?? '',
+    departmentOther:   record.department_other    ?? '',
+
+    // Lessee
+    lesseeType:      record.lessee_type       ?? 'business',
+    lesseeName:      record.lessee_name,
+    lesseeFirstName: record.lessee_first_name ?? '',
+    lesseeLastName:  record.lessee_last_name  ?? '',
+    location:        record.lessee_location   ?? '',
+    address:         record.lessee_address,
+    city:            record.lessee_city,
+    state:           record.lessee_state,
+    zip:             record.lessee_zip,
+    phone:           record.lessee_phone  ?? '',
+    email:           record.lessee_email,
+
+    // Vehicle
+    condition: record.vehicle_condition,
+    year:      record.vehicle_year,
+    make:      record.vehicle_make,
+    model:     record.vehicle_model,
+    bodyStyle: record.vehicle_body_style,
+    vin:       record.vehicle_vin,
+    odometer:  record.vehicle_odometer ?? '',
+
+    // Lease terms
+    leaseDate:        record.lease_date,
+    numPayments:      record.num_payments,
+    firstPaymentDate: record.first_payment_date,
+    paymentDay:       record.payment_day,
+
+    // Financials
+    vehicleAgreedValue:  record.vehicle_agreed_value,
+    taxes:               record.taxes,
+    titleRegFees:        record.title_reg_fees,
+    acquisitionFee:      record.acquisition_fee,
+    docFee:              record.doc_fee,
+    priorLeaseBalance:   record.prior_lease_balance,
+    optionalProducts:    record.optional_products,
+    capCostReduction:    record.cap_cost_reduction,
+    residualValue:       record.residual_value,
+    rentCharge:          record.rent_charge,
+    monthlySalesTax:     record.monthly_sales_tax,
+    milesPerYear:        record.miles_per_year,
+    excessMileageRate:   record.excess_mileage_rate,
+    dispositionFee:      record.disposition_fee,
+    earlyTerminationFee: record.early_termination_fee,
+    purchaseOptionFee:   record.purchase_option_fee,
+
+    // Trade-in
+    tradeinYear:           record.tradein_year          ?? '',
+    tradeinMake:           record.tradein_make          ?? '',
+    tradeinModel:          record.tradein_model         ?? '',
+    tradeinGrossAllowance: record.tradein_gross_allowance,
+    tradeinPriorBalance:   record.tradein_prior_balance,
+
+    // Signatories
+    lessorSignatoryName:  record.lessor_signer_name  ?? 'Jim Liverseed',
+    lessorSignatoryTitle: record.lessor_signer_title ?? 'Lease Sales Consultant',
+    lessorSignatoryEmail: 'hill.mugisha@pritchards.com',
+    lesseeSignatories: [{
+      firstName: signerFirst,
+      lastName:  signerLast,
+      email:     record.customer_signer_email ?? record.lessee_email,
+    }],
+
+  }
+}
 import { calculateLease } from '@/lib/calculations'
 import Step1Parties    from './steps/Step1Parties'
 import Step3Vehicle    from './steps/Step3Vehicle'
@@ -11,6 +102,7 @@ import Step4Financials from './steps/Step4Financials'
 import Step5Review     from './steps/Step5Review'
 import Step5Signatures from './steps/Step5Signatures'
 import { ChevronLeft, ChevronRight, FileDown, Loader2, Check, Save } from 'lucide-react'
+import type { VehicleOnOrderSummary } from '@/lib/types'
 import clsx from 'clsx'
 
 const STEPS = [
@@ -31,9 +123,16 @@ const DEFAULT_VALUES: Partial<LeaseFormData> = {
   lessorZip:     '50428',
 
   // Lease classification
-  leaseType:    'Closed-End Lease',
-  customerType: 'Business',
-  vehicleUse:   'Standard Customer Use',
+  leaseType:         'Core',
+  contractStructure: 'Closed-End Lease',
+  customerType:      'Business',
+  vehicleUse:        'Standard Customer Use',
+
+  // Lessee type — starts unset so fields are hidden until user picks
+  lesseeType:      '',
+  lesseeFirstName: '',
+  lesseeLastName:  '',
+  location:        '',
 
   // Vehicle
   condition: 'NEW',
@@ -65,9 +164,24 @@ const DEFAULT_VALUES: Partial<LeaseFormData> = {
   lessorSignatoryName:   'Jim Liverseed',
   lessorSignatoryTitle:  'Lease Sales Consultant',
   lessorSignatoryEmail:  'hill.mugisha@pritchards.com',
+
 }
 
-export default function LeaseForm() {
+interface VehiclePrefill { vin: string; year: string; make: string; model: string }
+
+export default function LeaseForm({
+  vehiclePrefill,
+  editRecord,
+  onEditComplete,
+  isMasterLease,
+  masterLeaseVehicles,
+}: {
+  vehiclePrefill?:       VehiclePrefill | null
+  editRecord?:           LeaseRecord    | null
+  onEditComplete?:       () => void
+  isMasterLease?:        boolean
+  masterLeaseVehicles?:  VehicleOnOrderSummary[]
+}) {
   const router = useRouter()
   const [step, setStep]       = useState(1)
   const [saving, setSaving]         = useState(false)
@@ -76,7 +190,30 @@ export default function LeaseForm() {
   const [saveError, setSaveError]   = useState<string | null>(null)
   const [done, setDone]             = useState(false)
 
-  const form = useForm<LeaseFormData>({ defaultValues: DEFAULT_VALUES, mode: 'onTouched' })
+  const form = useForm<LeaseFormData>({
+    defaultValues: {
+      ...DEFAULT_VALUES,
+      ...(editRecord    ? recordToFormData(editRecord) : {}),
+      ...(vehiclePrefill ? {
+        vin:   vehiclePrefill.vin,
+        year:  vehiclePrefill.year,
+        make:  vehiclePrefill.make,
+        model: vehiclePrefill.model,
+      } : {}),
+      ...(isMasterLease ? {
+        is_master_lease: true,
+        vehicles_json:   JSON.stringify(masterLeaseVehicles ?? []),
+        // Placeholder vehicle fields so form doesn't fail required validation
+        condition: 'NEW',
+        vin:       masterLeaseVehicles?.[0]?.vin ?? '',
+        year:      masterLeaseVehicles?.[0]?.model_year ?? '',
+        make:      masterLeaseVehicles?.[0]?.oem ?? '',
+        model:     masterLeaseVehicles?.[0]?.vehicle_line ?? '',
+        bodyStyle: '',
+      } : {}),
+    },
+    mode: 'onTouched',
+  })
 
   // ── Free navigation: click any step to jump ──────────────────────────────
   function goToStep(target: number) {
@@ -101,7 +238,13 @@ export default function LeaseForm() {
       lessor_state:   (raw.lessorState ?? '').toUpperCase(),
       lessor_zip:     raw.lessorZip,
 
-      lessee_name:           raw.lesseeName,
+      lessee_name:           raw.lesseeType === 'individual'
+                               ? `${raw.lesseeFirstName ?? ''} ${raw.lesseeLastName ?? ''}`.trim()
+                               : raw.lesseeName ?? '',
+      lessee_type:           raw.lesseeType || 'business',
+      lessee_first_name:     raw.lesseeFirstName  || null,
+      lessee_last_name:      raw.lesseeLastName   || null,
+      lessee_location:       raw.location         || null,
       lessee_address:        raw.address,
       lessee_city:           raw.city,
       lessee_state:          (raw.state ?? '').toUpperCase(),
@@ -110,6 +253,12 @@ export default function LeaseForm() {
       lessee_email:          raw.email,
 
       lease_date:            raw.leaseDate,
+      lease_type:            raw.leaseType         || null,
+      contract_structure:    raw.contractStructure || null,
+      customer_type:         raw.customerType      || null,
+      vehicle_use:           raw.vehicleUse        || null,
+      department:            raw.department        || null,
+      department_other:      raw.departmentOther   || null,
 
       vehicle_condition:     raw.condition,
       vehicle_year:          raw.year,
@@ -147,6 +296,9 @@ export default function LeaseForm() {
 
       lessor_signer_title: raw.lessorSignatoryTitle || null,
       lessor_signer_name:  raw.lessorSignatoryName  || null,
+
+      is_master_lease: raw.is_master_lease ?? false,
+      vehicles_json:   raw.vehicles_json   || null,
     }
   }
 
@@ -180,16 +332,24 @@ export default function LeaseForm() {
     setSaveError(null)
 
     try {
-      const raw = form.getValues()
+      const raw     = form.getValues()
       const payload = buildPayload(raw)
 
-      const saveRes = await fetch('/api/leases', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
+      // PATCH existing record when editing, POST new record otherwise
+      const saveRes = editRecord
+        ? await fetch(`/api/leases/${editRecord.id}`, {
+            method:  'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(payload),
+          })
+        : await fetch('/api/leases', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(payload),
+          })
+
       const saved = await saveRes.json() as LeaseRecord & { error?: string }
-      if (!saveRes.ok) throw new Error(saved.error ?? 'Save failed')
+      if (!saveRes.ok) throw new Error(saved.error ?? (editRecord ? 'Update failed' : 'Save failed'))
 
       const pdfRes = await fetch('/api/generate-pdf', {
         method: 'POST',
@@ -206,7 +366,11 @@ export default function LeaseForm() {
       a.click()
       URL.revokeObjectURL(url)
 
-      setDone(true)
+      if (editRecord) {
+        onEditComplete?.()
+      } else {
+        setDone(true)
+      }
     } catch (e) {
       setSaveError(String(e))
     } finally {
@@ -296,9 +460,9 @@ export default function LeaseForm() {
       {/* ── Step content ─────────────────────────────────────────────────── */}
       <div className="card p-6 sm:p-8">
         {step === 1 && <Step1Parties    form={form} />}
-        {step === 2 && <Step3Vehicle    form={form} />}
-        {step === 3 && <Step4Financials form={form} />}
-        {step === 4 && <Step5Review     form={form} />}
+        {step === 2 && <Step3Vehicle    form={form} prefilled={!!vehiclePrefill} isMasterLease={isMasterLease} />}
+        {step === 3 && <Step4Financials form={form} isMasterLease={isMasterLease} />}
+        {step === 4 && <Step5Review     form={form} isMasterLease={isMasterLease} />}
         {step === 5 && <Step5Signatures form={form} />}
       </div>
 

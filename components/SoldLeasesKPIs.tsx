@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { SoldLeaseRecord } from '@/lib/sold-lease-types'
+import { LeasePortfolioRecord } from '@/lib/lease-portfolio-types'
 import { calcRevenue } from './SoldLeasesTable'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid,
@@ -9,7 +9,7 @@ import {
 import { AlertCircle } from 'lucide-react'
 
 interface Props {
-  leases: SoldLeaseRecord[]
+  leases: LeasePortfolioRecord[]
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -143,11 +143,10 @@ export default function SoldLeasesKPIs({ leases }: Props) {
           <AlertCircle size={15} className="mt-0.5 shrink-0 text-red-400" />
           <p className="text-xs text-red-800">
             <span className="font-semibold">{excludedCount} record{excludedCount !== 1 ? 's were' : ' was'} excluded</span> from all revenue calculations — one or more required fields ({' '}
-            <span className="font-mono">mon_payment</span>,{' '}
-            <span className="font-mono">term</span>,{' '}
-            <span className="font-mono">wholesale_proceeds</span>,{' '}
             <span className="font-mono">monthly_payment</span>,{' '}
-            <span className="font-mono">balloon_residual</span>) are missing.
+            <span className="font-mono">term</span>,{' '}
+            <span className="font-mono">monthly_liability_payment</span>,{' '}
+            <span className="font-mono">balloon_payment</span>) are missing.
           </p>
         </div>
       )}
@@ -166,12 +165,12 @@ export default function SoldLeasesKPIs({ leases }: Props) {
           <FormulaLine
             label="Gross Revenue"
             color="text-indigo-600"
-            formula="(Monthly Payment × Term) + Wholesale Proceeds"
+            formula="(Monthly Payment × Term) + Net Sale Price"
           />
           <FormulaLine
             label="Net Revenue"
             color="text-emerald-600"
-            formula="Gross Revenue − (Lender Monthly Payment × Term) − Balloon / Residual"
+            formula="Gross Revenue − (Monthly Liability Payment × Term) − Balloon Payment"
           />
         </div>
       </KPICard>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PDFDocument } from 'pdf-lib'
-import { renderLease, renderInsuranceAck, renderAchAuthorizationForLessor } from '@/lib/lease-renderer'
+import { renderLease, renderMasterLease, renderInsuranceAck, renderAchAuthorizationForLessor } from '@/lib/lease-renderer'
 import { recordToTemplateData } from '@/lib/lease-adapter'
 import type { LeaseRecord } from '@/lib/types'
 
@@ -14,7 +14,9 @@ export async function POST(req: NextRequest) {
     const { record } = (await req.json()) as { record: LeaseRecord }
 
     const templateData = recordToTemplateData(record)
-    const htmlLease     = renderLease(templateData)
+    const htmlLease     = record.is_master_lease
+      ? renderMasterLease(templateData)
+      : renderLease(templateData)
     const htmlInsurance = renderInsuranceAck(templateData)
     const htmlAch       = renderAchAuthorizationForLessor(templateData)
 
@@ -25,7 +27,7 @@ export async function POST(req: NextRequest) {
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     })
 
-    async function renderPage(html: string): Promise<Buffer> {
+    const renderPage = async (html: string): Promise<Buffer> => {
       const page = await browser.newPage()
       await page.setContent(html, { waitUntil: 'networkidle0' })
       const pdf = await page.pdf({

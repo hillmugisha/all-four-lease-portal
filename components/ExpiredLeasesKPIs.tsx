@@ -1,14 +1,14 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { ExpiredLeaseRecord } from '@/lib/expired-lease-types'
+import { LeasePortfolioRecord } from '@/lib/lease-portfolio-types'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList,
 } from 'recharts'
 import { ChevronDown } from 'lucide-react'
 
 interface Props {
-  leases: ExpiredLeaseRecord[]
+  leases: LeasePortfolioRecord[]
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -74,7 +74,7 @@ export default function ExpiredLeasesKPIs({ leases }: Props) {
     const counts: Record<string, number> = {}
     let missing = 0
     for (const l of leases) {
-      const key = (l.company ?? '').trim()
+      const key = (l.company_name ?? '').trim()
       if (!key) { missing++; continue }
       counts[key] = (counts[key] ?? 0) + 1
     }
