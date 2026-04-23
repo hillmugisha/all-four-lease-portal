@@ -161,7 +161,7 @@ export default function ExpiredLeasesKPIs({ leases }: Props) {
 
       {/* ── Summary banner ── */}
       <div className="rounded-lg border border-brand-200 bg-brand-50 px-5 py-3 flex items-center gap-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">Total Expired Leases</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">Total Out of Service Leases</p>
         <p className="text-2xl font-bold text-brand-700">{leases.length.toLocaleString()}</p>
       </div>
 
@@ -169,7 +169,7 @@ export default function ExpiredLeasesKPIs({ leases }: Props) {
 
         {/* ── 1. By Company ── */}
         <KPICard
-          title="Expired Leases by Company"
+          title="Out of Service Leases by Company"
           subtitle={`${byCompanyData.length} compan${byCompanyData.length === 1 ? 'y' : 'ies'}`}
         >
           <ResponsiveContainer width="100%" height={companyChartHeight}>
@@ -194,7 +194,7 @@ export default function ExpiredLeasesKPIs({ leases }: Props) {
 
         {/* ── 3. By Customer Type ── */}
         <KPICard
-          title="Expired Leases by Customer Type"
+          title="Out of Service Leases by Customer Type"
           subtitle={`${byCustomerTypeData.length} type${byCustomerTypeData.length === 1 ? '' : 's'}`}
         >
           <ResponsiveContainer width="100%" height={custTypeChartHeight}>
@@ -265,7 +265,7 @@ export default function ExpiredLeasesKPIs({ leases }: Props) {
         {/* ── 4. By Year ── */}
         {byYearData.length > 0 && (
           <KPICard
-            title="Expired Leases by Year"
+            title="Out of Service Leases by Year"
             subtitle={`${byYearData[0].year}–${byYearData[byYearData.length - 1].year} · 12-year window`}
           >
             {/* Spacer matches the fixed-height control row in "Leases Ended Over Time" */}

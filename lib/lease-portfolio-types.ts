@@ -91,4 +91,7 @@ export interface LeasePortfolioRecord {
 
   // ── Portal link ───────────────────────────────────────────────────────────
   portal_lease_id?: string | null
+
+  // ── Archive ───────────────────────────────────────────────────────────────
+  archived?: boolean | null
 }

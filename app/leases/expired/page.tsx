@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import ExpiredLeasesTable from '@/components/ExpiredLeasesTable'
 import ExpiredLeasesKPIs from '@/components/ExpiredLeasesKPIs'
 import { LeasePortfolioRecord } from '@/lib/lease-portfolio-types'
-import { BarChart2, Table2, FilePlus } from 'lucide-react'
+import { BarChart2, Table2 } from 'lucide-react'
 import clsx from 'clsx'
 
 type Tab = 'reporting' | 'details'
@@ -38,19 +38,11 @@ export default function ExpiredLeasesPage() {
   return (
     <div className="px-8 py-5 bg-white min-h-screen">
       {/* Page header */}
-      <div className="pb-4 mb-4 border-b border-gray-200 flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">Expired Leases</h1>
-          <p className="mt-0.5 text-xs text-gray-500">
-            Leases that have reached their end date and the vehicle has been returned.
-          </p>
-        </div>
-        <button
-          disabled
-          className="btn-primary py-2 px-4 text-sm flex items-center gap-2 shrink-0 opacity-40 cursor-not-allowed"
-        >
-          <FilePlus size={15} /> Create New Lease
-        </button>
+      <div className="pb-4 mb-4 border-b border-gray-200">
+        <h1 className="text-xl font-bold text-gray-900">Out of Service Leases</h1>
+        <p className="mt-0.5 text-xs text-gray-500">
+          Leases that are out of service and no longer active.
+        </p>
       </div>
 
       {/* Sub-tabs */}
@@ -91,6 +83,10 @@ export default function ExpiredLeasesPage() {
         <ExpiredLeasesTable
           leases={leases}
           loading={loading}
+          onSold={(ids) => {
+            const soldSet = new Set(ids)
+            setLeases(prev => prev.filter(l => !soldSet.has(l.id)))
+          }}
         />
       )}
     </div>

@@ -177,10 +177,11 @@ export function calcRevenue(lease: LeasePortfolioRecord): { gross: number; net: 
 // ─── Shared cell renderer ─────────────────────────────────────────────────────
 
 export const STATUS_STYLES: Record<string, string> = {
-  Active:     'bg-green-50 text-green-700',
-  Expired:    'bg-amber-50 text-amber-700',
-  Terminated: 'bg-red-50 text-red-700',
-  Purchased:  'bg-blue-50 text-blue-700',
+  Active:            'bg-green-50 text-green-700',
+  Expired:           'bg-red-50 text-red-700',
+  'Out of Service':  'bg-red-50 text-red-700',
+  Terminated:        'bg-red-50 text-red-700',
+  Purchased:         'bg-blue-50 text-blue-700',
 }
 
 const XS    = 'text-xs text-gray-700'

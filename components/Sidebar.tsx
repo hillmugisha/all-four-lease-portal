@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { FileText, FolderOpen, Truck, FileSignature, CalendarX, ShoppingCart, ClipboardList, LogOut } from 'lucide-react'
+import { FileText, FolderOpen, Truck, FileSignature, CalendarX, ShoppingCart, ClipboardList, LogOut, History } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import clsx from 'clsx'
 
@@ -99,7 +99,7 @@ export default function Sidebar() {
 
             <Link
               href="/leases/expired"
-              title="Leases that have reached their end date and are no longer active."
+              title="Leases that are out of service and no longer active."
               className={clsx(
                 'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                 path === '/leases/expired'
@@ -108,7 +108,7 @@ export default function Sidebar() {
               )}
             >
               <CalendarX size={15} className="shrink-0" />
-              Expired
+              Out of Service
             </Link>
 
             {/* Purchased tab — hidden for now, will be re-enabled later */}
@@ -160,6 +160,26 @@ export default function Sidebar() {
         >
           <ClipboardList size={17} className="shrink-0" />
           Audit Logs
+        </Link>
+
+        {/* ── Section divider ── */}
+        <div className="pt-4 pb-1 px-3">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-600">Archive</p>
+        </div>
+
+        {/* ── Lease History ── */}
+        <Link
+          href="/leases/history"
+          title="Archived out-of-service lease records — not included in reporting."
+          className={clsx(
+            'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+            path.startsWith('/leases/history')
+              ? 'bg-white/10 text-white'
+              : 'text-neutral-400 hover:bg-white/8 hover:text-white'
+          )}
+        >
+          <History size={17} className="shrink-0" />
+          Lease History
         </Link>
 
       </nav>

@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { usePersistedColumns } from '@/lib/usePersistedColumns'
 import { LeasePortfolioRecord } from '@/lib/lease-portfolio-types'
-import { Eye, X, Search, ChevronDown, ChevronLeft, ChevronRight, Download, Columns } from 'lucide-react'
+import { Eye, X, Search, ChevronDown, ChevronLeft, ChevronRight, Download, Columns, ShoppingCart, Loader2, AlertTriangle } from 'lucide-react'
 import LeaseDocumentsSection from '@/components/LeaseDocumentsSection'
 import clsx from 'clsx'
 import * as XLSX from 'xlsx'
@@ -31,14 +31,14 @@ function ExpiredLeaseDetailModal({
             </p>
           </div>
           <div className="flex items-center gap-3 ml-4">
-            <span className="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium bg-amber-50 text-amber-700">Expired</span>
+            <span className="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium bg-red-50 text-red-700">Out of Service</span>
             <button onClick={onClose} className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"><X size={18} /></button>
           </div>
         </div>
         <div className="px-6 py-5 space-y-1">
           <LeaseDocumentsSection leaseId={lease.id} tableName="pritchard_lease_portfolio" />
           <MS title="Lease">
-            <DR label="Expired Date"    value={fmtDate(lease.out_of_service_date)} />
+            <DR label="Out of Service Date" value={fmtDate(lease.out_of_service_date)} />
             <DR label="Lease Start"     value={fmtDate(lease.lease_start_date)} />
             <DR label="Lease End"       value={fmtDate(lease.lease_end_date)} />
             <DR label="Term"            value={lease.term != null ? `${lease.term} months` : null} />
@@ -96,6 +96,74 @@ function ExpiredLeaseDetailModal({
         </div>
         <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-3 rounded-b-xl flex justify-end">
           <button onClick={onClose} className="btn-secondary">Close</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Mark as Sold confirmation modal ─────────────────────────────────────────
+
+function MarkAsSoldConfirmModal({
+  count, onConfirm, onCancel, confirming,
+}: {
+  count: number
+  onConfirm: () => void
+  onCancel: () => void
+  confirming: boolean
+}) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
+      <div className="relative z-10 w-full max-w-sm rounded-xl bg-white shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle size={18} className="text-amber-500 shrink-0" />
+            <span className="text-sm font-semibold text-gray-900">Mark as Sold</span>
+          </div>
+          <button
+            onClick={onCancel}
+            className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="px-5 py-4 space-y-3">
+          <p className="text-sm text-gray-600">
+            Are you sure you want to mark {count === 1 ? 'this lease' : `these ${count} leases`} as sold?
+          </p>
+          <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 space-y-0.5">
+            <p className="text-xs font-semibold text-gray-700">
+              {count === 1 ? '1 lease record' : `${count} lease records`}
+            </p>
+            <p className="text-xs text-gray-500">
+              Will be moved from Out of Service to the Purchased table with today&apos;s date as the sold date.
+            </p>
+          </div>
+          <p className="text-xs font-medium text-red-600">This action cannot be undone.</p>
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end gap-2.5 px-5 py-4 border-t border-gray-100">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={confirming}
+            className="btn-secondary"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={confirming}
+            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+          >
+            {confirming ? <><Loader2 size={14} className="animate-spin" /> Saving…</> : 'Continue'}
+          </button>
         </div>
       </div>
     </div>
@@ -189,7 +257,7 @@ function MultiSelectFilter({ label, selected, onChange, options }: { label: stri
 
 function exportToExcel(records: LeasePortfolioRecord[]) {
   const rows = records.map((l) => ({
-    'Expired Date': l.out_of_service_date ?? '', 'Company': l.company_name ?? '', 'Customer Name': l.customer_name ?? '',
+    'Out of Service Date': l.out_of_service_date ?? '', 'Company': l.company_name ?? '', 'Customer Name': l.customer_name ?? '',
     'Customer Type': l.customer_type ?? '', 'Driver': l.driver ?? '',
     'Phone': l.phone ?? '', 'Email': l.email_address ?? '',
     'Billing Address': l.billing_address ?? '', 'Billing City': l.billing_city ?? '',
@@ -212,15 +280,15 @@ function exportToExcel(records: LeasePortfolioRecord[]) {
   }))
   const ws = XLSX.utils.json_to_sheet(rows)
   const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, 'Expired Leases')
-  XLSX.writeFile(wb, `expired-leases-${new Date().toISOString().slice(0, 10)}.xlsx`)
+  XLSX.utils.book_append_sheet(wb, ws, 'Out of Service Leases')
+  XLSX.writeFile(wb, `out-of-service-leases-${new Date().toISOString().slice(0, 10)}.xlsx`)
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-interface TableProps { leases: LeasePortfolioRecord[]; loading: boolean }
+interface TableProps { leases: LeasePortfolioRecord[]; loading: boolean; onSold?: (ids: string[]) => void }
 
-export default function ExpiredLeasesTable({ leases, loading }: TableProps) {
+export default function ExpiredLeasesTable({ leases, loading, onSold }: TableProps) {
   const [selected, setSelected]           = useState<LeasePortfolioRecord | null>(null)
   const [filters, setFilters]             = useState<Filters>(EMPTY_FILTERS)
   const [colWidths, setColWidths]         = useState<Record<ColKey, number>>(DEFAULT_WIDTHS)
@@ -228,6 +296,8 @@ export default function ExpiredLeasesTable({ leases, loading }: TableProps) {
   const [checkedIds, setCheckedIds]       = useState<Set<string>>(new Set())
   const [visibleCols, setVisibleCols]     = usePersistedColumns('cols:expired-leases', DEFAULT_COLS_EXPIRED)
   const [columnsModalOpen, setColumnsModalOpen] = useState(false)
+  const [markingSold, setMarkingSold]     = useState(false)
+  const [soldConfirmOpen, setSoldConfirmOpen] = useState(false)
 
   const makes         = useMemo(() => Array.from(new Set(leases.map((l) => l.make).filter((x): x is string => x !== null))).sort(), [leases])
   const companies     = useMemo(() => Array.from(new Set(leases.map((l) => l.company_name).filter((x): x is string => x !== null))).sort(), [leases])
@@ -254,6 +324,26 @@ export default function ExpiredLeasesTable({ leases, loading }: TableProps) {
   function toggleAll() { setCheckedIds(allChecked ? new Set() : new Set(filtered.map((l) => l.id))) }
   function toggleId(id: string) { setCheckedIds((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next }) }
   function handleExport() { exportToExcel(someChecked ? filtered.filter((l) => checkedIds.has(l.id)) : filtered) }
+
+  async function handleMarkAsSoldConfirmed() {
+    const ids = Array.from(checkedIds)
+    if (!ids.length) return
+    setMarkingSold(true)
+    try {
+      const res = await fetch('/api/expired-leases/mark-sold', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids }),
+      })
+      if (res.ok) {
+        setSoldConfirmOpen(false)
+        setCheckedIds(new Set())
+        onSold?.(ids)
+      }
+    } finally {
+      setMarkingSold(false)
+    }
+  }
 
   useEffect(() => { setPage(1) }, [filters])
 
@@ -296,7 +386,7 @@ export default function ExpiredLeasesTable({ leases, loading }: TableProps) {
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         <div className="flex items-center gap-3 border-b border-gray-200 px-5 py-3.5">
           <div className="mr-auto">
-            <h2 className="text-sm font-semibold text-gray-900">Expired Lease Records</h2>
+            <h2 className="text-sm font-semibold text-gray-900">Out of Service Lease Records</h2>
             <p className="text-xs text-gray-400 mt-0.5">
               {hasFilters ? `${filtered.length} of ${leases.length}` : leases.length} total
               {totalPages > 1 && ` · page ${page} of ${totalPages}`}
@@ -323,6 +413,14 @@ export default function ExpiredLeasesTable({ leases, loading }: TableProps) {
           <button onClick={handleExport} className="btn-secondary py-1.5 text-xs" disabled={loading || filtered.length === 0}>
             <Download size={13} /> {someChecked ? `Export (${checkedIds.size})` : 'Export'}
           </button>
+          <button
+            onClick={() => setSoldConfirmOpen(true)}
+            disabled={!someChecked || markingSold}
+            className="btn-primary py-1.5 text-xs flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <ShoppingCart size={13} />
+            {someChecked ? `Mark as Sold (${checkedIds.size})` : 'Mark as Sold'}
+          </button>
         </div>
 
         {loading && (
@@ -340,8 +438,8 @@ export default function ExpiredLeasesTable({ leases, loading }: TableProps) {
 
         {!loading && leases.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <p className="text-sm font-semibold text-gray-800">No expired lease records</p>
-            <p className="mt-1 text-xs text-gray-400 max-w-xs">Run the import script to populate data from Expired Leases.xlsx.</p>
+            <p className="text-sm font-semibold text-gray-800">No out of service lease records</p>
+            <p className="mt-1 text-xs text-gray-400 max-w-xs">Run the import script to populate data from Out of Service Leases.xlsx.</p>
           </div>
         )}
 
@@ -414,6 +512,15 @@ export default function ExpiredLeasesTable({ leases, loading }: TableProps) {
           </div>
         )}
       </div>
+
+      {soldConfirmOpen && (
+        <MarkAsSoldConfirmModal
+          count={checkedIds.size}
+          onConfirm={handleMarkAsSoldConfirmed}
+          onCancel={() => setSoldConfirmOpen(false)}
+          confirming={markingSold}
+        />
+      )}
 
       {selected && <ExpiredLeaseDetailModal lease={selected} onClose={() => setSelected(null)} />}
 

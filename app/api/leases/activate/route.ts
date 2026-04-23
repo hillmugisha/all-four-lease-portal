@@ -185,7 +185,18 @@ export async function POST(req: NextRequest) {
 
     if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 })
 
-    // 6. Auto-attach signed PDF from DocuSign for portal leases (best-effort — never blocks activation)
+    // 6. Auto-archive any expired portfolio records for the same VINs (best-effort)
+    const activatedVins = toActivate.map((l) => l.vehicle_vin).filter(Boolean)
+    if (activatedVins.length > 0) {
+      const { error: archiveErr } = await supabase
+        .from('pritchard_lease_portfolio')
+        .update({ archived: true })
+        .eq('lease_status', 'Out of Service')
+        .in('vin', activatedVins)
+      if (archiveErr) console.error('[activate] auto-archive failed:', archiveErr.message)
+    }
+
+    // 7. Auto-attach signed PDF from DocuSign for portal leases (best-effort — never blocks activation)
     try {
       const apiClient = await getDocuSignClient()
       const accountId = getAccountId()

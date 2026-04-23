@@ -14,8 +14,7 @@ export async function GET() {
       const { data, error } = await getSupabaseAdmin()
         .from('pritchard_lease_portfolio')
         .select('*')
-        .in('lease_status', ['Out of Service', 'Expired'])
-        .or('archived.is.null,archived.eq.false')
+        .eq('archived', true)
         .order('out_of_service_date', { ascending: false })
         .range(from, from + BATCH - 1)
 
