@@ -25,6 +25,8 @@ export default function Step5Signatures({ form }: Props) {
   const [sentEnvelopeId, setSentEnvelopeId] = useState<string | null>(null)
   const [classificationError, setClassificationError] = useState<string | null>(null)
 
+  const [selectedDocs, setSelectedDocs] = useState({ lease: true, insurance: true, ach: true })
+
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'lesseeSignatories',
@@ -87,7 +89,7 @@ export default function Step5Signatures({ form }: Props) {
       const res = await fetch('/api/send-to-docusign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ formData: form.getValues() }),
+        body: JSON.stringify({ formData: form.getValues(), selectedDocs }),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'Failed to send to DocuSign')
@@ -242,7 +244,7 @@ export default function Step5Signatures({ form }: Props) {
       const res = await fetch('/api/generate-preview-packet', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ record }),
+        body:    JSON.stringify({ record, selectedDocs }),
       })
       if (!res.ok) throw new Error('Failed to generate preview')
       const blob = await res.blob()
@@ -451,6 +453,38 @@ export default function Step5Signatures({ form }: Props) {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* ── Document Selection ─────────────────────────────────────────────── */}
+      <div>
+        <h3 className="text-sm font-semibold text-gray-700 mb-3">Documents to Include</h3>
+        <div className="rounded-lg border border-gray-200 p-4 space-y-3">
+          <label className="flex items-center gap-3 cursor-not-allowed">
+            <input type="checkbox" checked disabled className="accent-brand-600 h-4 w-4" />
+            <span className="text-sm font-medium text-gray-700">
+              Lease Agreement
+              <span className="ml-1.5 text-xs font-normal text-gray-400">(always included)</span>
+            </span>
+          </label>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={selectedDocs.insurance}
+              onChange={(e) => setSelectedDocs((s) => ({ ...s, insurance: e.target.checked }))}
+              className="accent-brand-600 h-4 w-4"
+            />
+            <span className="text-sm font-medium text-gray-700">Insurance Acknowledgement</span>
+          </label>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={selectedDocs.ach}
+              onChange={(e) => setSelectedDocs((s) => ({ ...s, ach: e.target.checked }))}
+              className="accent-brand-600 h-4 w-4"
+            />
+            <span className="text-sm font-medium text-gray-700">ACH Authorization Form</span>
+          </label>
         </div>
       </div>
 

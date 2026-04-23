@@ -11,16 +11,20 @@ import type { LeaseRecord } from '@/lib/types'
  */
 export async function POST(req: NextRequest) {
   try {
-    const { record } = (await req.json()) as { record: LeaseRecord }
+    const { record, selectedDocs = { lease: true, insurance: true, ach: true } } =
+      (await req.json()) as {
+        record: LeaseRecord
+        selectedDocs?: { lease: boolean; insurance: boolean; ach: boolean }
+      }
 
     const templateData = recordToTemplateData(record)
     const htmlLease     = record.is_master_lease
       ? renderMasterLease(templateData)
       : renderLease(templateData)
-    const htmlInsurance = renderInsuranceAck(templateData)
-    const htmlAch       = renderAchAuthorizationForLessor(templateData)
+    const htmlInsurance = selectedDocs.insurance ? renderInsuranceAck(templateData) : null
+    const htmlAch       = selectedDocs.ach       ? renderAchAuthorizationForLessor(templateData) : null
 
-    // Launch a single browser and render all three pages in parallel
+    // Launch a single browser and render selected pages in parallel
     const puppeteer = await import('puppeteer')
     const browser   = await puppeteer.default.launch({
       headless: true,
@@ -39,18 +43,17 @@ export async function POST(req: NextRequest) {
       return Buffer.from(pdf)
     }
 
-    const [pdfLease, pdfInsurance, pdfAch] = await Promise.all([
-      renderPage(htmlLease),
-      renderPage(htmlInsurance),
-      renderPage(htmlAch),
-    ])
+    const htmlPages = ([htmlLease, htmlInsurance, htmlAch] as (string | null)[])
+    const renderedPdfs = await Promise.all(
+      htmlPages.map((html) => html ? renderPage(html) : Promise.resolve(null))
+    )
 
     await browser.close()
 
-    // Merge all three PDFs into one packet using pdf-lib
+    // Merge only selected PDFs into one packet using pdf-lib
     const merged = await PDFDocument.create()
 
-    for (const pdfBytes of [pdfLease, pdfInsurance, pdfAch]) {
+    for (const pdfBytes of renderedPdfs.filter((b): b is Buffer => b !== null)) {
       const doc   = await PDFDocument.load(pdfBytes)
       const pages = await merged.copyPages(doc, doc.getPageIndices())
       pages.forEach(page => merged.addPage(page))
