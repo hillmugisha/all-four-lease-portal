@@ -148,6 +148,7 @@ export default function Step1Parties({ form }: Props) {
     setValue('vehicleUse', getVehicleUses(lt, newCs, newCt)[0] ?? '')
     setValue('department', '')
     setValue('departmentOther', '')
+    if (lt !== 'Core') setValue('lesseeType', 'business')
   }
 
   function handleContractStructureChange(e: React.ChangeEvent<HTMLSelectElement>) {
@@ -431,17 +432,19 @@ export default function Step1Parties({ form }: Props) {
                 />
                 <span className="font-medium text-gray-700">Business</span>
               </label>
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="radio"
-                  value="individual"
-                  {...register('lesseeType')}
-                  checked={isIndividual}
-                  onChange={() => setValue('lesseeType', 'individual')}
-                  className="accent-brand-600"
-                />
-                <span className="font-medium text-gray-700">Individual</span>
-              </label>
+              {leaseType === 'Core' && (
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="radio"
+                    value="individual"
+                    {...register('lesseeType')}
+                    checked={isIndividual}
+                    onChange={() => setValue('lesseeType', 'individual')}
+                    className="accent-brand-600"
+                  />
+                  <span className="font-medium text-gray-700">Individual</span>
+                </label>
+              )}
             </div>
           </div>
 
@@ -553,25 +556,32 @@ export default function Step1Parties({ form }: Props) {
                   </p>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-6">
                     <div className="sm:col-span-2">
-                      <label className="label">First Name</label>
+                      <label className="label">First Name <span className="req">*</span></label>
                       <input
-                        {...register('billingContactFirstName')}
+                        {...register('billingContactFirstName', { required: 'Required' })}
                         placeholder="Jane"
                         className="input"
                       />
+                      {errors.billingContactFirstName && (
+                        <p className="field-error">{errors.billingContactFirstName.message}</p>
+                      )}
                     </div>
                     <div className="sm:col-span-2">
-                      <label className="label">Last Name</label>
+                      <label className="label">Last Name <span className="req">*</span></label>
                       <input
-                        {...register('billingContactLastName')}
+                        {...register('billingContactLastName', { required: 'Required' })}
                         placeholder="Smith"
                         className="input"
                       />
+                      {errors.billingContactLastName && (
+                        <p className="field-error">{errors.billingContactLastName.message}</p>
+                      )}
                     </div>
                     <div className="sm:col-span-2">
-                      <label className="label">Email</label>
+                      <label className="label">Email <span className="req">*</span></label>
                       <input
                         {...register('billingContactEmail', {
+                          required: 'Required',
                           pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Enter a valid email address' },
                         })}
                         placeholder="billing@example.com"
