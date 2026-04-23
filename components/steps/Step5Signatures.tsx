@@ -458,7 +458,7 @@ export default function Step5Signatures({ form }: Props) {
 
       {/* ── Document Selection ─────────────────────────────────────────────── */}
       <div>
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">Documents to Include</h3>
+        <h3 className="text-sm font-semibold text-gray-700 mb-3">Documents to Send to Customer</h3>
         <div className="rounded-lg border border-gray-200 p-4 space-y-3">
           <label className="flex items-center gap-3 cursor-not-allowed">
             <input type="checkbox" checked disabled className="accent-brand-600 h-4 w-4" />

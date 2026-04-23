@@ -461,11 +461,27 @@ export default function Step1Parties({ form }: Props) {
               {/* Business Name — full width */}
               <div className="sm:col-span-6">
                 <label className="label">Business Name <span className="req">*</span></label>
-                <input
+                <select
                   {...register('lesseeName', { required: isBusiness ? 'Required' : false })}
-                  placeholder="Emerald Companies, Inc."
                   className="input"
-                />
+                >
+                  <option value="">Select a business…</option>
+                  <option>Worldwide Equipment Sales, LLC</option>
+                  <option>Prescription Landscape Inc.</option>
+                  <option>Envoy Technologies LLC</option>
+                  <option>Henning Logistics</option>
+                  <option>Inner City Logistics</option>
+                  <option>Sansom Equipment Company</option>
+                  <option>Chrysler of Forest City</option>
+                  <option>Central Iowa Televising LLC</option>
+                  <option>SF Iowa Leasing, LLC</option>
+                  <option>All American Cleanup</option>
+                  <option>UCSD</option>
+                  <option>Curbtender, Inc.</option>
+                  <option>MN Care Services</option>
+                  <option>Sukup Manufacturing Co.</option>
+                  <option>Prime Time Electric LLC</option>
+                </select>
                 {errors.lesseeName && <p className="field-error">{errors.lesseeName.message}</p>}
               </div>
 
