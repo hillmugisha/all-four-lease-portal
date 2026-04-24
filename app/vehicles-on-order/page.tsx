@@ -8,7 +8,6 @@ import { FilePlus } from 'lucide-react'
 export default function VehiclesOnOrderPage() {
   const [vehicles, setVehicles]       = useState<VehicleOnOrderRecord[]>([])
   const [loading, setLoading]         = useState(true)
-  const [hasSelection, setHasSelection] = useState(false)
   const tableRef                      = useRef<VehiclesOnOrderTableHandle>(null)
 
   const load = useCallback(async () => {
@@ -38,9 +37,7 @@ export default function VehiclesOnOrderPage() {
         </div>
         <button
           onClick={() => tableRef.current?.createLease()}
-          disabled={!hasSelection}
-          className="btn-primary py-2 px-4 text-sm flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-          title={hasSelection ? 'Generate lease for selected vehicle' : 'Select a vehicle to generate a lease'}
+          className="btn-primary py-2 px-4 text-sm flex items-center gap-2 shrink-0"
         >
           <FilePlus size={15} /> Create New Lease
         </button>
@@ -51,7 +48,6 @@ export default function VehiclesOnOrderPage() {
         vehicles={vehicles}
         loading={loading}
         onRefresh={load}
-        onSelectionChange={(count) => setHasSelection(count > 0)}
       />
     </div>
   )

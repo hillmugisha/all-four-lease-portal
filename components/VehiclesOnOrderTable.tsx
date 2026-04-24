@@ -477,13 +477,8 @@ const VehiclesOnOrderTable = forwardRef<
 
   function handleGenerateLease() {
     const sel = filtered.filter((v) => checkedIds.has(v.id))
-    if (sel.length === 0) return
-    if (sel.length > 1) {
-      setPendingVehicles(sel)
-      setMasterLeaseModalOpen(true)
-      return
-    }
-    routeToSingleLease(sel[0])
+    setPendingVehicles(sel)
+    setMasterLeaseModalOpen(true)
   }
 
   handleGenerateLeaseRef.current = handleGenerateLease
@@ -502,23 +497,15 @@ const VehiclesOnOrderTable = forwardRef<
   }
 
   function confirmMasterLease() {
-    const summaries = pendingVehicles.map((v) => ({
-      id:           v.id,
-      vin:          v.vin ?? null,
-      model_year:   v.model_year ?? null,
-      oem:          v.oem ?? null,
-      vehicle_line: v.vehicle_line ?? null,
-      color:        v.color ?? null,
-    }))
-    sessionStorage.setItem('masterLeaseVehicles', JSON.stringify(summaries))
     setMasterLeaseModalOpen(false)
-    router.push('/new-lease?masterLease=true')
+    router.push('/new-lease?masterLeaseAgreement=true')
   }
 
   function declineMasterLease() {
     const first = pendingVehicles[0]
     setMasterLeaseModalOpen(false)
     if (first) routeToSingleLease(first)
+    else router.push('/new-lease?leaseType=standard')
   }
 
   function resize(key: ColKey, delta: number) {
@@ -815,24 +802,32 @@ const VehiclesOnOrderTable = forwardRef<
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMasterLeaseModalOpen(false)} />
           <div className="relative z-10 w-full max-w-md rounded-xl bg-white shadow-2xl p-6">
             <h2 className="text-base font-semibold text-gray-900 mb-2">
-              Create New Lease for {pendingVehicles.length} Vehicles
+              Create New Lease
             </h2>
             <p className="text-sm text-gray-600 mb-5">
-              You&apos;ve selected <strong>{pendingVehicles.length} vehicles</strong>. Are you creating a
-              Master Vehicle Lease Agreement (MLA) that covers all of them under one contract?
+              {pendingVehicles.length > 0
+                ? <>{pendingVehicles.length === 1 ? <>You&apos;ve selected <strong>1 vehicle</strong>. </> : <>You&apos;ve selected <strong>{pendingVehicles.length} vehicles</strong>. </>}What type of lease would you like to create?</>
+                : <>No vehicles selected. What type of lease would you like to create?</>
+              }
             </p>
             <div className="flex flex-col gap-3">
               <button
                 onClick={confirmMasterLease}
                 className="btn-primary w-full justify-center"
               >
-                Yes &mdash; Create Master Lease Agreement
+                New Master Lease Agreement
+              </button>
+              <button
+                onClick={() => setMasterLeaseModalOpen(false)}
+                className="btn-secondary w-full justify-center"
+              >
+                New Lease Schedule
               </button>
               <button
                 onClick={declineMasterLease}
                 className="btn-secondary w-full justify-center"
               >
-                No &mdash; Individual Lease (first vehicle only)
+                Individual Lease Agreement
               </button>
             </div>
           </div>

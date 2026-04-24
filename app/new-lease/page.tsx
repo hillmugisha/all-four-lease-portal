@@ -4,11 +4,13 @@ import { Suspense, useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import LeaseForm from '@/components/LeaseForm'
 import LeaseTable from '@/components/LeaseTable'
+import LeaseTypePicker from '@/components/LeaseTypePicker'
 import { LayoutDashboard, FilePlus } from 'lucide-react'
 import clsx from 'clsx'
 import type { VehicleOnOrderSummary } from '@/lib/types'
 
 type Tab = 'dashboard' | 'create'
+type LeaseMode = 'standard' | 'master_agreement'
 
 function NewLeaseContent() {
   const searchParams = useSearchParams()
@@ -16,7 +18,9 @@ function NewLeaseContent() {
   const year  = searchParams.get('year')  ?? ''
   const make  = searchParams.get('make')  ?? ''
   const model = searchParams.get('model') ?? ''
-  const isMasterLease = searchParams.get('masterLease') === 'true'
+  const isMasterLease          = searchParams.get('masterLease') === 'true'
+  const isMasterLeaseAgreement = searchParams.get('masterLeaseAgreement') === 'true'
+  const isStandardFromUrl      = searchParams.get('leaseType') === 'standard'
 
   const prefill = vin ? { vin, year, make, model } : null
 
@@ -39,7 +43,27 @@ function NewLeaseContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const [activeTab, setActiveTab] = useState<Tab>(prefill || isMasterLease ? 'create' : 'dashboard')
+  function initialLeaseMode(): LeaseMode | null {
+    if (isMasterLeaseAgreement) return 'master_agreement'
+    if (prefill || isMasterLease || isStandardFromUrl) return 'standard'
+    return null
+  }
+
+  const [activeTab, setActiveTab] = useState<Tab>(
+    prefill || isMasterLease || isMasterLeaseAgreement || isStandardFromUrl ? 'create' : 'dashboard'
+  )
+  const [leaseMode, setLeaseMode] = useState<LeaseMode | null>(initialLeaseMode)
+
+  function handleTabClick(id: Tab) {
+    // Only reset the picker when navigating TO create from somewhere else
+    if (id === 'create' && activeTab !== 'create') setLeaseMode(null)
+    setActiveTab(id)
+  }
+
+  function handleCreateNew() {
+    setLeaseMode(null)
+    setActiveTab('create')
+  }
 
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
     { id: 'dashboard', label: 'Pipeline',         icon: LayoutDashboard },
@@ -62,7 +86,7 @@ function NewLeaseContent() {
           {tabs.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
-              onClick={() => setActiveTab(id)}
+              onClick={() => handleTabClick(id)}
               className={clsx(
                 'flex items-center gap-2 pb-3 text-sm font-medium border-b-2 transition-colors',
                 activeTab === id
@@ -79,14 +103,19 @@ function NewLeaseContent() {
 
       {/* Tab content */}
       {activeTab === 'dashboard' && (
-        <LeaseTable onCreateNew={() => setActiveTab('create')} />
+        <LeaseTable onCreateNew={handleCreateNew} />
       )}
 
-      {activeTab === 'create' && masterLeaseReady && (
+      {activeTab === 'create' && !isMasterLease && leaseMode === null && (
+        <LeaseTypePicker onSelect={setLeaseMode} />
+      )}
+
+      {activeTab === 'create' && (isMasterLease || leaseMode !== null) && masterLeaseReady && (
         <LeaseForm
           vehiclePrefill={prefill}
           isMasterLease={isMasterLease}
           masterLeaseVehicles={masterLeaseVehicles}
+          isMasterLeaseAgreement={leaseMode === 'master_agreement'}
         />
       )}
     </div>

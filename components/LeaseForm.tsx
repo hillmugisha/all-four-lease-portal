@@ -105,12 +105,18 @@ import { ChevronLeft, ChevronRight, FileDown, Loader2, Check, Save } from 'lucid
 import type { VehicleOnOrderSummary } from '@/lib/types'
 import clsx from 'clsx'
 
-const STEPS = [
-  { id: 1, label: 'Parties' },
-  { id: 2, label: 'Vehicle' },
-  { id: 3, label: 'Financials' },
-  { id: 4, label: 'Review' },
-  { id: 5, label: 'Signatures' },
+const STANDARD_STEPS = [
+  { id: 1, label: 'Parties',    component: 1 },
+  { id: 2, label: 'Vehicle',    component: 2 },
+  { id: 3, label: 'Financials', component: 3 },
+  { id: 4, label: 'Review',     component: 4 },
+  { id: 5, label: 'Signatures', component: 5 },
+]
+
+const MASTER_AGREEMENT_STEPS = [
+  { id: 1, label: 'Parties',    component: 1 },
+  { id: 2, label: 'Review',     component: 4 },
+  { id: 3, label: 'Signatures', component: 5 },
 ]
 
 const DEFAULT_VALUES: Partial<LeaseFormData> = {
@@ -175,12 +181,14 @@ export default function LeaseForm({
   onEditComplete,
   isMasterLease,
   masterLeaseVehicles,
+  isMasterLeaseAgreement,
 }: {
-  vehiclePrefill?:       VehiclePrefill | null
-  editRecord?:           LeaseRecord    | null
-  onEditComplete?:       () => void
-  isMasterLease?:        boolean
-  masterLeaseVehicles?:  VehicleOnOrderSummary[]
+  vehiclePrefill?:          VehiclePrefill | null
+  editRecord?:              LeaseRecord    | null
+  onEditComplete?:          () => void
+  isMasterLease?:           boolean
+  masterLeaseVehicles?:     VehicleOnOrderSummary[]
+  isMasterLeaseAgreement?:  boolean
 }) {
   const router = useRouter()
   const [step, setStep]       = useState(1)
@@ -215,13 +223,15 @@ export default function LeaseForm({
     mode: 'onTouched',
   })
 
+  const activeSteps = isMasterLeaseAgreement ? MASTER_AGREEMENT_STEPS : STANDARD_STEPS
+
   // ── Free navigation: click any step to jump ──────────────────────────────
   function goToStep(target: number) {
     setStep(target)
   }
 
   async function handleNext() {
-    setStep((s) => Math.min(s + 1, STEPS.length))
+    setStep((s) => Math.min(s + 1, activeSteps.length))
   }
 
   function handleBack() {
@@ -411,7 +421,7 @@ export default function LeaseForm({
 
       {/* ── Step indicator ────────────────────────────────────────────────── */}
       <nav className="flex items-center justify-between px-2">
-        {STEPS.map((s, i) => {
+        {activeSteps.map((s, i) => {
           const isActive    = step === s.id
           const isCompleted = step > s.id
 
@@ -446,7 +456,7 @@ export default function LeaseForm({
               </button>
 
               {/* Connector line — between steps */}
-              {i < STEPS.length - 1 && (
+              {i < activeSteps.length - 1 && (
                 <div className={clsx(
                   'mx-2 mb-5 h-px flex-1 transition-colors',
                   step > s.id ? 'bg-brand-600' : 'bg-gray-200'
@@ -459,11 +469,18 @@ export default function LeaseForm({
 
       {/* ── Step content ─────────────────────────────────────────────────── */}
       <div className="card p-6 sm:p-8">
-        {step === 1 && <Step1Parties    form={form} />}
-        {step === 2 && <Step3Vehicle    form={form} prefilled={!!vehiclePrefill} isMasterLease={isMasterLease} />}
-        {step === 3 && <Step4Financials form={form} isMasterLease={isMasterLease} />}
-        {step === 4 && <Step5Review     form={form} isMasterLease={isMasterLease} />}
-        {step === 5 && <Step5Signatures form={form} />}
+        {(() => {
+          const activeComponent = activeSteps[step - 1].component
+          return (
+            <>
+              {activeComponent === 1 && <Step1Parties    form={form} />}
+              {activeComponent === 2 && <Step3Vehicle    form={form} prefilled={!!vehiclePrefill} isMasterLease={isMasterLease} />}
+              {activeComponent === 3 && <Step4Financials form={form} isMasterLease={isMasterLease} />}
+              {activeComponent === 4 && <Step5Review     form={form} isMasterLease={isMasterLease} isMasterLeaseAgreement={isMasterLeaseAgreement} />}
+              {activeComponent === 5 && <Step5Signatures form={form} />}
+            </>
+          )
+        })()}
       </div>
 
       {/* ── Draft saved banner ───────────────────────────────────────────── */}
@@ -514,7 +531,7 @@ export default function LeaseForm({
             )}
           </button>
 
-          {step < STEPS.length && (
+          {step < activeSteps.length && (
             <button type="button" onClick={handleNext} className="btn-primary">
               Next
               <ChevronRight size={16} />
