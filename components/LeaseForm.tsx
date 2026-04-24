@@ -4,6 +4,15 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
 import { LeaseFormData, LeaseRecord } from '@/lib/types'
+import Step1Parties    from './steps/Step1Parties'
+import Step3Vehicle    from './steps/Step3Vehicle'
+import Step4Financials from './steps/Step4Financials'
+import Step5Review     from './steps/Step5Review'
+import Step5Signatures from './steps/Step5Signatures'
+import { ChevronLeft, ChevronRight, Loader2, Check, Save } from 'lucide-react'
+import StepIndicator from '@/components/StepIndicator'
+import type { VehicleOnOrderSummary } from '@/lib/types'
+import clsx from 'clsx'
 
 // ─── Map a saved LeaseRecord back to form fields for editing ─────────────────
 function recordToFormData(record: LeaseRecord): Partial<LeaseFormData> {
@@ -95,15 +104,6 @@ function recordToFormData(record: LeaseRecord): Partial<LeaseFormData> {
 
   }
 }
-import { calculateLease } from '@/lib/calculations'
-import Step1Parties    from './steps/Step1Parties'
-import Step3Vehicle    from './steps/Step3Vehicle'
-import Step4Financials from './steps/Step4Financials'
-import Step5Review     from './steps/Step5Review'
-import Step5Signatures from './steps/Step5Signatures'
-import { ChevronLeft, ChevronRight, FileDown, Loader2, Check, Save } from 'lucide-react'
-import type { VehicleOnOrderSummary } from '@/lib/types'
-import clsx from 'clsx'
 
 const STANDARD_STEPS = [
   { id: 1, label: 'Parties',    component: 1 },
@@ -420,52 +420,11 @@ export default function LeaseForm({
     <div className="space-y-6">
 
       {/* ── Step indicator ────────────────────────────────────────────────── */}
-      <nav className="flex items-center justify-between px-2">
-        {activeSteps.map((s, i) => {
-          const isActive    = step === s.id
-          const isCompleted = step > s.id
-
-          return (
-            <div key={s.id} className="flex flex-1 items-center">
-              {/* Step button */}
-              <button
-                type="button"
-                onClick={() => goToStep(s.id)}
-                className="flex flex-col items-center gap-1.5 focus:outline-none group"
-              >
-                {/* Circle */}
-                <div className={clsx(
-                  'flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-bold transition-all',
-                  isActive
-                    ? 'border-brand-600 bg-brand-600 text-white'
-                    : isCompleted
-                    ? 'border-brand-600 bg-brand-600 text-white'
-                    : 'border-gray-300 bg-white text-gray-400 group-hover:border-gray-400'
-                )}>
-                  {isCompleted ? <Check size={13} strokeWidth={2.5} /> : s.id}
-                </div>
-                {/* Label */}
-                <span className={clsx(
-                  'text-xs font-medium whitespace-nowrap transition-colors',
-                  isActive    ? 'text-brand-600' :
-                  isCompleted ? 'text-brand-600' :
-                                'text-gray-400 group-hover:text-gray-500'
-                )}>
-                  {s.label}
-                </span>
-              </button>
-
-              {/* Connector line — between steps */}
-              {i < activeSteps.length - 1 && (
-                <div className={clsx(
-                  'mx-2 mb-5 h-px flex-1 transition-colors',
-                  step > s.id ? 'bg-brand-600' : 'bg-gray-200'
-                )} />
-              )}
-            </div>
-          )
-        })}
-      </nav>
+      <StepIndicator
+        steps={activeSteps}
+        currentStep={step}
+        onStepClick={goToStep}
+      />
 
       {/* ── Step content ─────────────────────────────────────────────────── */}
       <div className="card p-6 sm:p-8">

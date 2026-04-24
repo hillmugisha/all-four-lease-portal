@@ -378,6 +378,21 @@ export default function ExpiredLeasesTable({ leases, loading, onSold }: TablePro
           <MultiSelectFilter label="Customer Type" selected={filters.customerType} onChange={(v) => setFilters((f) => ({ ...f, customerType: v }))} options={customerTypes} />
           <MultiSelectFilter label="Term"          selected={filters.term}         onChange={(v) => setFilters((f) => ({ ...f, term: v }))}         options={terms} />
           <MultiSelectFilter label="Lender"        selected={filters.lender}       onChange={(v) => setFilters((f) => ({ ...f, lender: v }))}       options={lenders} />
+          <div className="relative">
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search by customer, company, VIN…"
+              value={filters.name}
+              onChange={(e) => setFilters({ ...filters, name: e.target.value })}
+              className="input pl-7 py-1.5 text-sm w-[28rem]"
+            />
+            {filters.name && (
+              <button onClick={() => setFilters({ ...filters, name: '' })} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <X size={13} />
+              </button>
+            )}
+          </div>
           {hasFilters && (
             <button onClick={() => setFilters(EMPTY_FILTERS)} className="inline-flex items-center gap-1.5 rounded-md border border-red-300 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-100 hover:border-red-400 transition-colors">
               <X size={12} /> Clear filters
@@ -394,21 +409,6 @@ export default function ExpiredLeasesTable({ leases, loading, onSold }: TablePro
               {hasFilters ? `${filtered.length} of ${leases.length}` : leases.length} total
               {totalPages > 1 && ` · page ${page} of ${totalPages}`}
             </p>
-          </div>
-          <div className="relative">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Search by customer, company, VIN…"
-              value={filters.name}
-              onChange={(e) => setFilters({ ...filters, name: e.target.value })}
-              className="input pl-7 py-1.5 text-sm w-80"
-            />
-            {filters.name && (
-              <button onClick={() => setFilters({ ...filters, name: '' })} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                <X size={13} />
-              </button>
-            )}
           </div>
           <button onClick={() => setColumnsModalOpen(true)} className="btn-secondary py-1.5 text-xs flex items-center gap-1.5">
             <Columns size={13} /> Columns
@@ -430,6 +430,12 @@ export default function ExpiredLeasesTable({ leases, loading, onSold }: TablePro
           >
             <Zap size={13} />
             Activate Lease
+          </button>
+          <button
+            disabled
+            className="btn-secondary py-1.5 text-xs flex items-center gap-1.5 opacity-40 cursor-not-allowed"
+          >
+            Mass Edit
           </button>
         </div>
 

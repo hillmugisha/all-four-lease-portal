@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vehicle Lease Schedule</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 10pt;
+      line-height: 1.4;
+      color: #000;
+      background: #fff;
+      padding: 40px 52px;
+      max-width: 850px;
+      margin: 0 auto;
+    }
+
+    /* ── Header ── */
+    .doc-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #000;
+    }
+
+    .doc-header img {
+      height: 48px;
+      object-fit: contain;
+    }
+
+    h1.doc-title {
+      font-size: 15pt;
+      font-weight: bold;
+      letter-spacing: 0.06em;
+      text-align: right;
+    }
+
+    /* ── Opening statement ── */
+    .opening-stmt {
+      font-size: 9.5pt;
+      margin-top: 14px;
+      margin-bottom: 4px;
+      line-height: 1.7;
+    }
+
+    .fill {
+      display: inline-block;
+      border-bottom: 1px solid #000;
+      padding: 0 4px;
+      min-width: 70px;
+    }
+
+    .doc-date {
+      font-size: 9.5pt;
+      margin-bottom: 16px;
+    }
+
+    /* ── Parties ── */
+    .parties {
+      display: flex;
+      gap: 48px;
+      margin-bottom: 20px;
+    }
+
+    .party-block {
+      flex: 1;
+    }
+
+    .party-label {
+      font-size: 9.5pt;
+      font-weight: bold;
+      margin-bottom: 2px;
+    }
+
+    .party-name {
+      font-weight: bold;
+      font-size: 10pt;
+      margin-bottom: 2px;
+    }
+
+    .party-address {
+      font-size: 9pt;
+      color: #222;
+      line-height: 1.5;
+    }
+
+    /* ── Vehicle table ── */
+    table.vehicle-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 8.5pt;
+      margin-bottom: 24px;
+    }
+
+    table.vehicle-table thead tr {
+      background: #1a1a1a;
+      color: #fff;
+    }
+
+    table.vehicle-table thead th {
+      padding: 5px 7px;
+      text-align: left;
+      font-weight: bold;
+      font-size: 8pt;
+      white-space: nowrap;
+    }
+
+    table.vehicle-table thead th.num {
+      text-align: right;
+    }
+
+    table.vehicle-table tbody tr:nth-child(even) {
+      background: #f5f5f5;
+    }
+
+    table.vehicle-table tbody td {
+      padding: 5px 7px;
+      border-bottom: 1px solid #ddd;
+      vertical-align: middle;
+    }
+
+    table.vehicle-table tbody td.num {
+      text-align: right;
+    }
+
+    /* ── Signature block ── */
+    .sig-block {
+      margin-top: 36px;
+    }
+
+    .sig-block table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .sig-block td {
+      vertical-align: top;
+      padding: 0 32px 0 0;
+      width: 50%;
+    }
+
+    .sig-block td:last-child {
+      padding-right: 0;
+    }
+
+    .sig-label {
+      font-weight: bold;
+      font-size: 9.5pt;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .sig-line {
+      border-bottom: 1px solid #000;
+      height: 28px;
+      min-width: 200px;
+    }
+
+    /* DocuSign anchor strings — invisible in PDF rendering */
+    .ds-anchor {
+      color: white;
+      font-size: 1pt;
+      display: inline;
+      line-height: 0;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Header ─────────────────────────────────────────────── -->
+  <div class="doc-header">
+    {{#if logoDataUri}}
+    <img src="{{{logoDataUri}}}" alt="Lessor logo" />
+    {{/if}}
+    <h1 class="doc-title">VEHICLE LEASE SCHEDULE</h1>
+  </div>
+
+  <!-- ── Opening Statement ──────────────────────────────────── -->
+  <p class="opening-stmt">
+    The following vehicle is hereby added to the Master Lease Agreement dated
+    <span class="fill">{{#if schedule.master_lease_ref}}{{schedule.master_lease_ref}}{{else}}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{/if}}</span>,
+    between
+    <span class="fill">{{lessor.name}}</span> (Lessor) and
+    <span class="fill">{{lessee.name}}</span> (Lessee).
+  </p>
+  <p class="doc-date">
+    Date:&nbsp;&nbsp;<span class="fill">{{#if schedule.schedule_date}}{{fmtDateShort schedule.schedule_date}}{{else}}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{/if}}</span>
+  </p>
+
+  <!-- ── Parties ───────────────────────────────────────────── -->
+  <div class="parties">
+    <div class="party-block">
+      <div class="party-label">Lessor:</div>
+      <div class="party-name">{{lessor.name}}</div>
+      <div class="party-address">
+        {{lessor.address}}{{#if lessor.po_box}}<br/>{{lessor.po_box}}{{/if}}<br/>
+        {{lessor.city}}, {{lessor.state}} {{lessor.zip}}
+      </div>
+    </div>
+    <div class="party-block">
+      <div class="party-label">Lessee:</div>
+      <div class="party-name">{{lessee.name}}</div>
+      <div class="party-address">
+        {{lessee.address}}<br/>
+        {{lessee.city}}, {{lessee.state}} {{lessee.zip}}
+        {{#if lessee.phone}}<br/>{{lessee.phone}}{{/if}}
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Vehicle Schedule Table ─────────────────────────────── -->
+  <table class="vehicle-table">
+    <thead>
+      <tr>
+        <th>Unit / VIN</th>
+        <th>Vehicle Description</th>
+        <th>Lease Date</th>
+        <th>Term</th>
+        <th class="num">Cap Cost</th>
+        <th class="num">Monthly Payment</th>
+        <th class="num">Lease End Residual Value</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each vehicles}}
+      <tr>
+        <td style="font-family: monospace; font-size: 8pt;">{{#if vin}}{{vin}}{{else}}&mdash;{{/if}}</td>
+        <td>{{#if model_year}}{{model_year}} {{/if}}{{#if oem}}{{oem}} {{/if}}{{#if vehicle_line}}{{vehicle_line}}{{/if}}{{#unless model_year}}{{#unless oem}}{{#unless vehicle_line}}&mdash;{{/unless}}{{/unless}}{{/unless}}</td>
+        <td>{{#if lease_start_date}}{{fmtDateShort lease_start_date}}{{else}}&mdash;{{/if}}</td>
+        <td>{{#if term}}{{term}}{{else}}&mdash;{{/if}}</td>
+        <td class="num">{{#if net_cap_cost}}{{fmt net_cap_cost}}{{else}}&mdash;{{/if}}</td>
+        <td class="num">{{#if monthly_payment}}{{fmt monthly_payment}}{{else}}&mdash;{{/if}}</td>
+        <td class="num">{{#if residual_value}}{{fmt residual_value}}{{else}}&mdash;{{/if}}</td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+
+  <!-- ── Signatures ─────────────────────────────────────────── -->
+  <div class="sig-block">
+    <table>
+      <tr>
+        <!-- Lessee -->
+        <td>
+          <span class="sig-label">Lessee:</span>
+          <div class="sig-line">
+            <span class="ds-anchor">\ls_lessee_sign\</span>
+          </div>
+          <span class="ds-anchor">\ls_lessee_date\</span>
+          {{#if signatures.co_lessee_signer_name}}
+          <div class="sig-line" style="margin-top: 16px;">
+            <span class="ds-anchor">\ls_co_lessee_sign\</span>
+          </div>
+          <span class="ds-anchor">\ls_co_lessee_date\</span>
+          {{/if}}
+        </td>
+        <!-- Lessor -->
+        <td>
+          <span class="sig-label">Lessor:</span>
+          <div class="sig-line">
+            <span class="ds-anchor">\ls_lessor_sign\</span>
+          </div>
+          <span class="ds-anchor">\ls_lessor_date\</span>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+</body>
+</html>

@@ -76,8 +76,6 @@ export default function Step3Vehicle({ form, prefilled, isMasterLease }: Props) 
     setLookupState('idle')
   }
 
-  const coreDisabled = prefilled || lookupState === 'found'
-
   // ── Master lease mode: editable vehicle table ─────────────────────────────
   if (isMasterLease) {
     // Live source: read from vehicles_json form field so edits persist across steps
@@ -190,132 +188,129 @@ export default function Step3Vehicle({ form, prefilled, isMasterLease }: Props) 
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-6">
+      <div className="space-y-4">
 
-        {/* VIN — first, full width */}
-        <div className="sm:col-span-6">
-          <label className="label">VIN <span className="req">*</span></label>
-          <div className="relative">
-            <input
-              {...register('vin', {
-                required: 'Required',
-                minLength: { value: 17, message: 'VIN must be 17 characters' },
-                maxLength: { value: 17, message: 'VIN must be 17 characters' },
-              })}
-              onChange={prefilled ? undefined : handleVinChange}
-              readOnly={prefilled}
-              placeholder="Enter 17-character VIN…"
-              maxLength={17}
-              className="input font-mono uppercase tracking-widest pr-10 read-only:bg-gray-50 read-only:text-gray-500 read-only:cursor-default"
-              autoFocus={!prefilled}
-            />
-            {/* Status icon / clear — hidden when prefilled */}
-            {!prefilled && (
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
-                {lookupState === 'loading' && (
-                  <Loader2 size={16} className="animate-spin text-gray-400" />
-                )}
-                {lookupState === 'found' && (
-                  <button type="button" onClick={handleClearVin} title="Clear VIN" className="text-green-600 hover:text-green-700">
-                    <X size={16} />
-                  </button>
-                )}
-                {lookupState === 'not_found' && (
-                  <button type="button" onClick={handleClearVin} title="Clear VIN" className="text-red-500 hover:text-red-600">
-                    <X size={16} />
-                  </button>
-                )}
+        {/* Row 1: VIN | Condition | Year | Make | Model — 5 columns */}
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+          <div>
+            <label className="label">VIN <span className="req">*</span></label>
+            <div className="relative">
+              <input
+                {...register('vin', {
+                  required: 'Required',
+                  minLength: { value: 17, message: 'VIN must be 17 characters' },
+                  maxLength: { value: 17, message: 'VIN must be 17 characters' },
+                })}
+                onChange={prefilled ? undefined : handleVinChange}
+                readOnly={prefilled}
+                placeholder="Enter 17-character VIN…"
+                maxLength={17}
+                className="input font-mono uppercase tracking-widest pr-10 read-only:bg-gray-50 read-only:text-gray-500 read-only:cursor-default"
+                autoFocus={!prefilled}
+              />
+              {!prefilled && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
+                  {lookupState === 'loading' && (
+                    <Loader2 size={16} className="animate-spin text-gray-400" />
+                  )}
+                  {lookupState === 'found' && (
+                    <button type="button" onClick={handleClearVin} title="Clear VIN" className="text-green-600 hover:text-green-700">
+                      <X size={16} />
+                    </button>
+                  )}
+                  {lookupState === 'not_found' && (
+                    <button type="button" onClick={handleClearVin} title="Clear VIN" className="text-red-500 hover:text-red-600">
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+            {errors.vin && <p className="field-error">{errors.vin.message}</p>}
+            {!prefilled && lookupState === 'found' && (
+              <div className="mt-2 flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-200 rounded-md px-2 py-1.5">
+                <CheckCircle2 size={13} className="shrink-0" />
+                Found — click × to clear.
+              </div>
+            )}
+            {!prefilled && lookupState === 'not_found' && (
+              <div className="mt-2 flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1.5">
+                <AlertCircle size={13} className="shrink-0" />
+                Not found — enter manually.
               </div>
             )}
           </div>
-          {errors.vin && <p className="field-error">{errors.vin.message}</p>}
 
-          {/* Lookup status banners — hidden when prefilled */}
-          {!prefilled && lookupState === 'found' && (
-            <div className="mt-2 flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-md px-3 py-2">
-              <CheckCircle2 size={15} className="shrink-0" />
-              Vehicle found — details auto-populated. Click × to enter a different VIN.
-            </div>
-          )}
-          {!prefilled && lookupState === 'not_found' && (
-            <div className="mt-2 flex items-center gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
-              <AlertCircle size={15} className="shrink-0" />
-              VIN not found in database — please enter the vehicle details manually below.
-            </div>
-          )}
+          <div>
+            <label className="label">Condition <span className="req">*</span></label>
+            <select
+              {...register('condition', { required: 'Required' })}
+              className="input"
+            >
+              <option value="NEW">NEW</option>
+              <option value="USED">USED</option>
+            </select>
+            {errors.condition && <p className="field-error">{errors.condition.message}</p>}
+          </div>
+
+          <div>
+            <label className="label">Year <span className="req">*</span></label>
+            <input
+              {...register('year', { required: 'Required' })}
+              placeholder="2025"
+              maxLength={4}
+              readOnly={prefilled}
+              disabled={!prefilled && lookupState === 'found'}
+              className="input disabled:bg-gray-50 disabled:text-gray-500 read-only:bg-gray-50 read-only:text-gray-500 read-only:cursor-default"
+            />
+            {errors.year && <p className="field-error">{errors.year.message}</p>}
+          </div>
+
+          <div>
+            <label className="label">Make <span className="req">*</span></label>
+            <input
+              {...register('make', { required: 'Required' })}
+              placeholder="RAM"
+              readOnly={prefilled}
+              disabled={!prefilled && lookupState === 'found'}
+              className="input disabled:bg-gray-50 disabled:text-gray-500 read-only:bg-gray-50 read-only:text-gray-500 read-only:cursor-default"
+            />
+            {errors.make && <p className="field-error">{errors.make.message}</p>}
+          </div>
+
+          <div>
+            <label className="label">Model <span className="req">*</span></label>
+            <input
+              {...register('model', { required: 'Required' })}
+              placeholder="3500 LARAMIE"
+              readOnly={prefilled}
+              disabled={!prefilled && lookupState === 'found'}
+              className="input disabled:bg-gray-50 disabled:text-gray-500 read-only:bg-gray-50 read-only:text-gray-500 read-only:cursor-default"
+            />
+            {errors.model && <p className="field-error">{errors.model.message}</p>}
+          </div>
         </div>
 
-        {/* Remaining fields — always visible, disabled when auto-filled */}
-
-        {/* Row 2: Condition | Year | Make | Model — proportioned to data length */}
-        <div className="sm:col-span-1">
-          <label className="label">Condition <span className="req">*</span></label>
-          <select
-            {...register('condition', { required: 'Required' })}
-            className="input"
-          >
-            <option value="NEW">NEW</option>
-            <option value="USED">USED</option>
-          </select>
-          {errors.condition && <p className="field-error">{errors.condition.message}</p>}
-        </div>
-
-        <div className="sm:col-span-1">
-          <label className="label">Year <span className="req">*</span></label>
-          <input
-            {...register('year', { required: 'Required' })}
-            placeholder="2025"
-            maxLength={4}
-            readOnly={prefilled}
-            disabled={!prefilled && lookupState === 'found'}
-            className="input disabled:bg-gray-50 disabled:text-gray-500 read-only:bg-gray-50 read-only:text-gray-500 read-only:cursor-default"
-          />
-          {errors.year && <p className="field-error">{errors.year.message}</p>}
-        </div>
-
-        <div className="sm:col-span-2">
-          <label className="label">Make <span className="req">*</span></label>
-          <input
-            {...register('make', { required: 'Required' })}
-            placeholder="RAM"
-            readOnly={prefilled}
-            disabled={!prefilled && lookupState === 'found'}
-            className="input disabled:bg-gray-50 disabled:text-gray-500 read-only:bg-gray-50 read-only:text-gray-500 read-only:cursor-default"
-          />
-          {errors.make && <p className="field-error">{errors.make.message}</p>}
-        </div>
-
-        <div className="sm:col-span-2">
-          <label className="label">Model <span className="req">*</span></label>
-          <input
-            {...register('model', { required: 'Required' })}
-            placeholder="3500 LARAMIE"
-            readOnly={prefilled}
-            disabled={!prefilled && lookupState === 'found'}
-            className="input disabled:bg-gray-50 disabled:text-gray-500 read-only:bg-gray-50 read-only:text-gray-500 read-only:cursor-default"
-          />
-          {errors.model && <p className="field-error">{errors.model.message}</p>}
-        </div>
-
-        {/* Row 3: Body Style | Odometer */}
-        <div className="sm:col-span-3">
-          <label className="label">Body Style</label>
-          <input
-            {...register('bodyStyle')}
-            placeholder="e.g. TRUCK, SUV, SEDAN…"
-            className="input"
-          />
-        </div>
-
-        <div className="sm:col-span-2">
-          <label className="label">Odometer (miles)</label>
-          <input
-            {...register('odometer')}
-            placeholder="40"
-            type="number"
-            min={0}
-            className="input"
-          />
+        {/* Row 2: Body Style | Odometer */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="label">Body Style</label>
+            <input
+              {...register('bodyStyle')}
+              placeholder="e.g. TRUCK, SUV, SEDAN…"
+              className="input"
+            />
+          </div>
+          <div>
+            <label className="label">Odometer (miles)</label>
+            <input
+              {...register('odometer')}
+              placeholder="40"
+              type="number"
+              min={0}
+              className="input"
+            />
+          </div>
         </div>
 
       </div>

@@ -508,6 +508,13 @@ const VehiclesOnOrderTable = forwardRef<
     else router.push('/new-lease?leaseType=standard')
   }
 
+  function routeToLeaseSchedule() {
+    if (pendingVehicles.length === 0) return
+    sessionStorage.setItem('leaseScheduleVehicles', JSON.stringify(pendingVehicles))
+    setMasterLeaseModalOpen(false)
+    router.push('/new-lease-schedule')
+  }
+
   function resize(key: ColKey, delta: number) {
     setColWidths((prev) => ({ ...prev, [key]: Math.max(60, (prev[key] ?? 120) + delta) }))
   }
@@ -818,8 +825,9 @@ const VehiclesOnOrderTable = forwardRef<
                 New Master Lease Agreement
               </button>
               <button
-                onClick={() => setMasterLeaseModalOpen(false)}
-                className="btn-secondary w-full justify-center"
+                onClick={routeToLeaseSchedule}
+                disabled={pendingVehicles.length === 0}
+                className="btn-secondary w-full justify-center disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 New Lease Schedule
               </button>

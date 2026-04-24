@@ -243,10 +243,10 @@ export default function Step1Parties({ form }: Props) {
           </button>
 
           {leaseSetupOpen && (
-            <div className="px-4 py-4 bg-white">
+            <div className="px-4 py-3 bg-white">
 
-              {/* Four dropdowns in 2×2 grid */}
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {/* Four dropdowns in 4-column grid (2 on tablet, 1 on mobile) */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
 
                 {/* A — Lease Type */}
                 <div>
@@ -339,7 +339,7 @@ export default function Step1Parties({ form }: Props) {
 
               {/* Department / Location — only when Internal */}
               {isInternal && (
-                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <div>
                     <label className="label">
                       Department / Location <span className="req">*</span>
@@ -458,110 +458,108 @@ export default function Step1Parties({ form }: Props) {
           {/* ── Business fields ── */}
           {isBusiness && (
             <>
-              {/* Business Name — full width */}
-              <div className="sm:col-span-6">
-                <label className="label">Business Name <span className="req">*</span></label>
-                <select
-                  {...register('lesseeName', { required: isBusiness ? 'Required' : false })}
-                  className="input"
-                >
-                  <option value="">Select a business…</option>
-                  <option>Worldwide Equipment Sales, LLC</option>
-                  <option>Prescription Landscape Inc.</option>
-                  <option>Envoy Technologies LLC</option>
-                  <option>Henning Logistics</option>
-                  <option>Inner City Logistics</option>
-                  <option>Sansom Equipment Company</option>
-                  <option>Chrysler of Forest City</option>
-                  <option>Central Iowa Televising LLC</option>
-                  <option>SF Iowa Leasing, LLC</option>
-                  <option>All American Cleanup</option>
-                  <option>UCSD</option>
-                  <option>Curbtender, Inc.</option>
-                  <option>MN Care Services</option>
-                  <option>Sukup Manufacturing Co.</option>
-                  <option>Prime Time Electric LLC</option>
-                </select>
-                {errors.lesseeName && <p className="field-error">{errors.lesseeName.message}</p>}
+              {/* Business Name + Location + Phone + Email — 4 columns on one row */}
+              <div className="sm:col-span-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+                <div>
+                  <label className="label">Business Name <span className="req">*</span></label>
+                  <select
+                    {...register('lesseeName', { required: isBusiness ? 'Required' : false })}
+                    className="input"
+                  >
+                    <option value="">Select a business…</option>
+                    <option>Worldwide Equipment Sales, LLC</option>
+                    <option>Prescription Landscape Inc.</option>
+                    <option>Envoy Technologies LLC</option>
+                    <option>Henning Logistics</option>
+                    <option>Inner City Logistics</option>
+                    <option>Sansom Equipment Company</option>
+                    <option>Chrysler of Forest City</option>
+                    <option>Central Iowa Televising LLC</option>
+                    <option>SF Iowa Leasing, LLC</option>
+                    <option>All American Cleanup</option>
+                    <option>UCSD</option>
+                    <option>Curbtender, Inc.</option>
+                    <option>MN Care Services</option>
+                    <option>Sukup Manufacturing Co.</option>
+                    <option>Prime Time Electric LLC</option>
+                  </select>
+                  {errors.lesseeName && <p className="field-error">{errors.lesseeName.message}</p>}
+                </div>
+                <div>
+                  <label className="label">Location</label>
+                  <input
+                    {...register('location')}
+                    placeholder="e.g. Branch Office – Des Moines"
+                    className="input"
+                  />
+                  <p className="mt-1 text-xs text-gray-400">Optional — secondary location or branch descriptor</p>
+                </div>
+                <div>
+                  <label className="label">Phone</label>
+                  <input
+                    {...register('phone', {
+                      validate: (v) => !v || PHONE_REGEX.test(v) || 'Enter a valid US phone number',
+                    })}
+                    placeholder="320-241-5296"
+                    type="tel"
+                    className="input"
+                  />
+                  {errors.phone && <p className="field-error">{errors.phone.message}</p>}
+                </div>
+                <div>
+                  <label className="label">Email <span className="req">*</span></label>
+                  <input
+                    {...register('email', {
+                      required: 'Required',
+                      pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Enter a valid email address' },
+                    })}
+                    placeholder="joel@example.com"
+                    type="email"
+                    className="input"
+                  />
+                  {errors.email && <p className="field-error">{errors.email.message}</p>}
+                </div>
               </div>
 
-              {/* Street address — full width */}
-              <div className="sm:col-span-6">
-                <label className="label">Street Address <span className="req">*</span></label>
-                <input
-                  {...register('address', { required: 'Required' })}
-                  placeholder="6939 30th St. NE"
-                  className="input"
-                />
-                {errors.address && <p className="field-error">{errors.address.message}</p>}
-              </div>
-
-              {/* City + State + ZIP */}
-              <div className="sm:col-span-3">
-                <label className="label">City <span className="req">*</span></label>
-                <input
-                  {...register('city', { required: 'Required' })}
-                  placeholder="Sauk Rapids"
-                  className="input"
-                />
-                {errors.city && <p className="field-error">{errors.city.message}</p>}
-              </div>
-              <div className="sm:col-span-2">
-                <label className="label">State <span className="req">*</span></label>
-                <select {...register('state', { required: 'Required' })} className="input">
-                  <option value="">Select…</option>
-                  {US_STATES.map((s) => (
-                    <option key={s.abbr} value={s.abbr}>{s.abbr} — {s.name}</option>
-                  ))}
-                </select>
-                {errors.state && <p className="field-error">{errors.state.message}</p>}
-              </div>
-              <div className="sm:col-span-1">
-                <label className="label">ZIP <span className="req">*</span></label>
-                <input
-                  {...register('zip', { required: 'Required' })}
-                  placeholder="56379"
-                  className="input"
-                />
-                {errors.zip && <p className="field-error">{errors.zip.message}</p>}
-              </div>
-
-              {/* Location (optional) */}
-              <div className="sm:col-span-6">
-                <label className="label">Location</label>
-                <input
-                  {...register('location')}
-                  placeholder="e.g. Branch Office – Des Moines"
-                  className="input"
-                />
-                <p className="mt-1 text-xs text-gray-400">Optional — secondary location or branch descriptor</p>
-              </div>
-
-              {/* Phone + Email */}
-              <div className="sm:col-span-2">
-                <label className="label">Phone</label>
-                <input
-                  {...register('phone', {
-                    validate: (v) => !v || PHONE_REGEX.test(v) || 'Enter a valid US phone number',
-                  })}
-                  placeholder="320-241-5296"
-                  type="tel"
-                  className="input"
-                />
-                {errors.phone && <p className="field-error">{errors.phone.message}</p>}
-              </div>
-              <div className="sm:col-span-4">
-                <label className="label">Email <span className="req">*</span></label>
-                <input
-                  {...register('email', {
-                    required: 'Required',
-                    pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Enter a valid email address' },
-                  })}
-                  placeholder="joel@example.com"
-                  type="email"
-                  className="input"
-                />
-                {errors.email && <p className="field-error">{errors.email.message}</p>}
+              {/* Address row — 4 equal columns on desktop */}
+              <div className="sm:col-span-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+                <div>
+                  <label className="label">Street Address <span className="req">*</span></label>
+                  <input
+                    {...register('address', { required: 'Required' })}
+                    placeholder="6939 30th St. NE"
+                    className="input"
+                  />
+                  {errors.address && <p className="field-error">{errors.address.message}</p>}
+                </div>
+                <div>
+                  <label className="label">City <span className="req">*</span></label>
+                  <input
+                    {...register('city', { required: 'Required' })}
+                    placeholder="Sauk Rapids"
+                    className="input"
+                  />
+                  {errors.city && <p className="field-error">{errors.city.message}</p>}
+                </div>
+                <div>
+                  <label className="label">State <span className="req">*</span></label>
+                  <select {...register('state', { required: 'Required' })} className="input">
+                    <option value="">Select…</option>
+                    {US_STATES.map((s) => (
+                      <option key={s.abbr} value={s.abbr}>{s.abbr} — {s.name}</option>
+                    ))}
+                  </select>
+                  {errors.state && <p className="field-error">{errors.state.message}</p>}
+                </div>
+                <div>
+                  <label className="label">ZIP <span className="req">*</span></label>
+                  <input
+                    {...register('zip', { required: 'Required' })}
+                    placeholder="56379"
+                    className="input"
+                  />
+                  {errors.zip && <p className="field-error">{errors.zip.message}</p>}
+                </div>
               </div>
 
               {/* ── Billing Contact (form-only, not on documents) ── */}
@@ -617,92 +615,92 @@ export default function Step1Parties({ form }: Props) {
           {/* ── Individual fields ── */}
           {isIndividual && (
             <>
-              {/* First + Last Name */}
-              <div className="sm:col-span-3">
-                <label className="label">First Name <span className="req">*</span></label>
-                <input
-                  {...register('lesseeFirstName', { required: isIndividual ? 'Required' : false })}
-                  placeholder="John"
-                  className="input"
-                />
-                {errors.lesseeFirstName && <p className="field-error">{errors.lesseeFirstName.message}</p>}
-              </div>
-              <div className="sm:col-span-3">
-                <label className="label">Last Name <span className="req">*</span></label>
-                <input
-                  {...register('lesseeLastName', { required: isIndividual ? 'Required' : false })}
-                  placeholder="Smith"
-                  className="input"
-                />
-                {errors.lesseeLastName && <p className="field-error">{errors.lesseeLastName.message}</p>}
-              </div>
-
-              {/* Street address — full width */}
-              <div className="sm:col-span-6">
-                <label className="label">Street Address <span className="req">*</span></label>
-                <input
-                  {...register('address', { required: 'Required' })}
-                  placeholder="6939 30th St. NE"
-                  className="input"
-                />
-                {errors.address && <p className="field-error">{errors.address.message}</p>}
-              </div>
-
-              {/* City + State + ZIP */}
-              <div className="sm:col-span-3">
-                <label className="label">City <span className="req">*</span></label>
-                <input
-                  {...register('city', { required: 'Required' })}
-                  placeholder="Sauk Rapids"
-                  className="input"
-                />
-                {errors.city && <p className="field-error">{errors.city.message}</p>}
-              </div>
-              <div className="sm:col-span-2">
-                <label className="label">State <span className="req">*</span></label>
-                <select {...register('state', { required: 'Required' })} className="input">
-                  <option value="">Select…</option>
-                  {US_STATES.map((s) => (
-                    <option key={s.abbr} value={s.abbr}>{s.abbr} — {s.name}</option>
-                  ))}
-                </select>
-                {errors.state && <p className="field-error">{errors.state.message}</p>}
-              </div>
-              <div className="sm:col-span-1">
-                <label className="label">ZIP <span className="req">*</span></label>
-                <input
-                  {...register('zip', { required: 'Required' })}
-                  placeholder="56379"
-                  className="input"
-                />
-                {errors.zip && <p className="field-error">{errors.zip.message}</p>}
+              {/* First Name + Last Name + Phone + Email — 4 columns on one row */}
+              <div className="sm:col-span-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+                <div>
+                  <label className="label">First Name <span className="req">*</span></label>
+                  <input
+                    {...register('lesseeFirstName', { required: isIndividual ? 'Required' : false })}
+                    placeholder="John"
+                    className="input"
+                  />
+                  {errors.lesseeFirstName && <p className="field-error">{errors.lesseeFirstName.message}</p>}
+                </div>
+                <div>
+                  <label className="label">Last Name <span className="req">*</span></label>
+                  <input
+                    {...register('lesseeLastName', { required: isIndividual ? 'Required' : false })}
+                    placeholder="Smith"
+                    className="input"
+                  />
+                  {errors.lesseeLastName && <p className="field-error">{errors.lesseeLastName.message}</p>}
+                </div>
+                <div>
+                  <label className="label">Phone</label>
+                  <input
+                    {...register('phone', {
+                      validate: (v) => !v || PHONE_REGEX.test(v) || 'Enter a valid US phone number',
+                    })}
+                    placeholder="320-241-5296"
+                    type="tel"
+                    className="input"
+                  />
+                  {errors.phone && <p className="field-error">{errors.phone.message}</p>}
+                </div>
+                <div>
+                  <label className="label">Email <span className="req">*</span></label>
+                  <input
+                    {...register('email', {
+                      required: 'Required',
+                      pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Enter a valid email address' },
+                    })}
+                    placeholder="john.smith@example.com"
+                    type="email"
+                    className="input"
+                  />
+                  {errors.email && <p className="field-error">{errors.email.message}</p>}
+                </div>
               </div>
 
-              {/* Phone + Email */}
-              <div className="sm:col-span-2">
-                <label className="label">Phone</label>
-                <input
-                  {...register('phone', {
-                    validate: (v) => !v || PHONE_REGEX.test(v) || 'Enter a valid US phone number',
-                  })}
-                  placeholder="320-241-5296"
-                  type="tel"
-                  className="input"
-                />
-                {errors.phone && <p className="field-error">{errors.phone.message}</p>}
-              </div>
-              <div className="sm:col-span-4">
-                <label className="label">Email <span className="req">*</span></label>
-                <input
-                  {...register('email', {
-                    required: 'Required',
-                    pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Enter a valid email address' },
-                  })}
-                  placeholder="john.smith@example.com"
-                  type="email"
-                  className="input"
-                />
-                {errors.email && <p className="field-error">{errors.email.message}</p>}
+              {/* Address row — Street Address, City, State, ZIP in 4 equal columns */}
+              <div className="sm:col-span-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+                <div>
+                  <label className="label">Street Address <span className="req">*</span></label>
+                  <input
+                    {...register('address', { required: 'Required' })}
+                    placeholder="6939 30th St. NE"
+                    className="input"
+                  />
+                  {errors.address && <p className="field-error">{errors.address.message}</p>}
+                </div>
+                <div>
+                  <label className="label">City <span className="req">*</span></label>
+                  <input
+                    {...register('city', { required: 'Required' })}
+                    placeholder="Sauk Rapids"
+                    className="input"
+                  />
+                  {errors.city && <p className="field-error">{errors.city.message}</p>}
+                </div>
+                <div>
+                  <label className="label">State <span className="req">*</span></label>
+                  <select {...register('state', { required: 'Required' })} className="input">
+                    <option value="">Select…</option>
+                    {US_STATES.map((s) => (
+                      <option key={s.abbr} value={s.abbr}>{s.abbr} — {s.name}</option>
+                    ))}
+                  </select>
+                  {errors.state && <p className="field-error">{errors.state.message}</p>}
+                </div>
+                <div>
+                  <label className="label">ZIP <span className="req">*</span></label>
+                  <input
+                    {...register('zip', { required: 'Required' })}
+                    placeholder="56379"
+                    className="input"
+                  />
+                  {errors.zip && <p className="field-error">{errors.zip.message}</p>}
+                </div>
               </div>
             </>
           )}
@@ -731,48 +729,48 @@ export default function Step1Parties({ form }: Props) {
             {errors.lessorName && <p className="field-error">{errors.lessorName.message}</p>}
           </div>
 
-          {/* Street (wider) + P.O. Box (narrower) — same row */}
-          <div className="sm:col-span-4">
-            <label className="label">Street Address <span className="req">*</span></label>
-            <input
-              {...register('lessorAddress', { required: 'Required' })}
-              readOnly
-              className="input bg-gray-50 text-gray-500 cursor-default"
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <label className="label">P.O. Box</label>
-            <input
-              {...register('lessorPoBox')}
-              readOnly
-              className="input bg-gray-50 text-gray-500 cursor-default"
-            />
-          </div>
-
-          {/* City + State + ZIP — same row */}
-          <div className="sm:col-span-3">
-            <label className="label">City <span className="req">*</span></label>
-            <input
-              {...register('lessorCity', { required: 'Required' })}
-              readOnly
-              className="input bg-gray-50 text-gray-500 cursor-default"
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <label className="label">State <span className="req">*</span></label>
-            <input
-              {...register('lessorState', { required: 'Required' })}
-              readOnly
-              className="input bg-gray-50 text-gray-500 cursor-default"
-            />
-          </div>
-          <div className="sm:col-span-1">
-            <label className="label">ZIP <span className="req">*</span></label>
-            <input
-              {...register('lessorZip', { required: 'Required' })}
-              readOnly
-              className="input bg-gray-50 text-gray-500 cursor-default"
-            />
+          {/* Address row — all 5 fields on one row on desktop */}
+          <div className="sm:col-span-6 grid grid-cols-2 gap-4 lg:grid-cols-5">
+            <div>
+              <label className="label">Street Address <span className="req">*</span></label>
+              <input
+                {...register('lessorAddress', { required: 'Required' })}
+                readOnly
+                className="input bg-gray-50 text-gray-500 cursor-default"
+              />
+            </div>
+            <div>
+              <label className="label">P.O. Box</label>
+              <input
+                {...register('lessorPoBox')}
+                readOnly
+                className="input bg-gray-50 text-gray-500 cursor-default"
+              />
+            </div>
+            <div>
+              <label className="label">City <span className="req">*</span></label>
+              <input
+                {...register('lessorCity', { required: 'Required' })}
+                readOnly
+                className="input bg-gray-50 text-gray-500 cursor-default"
+              />
+            </div>
+            <div>
+              <label className="label">State <span className="req">*</span></label>
+              <input
+                {...register('lessorState', { required: 'Required' })}
+                readOnly
+                className="input bg-gray-50 text-gray-500 cursor-default"
+              />
+            </div>
+            <div>
+              <label className="label">ZIP <span className="req">*</span></label>
+              <input
+                {...register('lessorZip', { required: 'Required' })}
+                readOnly
+                className="input bg-gray-50 text-gray-500 cursor-default"
+              />
+            </div>
           </div>
         </CollapsibleSection>
 

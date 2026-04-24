@@ -337,7 +337,7 @@ export default function Step5Signatures({ form }: Props) {
                     </button>
                   )}
                 </div>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                   <div>
                     <label className="label">First Name <span className="req">*</span></label>
                     <input
@@ -410,7 +410,7 @@ export default function Step5Signatures({ form }: Props) {
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">
               Company Signatory
             </p>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
               <div>
                 <label className="label">Name <span className="req">*</span></label>
                 <input
@@ -433,7 +433,7 @@ export default function Step5Signatures({ form }: Props) {
                   <p className="field-error">{errors.lessorSignatoryTitle.message}</p>
                 )}
               </div>
-              <div className="sm:col-span-2">
+              <div>
                 <label className="label">Email <span className="req">*</span></label>
                 <input
                   {...register('lessorSignatoryEmail', {
