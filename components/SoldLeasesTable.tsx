@@ -30,7 +30,7 @@ function SoldLeaseDetailModal({ lease, onClose }: { lease: LeasePortfolioRecord;
             </p>
           </div>
           <div className="flex items-center gap-3 ml-4">
-            <span className="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-700">Purchased</span>
+            <span className="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-700">Sold</span>
             <button onClick={onClose} className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"><X size={18} /></button>
           </div>
         </div>

@@ -96,6 +96,8 @@ export default function CurrentLeasesPage() {
           leases={leases}
           loading={loading}
           initialFilters={drillFilters}
+          onOutOfService={() => load()}
+          onSold={() => load()}
         />
       )}
     </div>

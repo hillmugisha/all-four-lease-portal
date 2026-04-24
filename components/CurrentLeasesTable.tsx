@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { usePersistedColumns } from '@/lib/usePersistedColumns'
 import { LeasePortfolioRecord } from '@/lib/lease-portfolio-types'
-import { Eye, X, Search, ChevronDown, ChevronLeft, ChevronRight, Download, Columns } from 'lucide-react'
+import { Eye, X, Search, ChevronDown, ChevronLeft, ChevronRight, Download, Columns, Wrench, Loader2, AlertTriangle, ShoppingCart } from 'lucide-react'
 import LeaseDocumentsSection from '@/components/LeaseDocumentsSection'
 import clsx from 'clsx'
 import * as XLSX from 'xlsx'
@@ -21,6 +21,135 @@ function StatusBadge({ status }: { status: string }) {
     <span className={clsx('inline-flex items-center rounded px-2 py-0.5 text-xs font-medium', color)}>
       {status}
     </span>
+  )
+}
+
+// ─── Mark as Out of Service confirmation modal ────────────────────────────────
+
+function MarkOutOfServiceConfirmModal({
+  count, onConfirm, onCancel, confirming, error,
+}: {
+  count: number
+  onConfirm: () => void
+  onCancel: () => void
+  confirming: boolean
+  error?: string | null
+}) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
+      <div className="relative z-10 w-full max-w-sm rounded-xl bg-white shadow-2xl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle size={18} className="text-amber-500 shrink-0" />
+            <span className="text-sm font-semibold text-gray-900">Mark Out of Service</span>
+          </div>
+          <button
+            onClick={onCancel}
+            className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
+        <div className="px-5 py-4 space-y-3">
+          <p className="text-sm text-gray-600">
+            Are you sure you want to mark {count === 1 ? 'this lease' : `these ${count} leases`} as out of service?
+          </p>
+          <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 space-y-0.5">
+            <p className="text-xs font-semibold text-gray-700">
+              {count === 1 ? '1 lease record' : `${count} lease records`}
+            </p>
+            <p className="text-xs text-gray-500">
+              Will be moved from Active Leases to the Out of Service tab with today&apos;s date.
+            </p>
+          </div>
+          {error && <p className="text-xs font-medium text-red-600">{error}</p>}
+        </div>
+        <div className="flex justify-end gap-2.5 px-5 py-4 border-t border-gray-100">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={confirming}
+            className="btn-secondary"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={confirming}
+            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+          >
+            {confirming ? <><Loader2 size={14} className="animate-spin" /> Saving…</> : 'Continue'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Mark as Sold confirmation modal ─────────────────────────────────────────
+
+function MarkAsSoldConfirmModal({
+  count, onConfirm, onCancel, confirming, error,
+}: {
+  count: number
+  onConfirm: () => void
+  onCancel: () => void
+  confirming: boolean
+  error?: string | null
+}) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
+      <div className="relative z-10 w-full max-w-sm rounded-xl bg-white shadow-2xl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle size={18} className="text-amber-500 shrink-0" />
+            <span className="text-sm font-semibold text-gray-900">Mark as Sold</span>
+          </div>
+          <button
+            onClick={onCancel}
+            className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
+        <div className="px-5 py-4 space-y-3">
+          <p className="text-sm text-gray-600">
+            Are you sure you want to mark {count === 1 ? 'this lease' : `these ${count} leases`} as sold?
+          </p>
+          <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 space-y-0.5">
+            <p className="text-xs font-semibold text-gray-700">
+              {count === 1 ? '1 lease record' : `${count} lease records`}
+            </p>
+            <p className="text-xs text-gray-500">
+              Will be moved from Active Leases to the Sold tab with today&apos;s date as the sold date.
+            </p>
+          </div>
+          <p className="text-xs font-medium text-red-600">This action cannot be undone.</p>
+          {error && <p className="text-xs font-medium text-red-600">{error}</p>}
+        </div>
+        <div className="flex justify-end gap-2.5 px-5 py-4 border-t border-gray-100">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={confirming}
+            className="btn-secondary"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={confirming}
+            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+          >
+            {confirming ? <><Loader2 size={14} className="animate-spin" /> Saving…</> : 'Continue'}
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -305,9 +434,11 @@ interface TableProps {
   leases: LeasePortfolioRecord[]
   loading: boolean
   initialFilters?: Partial<Filters> | null
+  onOutOfService?: (ids: string[]) => void
+  onSold?: (ids: string[]) => void
 }
 
-export default function CurrentLeasesTable({ leases, loading, initialFilters }: TableProps) {
+export default function CurrentLeasesTable({ leases, loading, initialFilters, onOutOfService, onSold }: TableProps) {
   const [selected, setSelected]           = useState<LeasePortfolioRecord | null>(null)
   const [filters, setFilters]             = useState<Filters>(EMPTY_FILTERS)
   const [colWidths, setColWidths]         = useState<Record<ColKey, number>>(DEFAULT_WIDTHS)
@@ -315,6 +446,12 @@ export default function CurrentLeasesTable({ leases, loading, initialFilters }: 
   const [checkedIds, setCheckedIds]       = useState<Set<string>>(new Set())
   const [visibleCols, setVisibleCols]     = usePersistedColumns('cols:current-leases', DEFAULT_COLS_ACTIVE)
   const [columnsModalOpen, setColumnsModalOpen] = useState(false)
+  const [markingOOS, setMarkingOOS]             = useState(false)
+  const [oosConfirmOpen, setOosConfirmOpen]     = useState(false)
+  const [oosError, setOosError]                 = useState<string | null>(null)
+  const [markingSold, setMarkingSold]           = useState(false)
+  const [soldConfirmOpen, setSoldConfirmOpen]   = useState(false)
+  const [soldError, setSoldError]               = useState<string | null>(null)
 
   useEffect(() => {
     if (initialFilters) { setFilters({ ...EMPTY_FILTERS, ...initialFilters }); setPage(1) }
@@ -364,6 +501,58 @@ export default function CurrentLeasesTable({ leases, loading, initialFilters }: 
   }
   function handleExport() {
     exportToExcel(someChecked ? filtered.filter((l) => checkedIds.has(l.id)) : filtered)
+  }
+
+  async function handleMarkOutOfServiceConfirmed() {
+    const ids = Array.from(checkedIds)
+    if (!ids.length) return
+    setMarkingOOS(true)
+    setOosError(null)
+    try {
+      const res = await fetch('/api/current-leases/mark-out-of-service', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids }),
+      })
+      if (res.ok) {
+        setOosConfirmOpen(false)
+        setCheckedIds(new Set())
+        onOutOfService?.(ids)
+      } else {
+        const body = await res.json().catch(() => ({}))
+        setOosError(body.error ?? `Server error (${res.status}) — please try again.`)
+      }
+    } catch {
+      setOosError('Network error — please check your connection and try again.')
+    } finally {
+      setMarkingOOS(false)
+    }
+  }
+
+  async function handleMarkAsSoldConfirmed() {
+    const ids = Array.from(checkedIds)
+    if (!ids.length) return
+    setMarkingSold(true)
+    setSoldError(null)
+    try {
+      const res = await fetch('/api/current-leases/mark-sold', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids }),
+      })
+      if (res.ok) {
+        setSoldConfirmOpen(false)
+        setCheckedIds(new Set())
+        onSold?.(ids)
+      } else {
+        const body = await res.json().catch(() => ({}))
+        setSoldError(body.error ?? `Server error (${res.status}) — please try again.`)
+      }
+    } catch {
+      setSoldError('Network error — please check your connection and try again.')
+    } finally {
+      setMarkingSold(false)
+    }
   }
 
   useEffect(() => { setPage(1) }, [filters])
@@ -440,6 +629,22 @@ export default function CurrentLeasesTable({ leases, loading, initialFilters }: 
           </button>
           <button onClick={handleExport} className="btn-secondary py-1.5 text-xs" disabled={loading || filtered.length === 0}>
             <Download size={13} /> {someChecked ? `Export (${checkedIds.size})` : 'Export'}
+          </button>
+          <button
+            onClick={() => { setOosError(null); setOosConfirmOpen(true) }}
+            disabled={!someChecked || markingOOS}
+            className="btn-primary py-1.5 text-xs flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Wrench size={13} />
+            {someChecked ? `Mark Out of Service (${checkedIds.size})` : 'Mark Out of Service'}
+          </button>
+          <button
+            onClick={() => { setSoldError(null); setSoldConfirmOpen(true) }}
+            disabled={!someChecked || markingSold}
+            className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+          >
+            <ShoppingCart size={13} />
+            {someChecked ? `Mark as Sold (${checkedIds.size})` : 'Mark as Sold'}
           </button>
         </div>
 
@@ -558,6 +763,26 @@ export default function CurrentLeasesTable({ leases, loading, initialFilters }: 
           </div>
         )}
       </div>
+
+      {oosConfirmOpen && (
+        <MarkOutOfServiceConfirmModal
+          count={checkedIds.size}
+          onConfirm={handleMarkOutOfServiceConfirmed}
+          onCancel={() => setOosConfirmOpen(false)}
+          confirming={markingOOS}
+          error={oosError}
+        />
+      )}
+
+      {soldConfirmOpen && (
+        <MarkAsSoldConfirmModal
+          count={checkedIds.size}
+          onConfirm={handleMarkAsSoldConfirmed}
+          onCancel={() => setSoldConfirmOpen(false)}
+          confirming={markingSold}
+          error={soldError}
+        />
+      )}
 
       {selected && <CurrentLeaseDetailModal lease={selected} onClose={() => setSelected(null)} />}
 

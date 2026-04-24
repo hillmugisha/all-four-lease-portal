@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { usePersistedColumns } from '@/lib/usePersistedColumns'
 import { LeasePortfolioRecord } from '@/lib/lease-portfolio-types'
-import { Eye, X, Search, ChevronDown, ChevronLeft, ChevronRight, Download, Columns, ShoppingCart, Loader2, AlertTriangle } from 'lucide-react'
+import { Eye, X, Search, ChevronDown, ChevronLeft, ChevronRight, Download, Columns, ShoppingCart, Loader2, AlertTriangle, Zap } from 'lucide-react'
 import LeaseDocumentsSection from '@/components/LeaseDocumentsSection'
 import clsx from 'clsx'
 import * as XLSX from 'xlsx'
@@ -105,18 +105,18 @@ function ExpiredLeaseDetailModal({
 // ─── Mark as Sold confirmation modal ─────────────────────────────────────────
 
 function MarkAsSoldConfirmModal({
-  count, onConfirm, onCancel, confirming,
+  count, onConfirm, onCancel, confirming, error,
 }: {
   count: number
   onConfirm: () => void
   onCancel: () => void
   confirming: boolean
+  error?: string | null
 }) {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
       <div className="relative z-10 w-full max-w-sm rounded-xl bg-white shadow-2xl">
-        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <div className="flex items-center gap-2.5">
             <AlertTriangle size={18} className="text-amber-500 shrink-0" />
@@ -129,8 +129,6 @@ function MarkAsSoldConfirmModal({
             <X size={16} />
           </button>
         </div>
-
-        {/* Body */}
         <div className="px-5 py-4 space-y-3">
           <p className="text-sm text-gray-600">
             Are you sure you want to mark {count === 1 ? 'this lease' : `these ${count} leases`} as sold?
@@ -140,13 +138,12 @@ function MarkAsSoldConfirmModal({
               {count === 1 ? '1 lease record' : `${count} lease records`}
             </p>
             <p className="text-xs text-gray-500">
-              Will be moved from Out of Service to the Purchased table with today&apos;s date as the sold date.
+              Will be moved from Out of Service to the Sold tab with today&apos;s date as the sold date.
             </p>
           </div>
           <p className="text-xs font-medium text-red-600">This action cannot be undone.</p>
+          {error && <p className="text-xs font-medium text-red-600">{error}</p>}
         </div>
-
-        {/* Footer */}
         <div className="flex justify-end gap-2.5 px-5 py-4 border-t border-gray-100">
           <button
             type="button"
@@ -296,8 +293,20 @@ export default function ExpiredLeasesTable({ leases, loading, onSold }: TablePro
   const [checkedIds, setCheckedIds]       = useState<Set<string>>(new Set())
   const [visibleCols, setVisibleCols]     = usePersistedColumns('cols:expired-leases', DEFAULT_COLS_EXPIRED)
   const [columnsModalOpen, setColumnsModalOpen] = useState(false)
-  const [markingSold, setMarkingSold]     = useState(false)
+  const [markingSold, setMarkingSold]         = useState(false)
   const [soldConfirmOpen, setSoldConfirmOpen] = useState(false)
+  const [soldError, setSoldError]             = useState<string | null>(null)
+  const [actionsOpen, setActionsOpen]       = useState(false)
+  const actionsRef                          = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!actionsOpen) return
+    function handleClick(e: MouseEvent) {
+      if (actionsRef.current && !actionsRef.current.contains(e.target as Node)) setActionsOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [actionsOpen])
 
   const makes         = useMemo(() => Array.from(new Set(leases.map((l) => l.make).filter((x): x is string => x !== null))).sort(), [leases])
   const companies     = useMemo(() => Array.from(new Set(leases.map((l) => l.company_name).filter((x): x is string => x !== null))).sort(), [leases])
@@ -329,6 +338,7 @@ export default function ExpiredLeasesTable({ leases, loading, onSold }: TablePro
     const ids = Array.from(checkedIds)
     if (!ids.length) return
     setMarkingSold(true)
+    setSoldError(null)
     try {
       const res = await fetch('/api/expired-leases/mark-sold', {
         method: 'PATCH',
@@ -339,7 +349,12 @@ export default function ExpiredLeasesTable({ leases, loading, onSold }: TablePro
         setSoldConfirmOpen(false)
         setCheckedIds(new Set())
         onSold?.(ids)
+      } else {
+        const body = await res.json().catch(() => ({}))
+        setSoldError(body.error ?? `Server error (${res.status}) — please try again.`)
       }
+    } catch {
+      setSoldError('Network error — please check your connection and try again.')
     } finally {
       setMarkingSold(false)
     }
@@ -413,14 +428,36 @@ export default function ExpiredLeasesTable({ leases, loading, onSold }: TablePro
           <button onClick={handleExport} className="btn-secondary py-1.5 text-xs" disabled={loading || filtered.length === 0}>
             <Download size={13} /> {someChecked ? `Export (${checkedIds.size})` : 'Export'}
           </button>
-          <button
-            onClick={() => setSoldConfirmOpen(true)}
-            disabled={!someChecked || markingSold}
-            className="btn-primary py-1.5 text-xs flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <ShoppingCart size={13} />
-            {someChecked ? `Mark as Sold (${checkedIds.size})` : 'Mark as Sold'}
-          </button>
+          <div ref={actionsRef} className="relative">
+            <button
+              onClick={() => setActionsOpen((o) => !o)}
+              className={`btn-primary py-1.5 text-xs flex items-center gap-1.5 ${actionsOpen ? 'bg-brand-700' : ''}`}
+            >
+              Actions
+              <ChevronDown size={13} className={`transition-transform ${actionsOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {actionsOpen && (
+              <div className="absolute right-0 top-full z-30 mt-1 min-w-[180px] rounded-lg border border-gray-200 bg-white shadow-lg py-1">
+                <button
+                  type="button"
+                  disabled={!someChecked || markingSold}
+                  onClick={() => { setActionsOpen(false); setSoldError(null); setSoldConfirmOpen(true) }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm font-semibold text-emerald-600 hover:bg-emerald-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ShoppingCart size={14} className="text-emerald-500 shrink-0" />
+                  {someChecked ? `Mark as Sold (${checkedIds.size})` : 'Mark as Sold'}
+                </button>
+                <button
+                  type="button"
+                  disabled
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-400 cursor-not-allowed"
+                >
+                  <Zap size={14} className="text-gray-300 shrink-0" />
+                  Activate Lease
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {loading && (
@@ -519,6 +556,7 @@ export default function ExpiredLeasesTable({ leases, loading, onSold }: TablePro
           onConfirm={handleMarkAsSoldConfirmed}
           onCancel={() => setSoldConfirmOpen(false)}
           confirming={markingSold}
+          error={soldError}
         />
       )}
 

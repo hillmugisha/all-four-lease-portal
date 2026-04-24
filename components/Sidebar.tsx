@@ -111,22 +111,19 @@ export default function Sidebar() {
               Out of Service
             </Link>
 
-            {/* Purchased tab — hidden for now, will be re-enabled later */}
-            {false && (
-              <Link
-                href="/leases/purchased"
-                title="Leases that were converted into a purchase."
-                className={clsx(
-                  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                  path === '/leases/purchased'
-                    ? 'bg-white/10 text-white'
-                    : 'text-neutral-400 hover:bg-white/8 hover:text-white'
-                )}
-              >
-                <ShoppingCart size={15} className="shrink-0" />
-                Purchased
-              </Link>
-            )}
+            <Link
+              href="/leases/purchased"
+              title="Leases where the vehicle was sold."
+              className={clsx(
+                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                path === '/leases/purchased'
+                  ? 'bg-white/10 text-white'
+                  : 'text-neutral-400 hover:bg-white/8 hover:text-white'
+              )}
+            >
+              <ShoppingCart size={15} className="shrink-0" />
+              Sold
+            </Link>
 
             <Link
               href="/new-lease"
