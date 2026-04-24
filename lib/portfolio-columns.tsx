@@ -182,6 +182,7 @@ export const STATUS_STYLES: Record<string, string> = {
   'Out of Service':  'bg-red-50 text-red-700',
   Terminated:        'bg-red-50 text-red-700',
   Purchased:         'bg-blue-50 text-blue-700',
+  Sold:              'bg-blue-50 text-blue-700',
 }
 
 const XS    = 'text-xs text-gray-700'
@@ -218,10 +219,11 @@ export function buildCell(key: ColKey, lease: LeasePortfolioRecord): React.React
 
     // ── Status / Onboarding ──
     case 'lease_status': {
-      const color = STATUS_STYLES[lease.lease_status] ?? 'bg-gray-100 text-gray-600'
+      const display = lease.lease_status === 'Purchased' ? 'Sold' : lease.lease_status
+      const color = STATUS_STYLES[display] ?? 'bg-gray-100 text-gray-600'
       return (
         <span className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${color}`}>
-          {lease.lease_status}
+          {display}
         </span>
       )
     }
