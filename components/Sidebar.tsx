@@ -9,10 +9,16 @@ import clsx from 'clsx'
 export default function Sidebar() {
   const path     = usePathname()
   const router   = useRouter()
-  const [leasesOpen, setLeasesOpen] = useState(
+  const isLeasesPath =
     path.startsWith('/current-leases') || path.startsWith('/new-lease') ||
     path.startsWith('/leases/expired') || path.startsWith('/leases/purchased')
-  )
+
+  const [leasesOpen, setLeasesOpen] = useState(isLeasesPath)
+
+  useEffect(() => {
+    if (isLeasesPath) setLeasesOpen(true)
+    else setLeasesOpen(false)
+  }, [isLeasesPath])
   const [userEmail, setUserEmail] = useState('')
 
   useEffect(() => {

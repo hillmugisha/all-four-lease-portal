@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
 export async function PATCH(req: NextRequest) {
   try {
     const { ids } = (await req.json()) as { ids: string[] }
-    if (!ids?.length) return NextResponse.json({ error: 'No IDs provided' }, { status: 400 })
+    if (!Array.isArray(ids) || ids.length === 0) return NextResponse.json({ error: 'No IDs provided' }, { status: 400 })
 
     const today = new Date().toISOString().split('T')[0]
 

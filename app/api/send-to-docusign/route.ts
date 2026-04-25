@@ -151,15 +151,18 @@ async function renderToPdf(html: string): Promise<Buffer> {
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
   })
-  const page = await browser.newPage()
-  await page.setContent(html, { waitUntil: 'networkidle0' })
-  const pdf = await page.pdf({
-    format: 'Letter',
-    printBackground: true,
-    margin: { top: '0', right: '0', bottom: '0', left: '0' },
-  })
-  await browser.close()
-  return Buffer.from(pdf)
+  try {
+    const page = await browser.newPage()
+    await page.setContent(html, { waitUntil: 'networkidle0' })
+    const pdf = await page.pdf({
+      format: 'Letter',
+      printBackground: true,
+      margin: { top: '0', right: '0', bottom: '0', left: '0' },
+    })
+    return Buffer.from(pdf)
+  } finally {
+    await browser.close()
+  }
 }
 
 async function generatePdf(record: LeaseRecord): Promise<Buffer> {

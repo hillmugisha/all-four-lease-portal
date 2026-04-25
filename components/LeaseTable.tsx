@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo, useRef, useCallback } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { usePersistedColumns } from '@/lib/usePersistedColumns'
 import { LeaseRecord } from '@/lib/types'
 import { fmt, fmtDate } from '@/lib/calculations'
@@ -454,55 +454,6 @@ function Toast({ toast }: { toast: ToastState }) {
   )
 }
 
-// ─── Resizable column header ──────────────────────────────────────────────────
-
-function ResizableTh({
-  width, onResize, children, className,
-}: {
-  width: number
-  onResize: (delta: number) => void
-  children: React.ReactNode
-  className?: string
-}) {
-  const startX = useRef<number | null>(null)
-
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault()
-    startX.current = e.clientX
-
-    function onMove(ev: MouseEvent) {
-      if (startX.current === null) return
-      onResize(ev.clientX - startX.current)
-      startX.current = ev.clientX
-    }
-    function onUp() {
-      startX.current = null
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
-    }
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
-  }, [onResize])
-
-  return (
-    <th
-      style={{ width, minWidth: 60, position: 'relative' }}
-      className={clsx(
-        'select-none border-r border-[#D6E4FF] bg-[#F5F9FF] px-3 py-2.5 text-left text-xs font-bold uppercase tracking-wide text-gray-900',
-        className
-      )}
-    >
-      {children}
-      {/* Resize handle */}
-      <span
-        onMouseDown={handleMouseDown}
-        className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-brand-400 transition-colors"
-        style={{ touchAction: 'none' }}
-      />
-    </th>
-  )
-}
-
 // ─── Column definitions ───────────────────────────────────────────────────────
 
 type ColKey =
@@ -529,8 +480,17 @@ const COLUMNS: ColDef[] = [
   { key: 'updated_at',            label: 'Last Updated',    default: false, width: 130 },
 ]
 
-const DEFAULT_COLS: ColKey[]              = COLUMNS.filter((c) => c.default).map((c) => c.key)
-const INIT_WIDTHS: Record<ColKey, number> = Object.fromEntries(COLUMNS.map((c) => [c.key, c.width])) as Record<ColKey, number>
+const DEFAULT_COLS: ColKey[] = COLUMNS.filter((c) => c.default).map((c) => c.key)
+
+function getCellTitle(col: ColKey, lease: LeaseRecord): string | undefined {
+  switch (col) {
+    case 'lessee_name':  return lease.lessee_name ?? undefined
+    case 'lessee_email': return lease.lessee_email ?? undefined
+    case 'vehicle':      return [lease.vehicle_year, lease.vehicle_make, lease.vehicle_model].filter(Boolean).join(' ') || undefined
+    case 'vehicle_vin':  return lease.vehicle_vin ?? undefined
+    default:             return undefined
+  }
+}
 
 // ─── Filters ─────────────────────────────────────────────────────────────────
 
@@ -597,7 +557,6 @@ export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
   const [deletingLease, setDeletingLease] = useState<LeaseRecord | null>(null)
   const [deleteInProgress, setDeleteInProgress] = useState(false)
   const [filters, setFilters]         = useState<Filters>(EMPTY_FILTERS)
-  const [colWidths, setColWidths]     = useState<Record<ColKey, number>>(INIT_WIDTHS)
   const [visibleCols, setVisibleCols] = usePersistedColumns('cols:new-leases', DEFAULT_COLS)
   const [columnsModalOpen, setColumnsModalOpen] = useState(false)
 
@@ -778,10 +737,6 @@ export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
 
   const hasFilters = Object.values(filters).some(Boolean)
 
-  function resizeCol(key: ColKey, delta: number) {
-    setColWidths((prev) => ({ ...prev, [key]: Math.max(60, (prev[key] ?? 120) + delta) }))
-  }
-
   // Ordered visible column definitions
   const visibleDefs = visibleCols.map((k) => COLUMNS.find((c) => c.key === k)!).filter(Boolean)
 
@@ -830,7 +785,7 @@ export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
         )}
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
         {/* Header bar */}
         <div className="flex items-center gap-3 border-b border-gray-200 px-5 py-3.5">
           <div className="mr-auto">
@@ -919,15 +874,14 @@ export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
           </div>
         )}
 
-        {/* Resizable table */}
         {!loading && filtered.length > 0 && (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto overflow-y-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
             <table
-              style={{ tableLayout: 'fixed', width: visibleDefs.reduce((s, c) => s + colWidths[c.key], 0) + 40 + 70 + 100 }}
-              className="border-collapse text-sm"
+              style={{ tableLayout: 'fixed', minWidth: visibleDefs.reduce((s, c) => s + c.width, 0) + 40 + 70 + 100 }}
+              className="w-full border-collapse text-sm"
             >
-              <thead>
-                <tr className="border-b border-gray-200">
+              <thead className="sticky top-0 z-10" style={{ boxShadow: '0 1px 0 #e5e7eb' }}>
+                <tr>
                   {/* Checkbox — 40 px fixed */}
                   <th style={{ width: 40, minWidth: 40 }} className="border-r border-[#D6E4FF] bg-[#F5F9FF] px-3 py-2.5">
                     {(() => {
@@ -947,11 +901,14 @@ export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
                   </th>
                   {/* Details — 70 px fixed */}
                   <th style={{ width: 70, minWidth: 70 }} className="border-r border-[#D6E4FF] bg-[#F5F9FF] px-3 py-2.5 text-xs font-bold uppercase tracking-wide text-gray-900">Details</th>
-                  {/* Visible resizable columns */}
                   {visibleDefs.map((col) => (
-                    <ResizableTh key={col.key} width={colWidths[col.key]} onResize={(d) => resizeCol(col.key, d)}>
+                    <th
+                      key={col.key}
+                      style={{ width: col.width }}
+                      className="border-r border-[#D6E4FF] bg-[#F5F9FF] px-3 py-2.5 text-left text-xs font-bold uppercase tracking-wide text-gray-900"
+                    >
                       {col.label}
-                    </ResizableTh>
+                    </th>
                   ))}
                   {/* Actions — 100 px fixed */}
                   <th style={{ width: 100, minWidth: 100 }} className="border-l border-[#D6E4FF] bg-[#F5F9FF] px-3 py-2.5 text-xs font-bold uppercase tracking-wide text-gray-900">Actions</th>
@@ -980,9 +937,8 @@ export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
                         <Eye size={16} />
                       </button>
                     </td>
-                    {/* Visible columns */}
                     {visibleDefs.map((col) => (
-                      <td key={col.key} className="border-r border-gray-100 px-3 py-2.5 overflow-hidden">
+                      <td key={col.key} className="border-r border-gray-100 px-3 py-2.5 overflow-hidden" title={getCellTitle(col.key, lease)}>
                         {renderCell(col.key, lease)}
                       </td>
                     ))}

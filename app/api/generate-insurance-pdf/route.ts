@@ -19,17 +19,18 @@ export async function POST(req: NextRequest) {
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     })
-
-    const page = await browser.newPage()
-    await page.setContent(html, { waitUntil: 'networkidle0' })
-
-    const pdf = await page.pdf({
-      format: 'Letter',
-      printBackground: true,
-      margin: { top: '0', right: '0', bottom: '0', left: '0' },
-    })
-
-    await browser.close()
+    let pdf: Uint8Array
+    try {
+      const page = await browser.newPage()
+      await page.setContent(html, { waitUntil: 'networkidle0' })
+      pdf = await page.pdf({
+        format: 'Letter',
+        printBackground: true,
+        margin: { top: '0', right: '0', bottom: '0', left: '0' },
+      })
+    } finally {
+      await browser.close()
+    }
 
     const filename = `insurance-ack-${record.lessee_name.replace(/\s+/g, '-')}-${record.vehicle_vin}.pdf`
 

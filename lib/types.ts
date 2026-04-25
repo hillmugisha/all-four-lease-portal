@@ -260,7 +260,53 @@ export interface LeaseRecord {
   is_master_lease?: boolean | null
   vehicles_json?:   string | null   // JSON-stringified VehicleOnOrderSummary[]
 
+  // MLA link — set when this lease is a schedule attached to a formal MLA
+  mla_id?: string | null            // FK → master_lease_agreements.id
+
   // Activation — set when a completed lease is promoted to Current Leases
   is_active?:    boolean | null
   activated_at?: string  | null
+}
+
+// ─── Master Lease Agreement (separate entity from leases) ────────────────────
+
+export interface MasterLeaseAgreement {
+  id:           string
+  created_at:   string
+  updated_at:   string
+  mla_number:   string              // e.g. "MLA-2026-0003"
+  status:       'draft' | 'sent' | 'executed'
+  executed_date: string | null
+
+  lessor_name:    string
+  lessor_address: string
+  lessor_po_box:  string | null
+  lessor_city:    string
+  lessor_state:   string
+  lessor_zip:     string
+
+  lessee_name:       string
+  lessee_type:       string | null
+  lessee_first_name: string | null
+  lessee_last_name:  string | null
+  lessee_location:   string | null
+  lessee_address:    string
+  lessee_city:       string
+  lessee_state:      string
+  lessee_zip:        string
+  lessee_phone:      string | null
+  lessee_email:      string
+
+  lease_type?:         string | null
+  contract_structure?: string | null
+  customer_type?:      string | null
+  vehicle_use?:        string | null
+
+  customer_signer_name?:  string | null
+  customer_signer_email?: string | null
+  docusign_envelope_id?:  string | null
+  sent_at?:               string | null
+  signed_at?:             string | null
+
+  portal_lease_id?: string | null
 }

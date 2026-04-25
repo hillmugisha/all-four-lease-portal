@@ -130,53 +130,6 @@ function VehicleDetailModal({ vehicle, onClose }: { vehicle: VehicleOnOrderRecor
   )
 }
 
-// ─── Resizable column header ──────────────────────────────────────────────────
-
-function ResizableTh({
-  width, onResize, children, className,
-}: {
-  width: number
-  onResize: (delta: number) => void
-  children: React.ReactNode
-  className?: string
-}) {
-  const startX = useRef<number | null>(null)
-
-  function handleMouseDown(e: React.MouseEvent) {
-    e.preventDefault()
-    startX.current = e.clientX
-    function onMove(ev: MouseEvent) {
-      if (startX.current === null) return
-      onResize(ev.clientX - startX.current)
-      startX.current = ev.clientX
-    }
-    function onUp() {
-      startX.current = null
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
-    }
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
-  }
-
-  return (
-    <th
-      style={{ width, minWidth: 60, position: 'relative' }}
-      className={clsx(
-        'select-none border-r border-[#D6E4FF] bg-[#F5F9FF] px-3 py-2.5 text-left text-xs font-bold uppercase tracking-wide text-gray-900',
-        className
-      )}
-    >
-      {children}
-      <span
-        onMouseDown={handleMouseDown}
-        className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-brand-400 transition-colors"
-        style={{ touchAction: 'none' }}
-      />
-    </th>
-  )
-}
-
 // ─── Column definitions ───────────────────────────────────────────────────────
 
 type ColKey =
@@ -235,8 +188,7 @@ const COLUMNS: ColDef[] = [
   { key: 'inventory_type',                  label: 'Inventory Type',                   default: false, width: 120 },
 ]
 
-const DEFAULT_COLS: ColKey[]                  = COLUMNS.filter((c) => c.default).map((c) => c.key)
-const DEFAULT_WIDTHS: Record<ColKey, number>  = Object.fromEntries(COLUMNS.map((c) => [c.key, c.width])) as Record<ColKey, number>
+const DEFAULT_COLS: ColKey[] = COLUMNS.filter((c) => c.default).map((c) => c.key)
 
 // ─── Filters ──────────────────────────────────────────────────────────────────
 
@@ -426,7 +378,6 @@ const VehiclesOnOrderTable = forwardRef<
   const [filters, setFilters]               = useState<Filters>(EMPTY_FILTERS)
   const [page, setPage]                     = useState(1)
   const [selected, setSelected]             = useState<VehicleOnOrderRecord | null>(null)
-  const [colWidths, setColWidths]           = useState<Record<ColKey, number>>(DEFAULT_WIDTHS)
   const [visibleCols, setVisibleCols]       = usePersistedColumns('cols:vehicles-on-order', DEFAULT_COLS)
   const [columnsModalOpen, setColumnsModalOpen] = useState(false)
   const [checkedIds, setCheckedIds]         = useState<Set<number>>(new Set())
@@ -515,10 +466,6 @@ const VehiclesOnOrderTable = forwardRef<
     router.push('/new-lease-schedule')
   }
 
-  function resize(key: ColKey, delta: number) {
-    setColWidths((prev) => ({ ...prev, [key]: Math.max(60, (prev[key] ?? 120) + delta) }))
-  }
-
   const visibleDefs = visibleCols
     .map((k) => COLUMNS.find((c) => c.key === k)!)
     .filter(Boolean)
@@ -594,7 +541,7 @@ const VehiclesOnOrderTable = forwardRef<
       </div>
 
       {/* ── Table card ── */}
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
 
         {/* Toolbar: count left · search + buttons right */}
         <div className="flex items-center gap-3 border-b border-gray-200 px-5 py-3">
@@ -636,11 +583,11 @@ const VehiclesOnOrderTable = forwardRef<
           </button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm border-collapse" style={{ tableLayout: 'fixed' }}>
-            <thead>
+        <div className="overflow-x-auto overflow-y-auto" style={{ maxHeight: 'calc(100vh - 500px)' }}>
+          <table className="w-full text-sm border-collapse" style={{ tableLayout: 'fixed', minWidth: 110 + visibleDefs.reduce((acc, col) => acc + col.width, 0) }}>
+            <thead className="sticky top-0 z-10" style={{ boxShadow: '0 1px 0 #e5e7eb' }}>
               <tr>
-                <th style={{ width: 40, minWidth: 40 }} className="border-r border-[#D6E4FF] bg-[#F5F9FF] px-3 py-2.5">
+                <th style={{ width: 40 }} className="border-r border-[#D6E4FF] bg-[#F5F9FF] px-3 py-2.5">
                   <input
                     type="checkbox"
                     checked={allChecked}
@@ -649,15 +596,15 @@ const VehiclesOnOrderTable = forwardRef<
                     className="h-3.5 w-3.5 rounded border-gray-300"
                   />
                 </th>
-                <th style={{ width: 70, minWidth: 70 }} className="border-r border-[#D6E4FF] bg-[#F5F9FF] px-3 py-2.5 text-xs font-bold uppercase tracking-wide text-gray-900">Details</th>
+                <th style={{ width: 70 }} className="border-r border-[#D6E4FF] bg-[#F5F9FF] px-3 py-2.5 text-xs font-bold uppercase tracking-wide text-gray-900">Details</th>
                 {visibleDefs.map((col) => (
-                  <ResizableTh
+                  <th
                     key={col.key}
-                    width={colWidths[col.key]}
-                    onResize={(d) => resize(col.key, d)}
+                    style={{ width: col.width }}
+                    className="border-r border-[#D6E4FF] bg-[#F5F9FF] px-3 py-2.5 text-left text-xs font-bold uppercase tracking-wide text-gray-900"
                   >
                     {col.label}
-                  </ResizableTh>
+                  </th>
                 ))}
               </tr>
             </thead>
@@ -710,7 +657,6 @@ const VehiclesOnOrderTable = forwardRef<
                       <td
                         key={col.key}
                         className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2.5 text-gray-700"
-                        style={{ maxWidth: colWidths[col.key] }}
                         title={vehicle[col.key] ?? undefined}
                       >
                         <Cell col={col.key} vehicle={vehicle} />
@@ -824,13 +770,18 @@ const VehiclesOnOrderTable = forwardRef<
               >
                 New Master Lease Agreement
               </button>
-              <button
-                onClick={routeToLeaseSchedule}
-                disabled={pendingVehicles.length === 0}
-                className="btn-secondary w-full justify-center disabled:opacity-40 disabled:cursor-not-allowed"
+              <div
+                title={pendingVehicles.length === 0 ? "Select vehicles to begin creating a new lease schedule" : undefined}
+                className="w-full"
               >
-                New Lease Schedule
-              </button>
+                <button
+                  onClick={routeToLeaseSchedule}
+                  disabled={pendingVehicles.length === 0}
+                  className="btn-secondary w-full justify-center disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  New Lease Schedule
+                </button>
+              </div>
               <button
                 onClick={declineMasterLease}
                 className="btn-secondary w-full justify-center"

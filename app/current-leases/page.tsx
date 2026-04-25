@@ -12,7 +12,7 @@ type Tab = 'reporting' | 'details'
 export default function CurrentLeasesPage() {
   const [leases, setLeases] = useState<LeasePortfolioRecord[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<Tab>('reporting')
+  const [activeTab, setActiveTab] = useState<Tab>('details')
   const [drillFilters, setDrillFilters] = useState<Record<string, string[]> | null>(null)
 
   const load = useCallback(async () => {

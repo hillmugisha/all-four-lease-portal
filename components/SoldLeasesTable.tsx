@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react'
+import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { usePersistedColumns } from '@/lib/usePersistedColumns'
 import { LeasePortfolioRecord } from '@/lib/lease-portfolio-types'
 import { Eye, X, Search, ChevronDown, ChevronLeft, ChevronRight, Download, Columns } from 'lucide-react'
@@ -9,7 +9,7 @@ import clsx from 'clsx'
 import * as XLSX from 'xlsx'
 import { fmtDate, fmtMoney, DR, MS } from '@/lib/table-utils'
 import OrganizeColumnsModal from '@/components/OrganizeColumnsModal'
-import { ColKey, COLUMNS, DEFAULT_WIDTHS, DEFAULT_COLS_PURCHASED, buildCell, calcRevenue } from '@/lib/portfolio-columns'
+import { ColKey, COLUMNS, DEFAULT_COLS_PURCHASED, buildCell, calcRevenue, getCellTitle } from '@/lib/portfolio-columns'
 export { calcRevenue } from '@/lib/portfolio-columns'
 
 const PAGE_SIZE = 100
@@ -103,31 +103,6 @@ function SoldLeaseDetailModal({ lease, onClose }: { lease: LeasePortfolioRecord;
         </div>
       </div>
     </div>
-  )
-}
-
-// ─── Resizable column header ──────────────────────────────────────────────────
-
-function ResizableTh({
-  width, onResize, children, className, tooltip,
-}: {
-  width: number; onResize: (delta: number) => void; children: React.ReactNode; className?: string; tooltip?: string
-}) {
-  const startX = useRef<number | null>(null)
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault()
-    startX.current = e.clientX
-    function onMove(ev: MouseEvent) { if (startX.current === null) return; onResize(ev.clientX - startX.current); startX.current = ev.clientX }
-    function onUp() { startX.current = null; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp) }
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
-  }, [onResize])
-
-  return (
-    <th style={{ width, minWidth: 60, position: 'relative' }} title={tooltip} className={clsx('select-none border-r border-[#D6E4FF] bg-[#F5F9FF] px-3 py-2.5 text-left text-xs font-bold uppercase tracking-wide text-gray-900', tooltip && 'cursor-help', className)}>
-      {children}
-      <span onMouseDown={handleMouseDown} className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-brand-400 transition-colors" style={{ touchAction: 'none' }} />
-    </th>
   )
 }
 
@@ -231,7 +206,6 @@ interface TableProps { leases: LeasePortfolioRecord[]; loading: boolean }
 export default function SoldLeasesTable({ leases, loading }: TableProps) {
   const [selected, setSelected]           = useState<LeasePortfolioRecord | null>(null)
   const [filters, setFilters]             = useState<Filters>(EMPTY_FILTERS)
-  const [colWidths, setColWidths]         = useState<Record<ColKey, number>>(DEFAULT_WIDTHS)
   const [page, setPage]                   = useState(1)
   const [checkedIds, setCheckedIds]       = useState<Set<string>>(new Set())
   const [visibleCols, setVisibleCols]     = usePersistedColumns('cols:sold-leases', DEFAULT_COLS_PURCHASED)
@@ -277,12 +251,8 @@ export default function SoldLeasesTable({ leases, loading }: TableProps) {
 
   const hasFilters = !!filters.name || filters.make.length > 0 || filters.company.length > 0 || filters.customerType.length > 0 || filters.term.length > 0 || filters.lender.length > 0
 
-  function resizeCol(key: ColKey, delta: number) {
-    setColWidths((prev) => ({ ...prev, [key]: Math.max(60, (prev[key] ?? 120) + delta) }))
-  }
-
   const visibleDefs = visibleCols.map((k) => COLUMNS.find((c) => c.key === k)!).filter(Boolean)
-  const tableWidth  = 110 + visibleDefs.reduce((acc, col) => acc + (colWidths[col.key] ?? col.width), 0)
+  const tableWidth  = 110 + visibleDefs.reduce((acc, col) => acc + col.width, 0)
 
   return (
     <div className="flex flex-col gap-4">
@@ -316,7 +286,7 @@ export default function SoldLeasesTable({ leases, loading }: TableProps) {
         </div>
       )}
 
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
         <div className="flex items-center gap-3 border-b border-gray-200 px-5 py-3.5">
           <div className="mr-auto">
             <h2 className="text-sm font-semibold text-gray-900">Sold Lease Records</h2>
@@ -367,18 +337,26 @@ export default function SoldLeasesTable({ leases, loading }: TableProps) {
         )}
 
         {!loading && filtered.length > 0 && (
-          <div className="overflow-x-auto" style={{ overflowY: 'visible' }}>
-            <table style={{ tableLayout: 'fixed', width: tableWidth }} className="border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-gray-200">
+          <div className="overflow-x-auto overflow-y-auto" style={{ maxHeight: 'calc(100vh - 260px)' }}>
+            <table style={{ tableLayout: 'fixed', minWidth: tableWidth }} className="w-full border-collapse text-sm">
+              <thead className="sticky top-0 z-10" style={{ boxShadow: '0 1px 0 #e5e7eb' }}>
+                <tr>
                   <th style={{ width: 40, minWidth: 40 }} className="border-r border-[#D6E4FF] bg-[#F5F9FF] px-3 py-2.5">
                     <input type="checkbox" checked={allChecked} ref={(el) => { if (el) el.indeterminate = someChecked && !allChecked }} onChange={toggleAll} className="h-3.5 w-3.5 rounded border-gray-300" />
                   </th>
                   <th style={{ width: 70, minWidth: 70 }} className="border-r border-[#D6E4FF] bg-[#F5F9FF] px-3 py-2.5 text-xs font-bold uppercase tracking-wide text-gray-900">Details</th>
                   {visibleDefs.map((col) => (
-                    <ResizableTh key={col.key} width={colWidths[col.key]} onResize={(d) => resizeCol(col.key, d)} tooltip={col.tooltip}>
+                    <th
+                      key={col.key}
+                      style={{ width: col.width }}
+                      title={col.tooltip}
+                      className={clsx(
+                        'border-r border-[#D6E4FF] bg-[#F5F9FF] px-3 py-2.5 text-left text-xs font-bold uppercase tracking-wide text-gray-900',
+                        col.tooltip && 'cursor-help'
+                      )}
+                    >
                       {col.label}
-                    </ResizableTh>
+                    </th>
                   ))}
                 </tr>
               </thead>
@@ -394,7 +372,7 @@ export default function SoldLeasesTable({ leases, loading }: TableProps) {
                       </button>
                     </td>
                     {visibleDefs.map((col) => (
-                      <td key={col.key} className="border-r border-gray-100 px-3 py-2.5 overflow-hidden" style={{ maxWidth: colWidths[col.key] }}>
+                      <td key={col.key} className="border-r border-gray-100 px-3 py-2.5 overflow-hidden" title={getCellTitle(col.key, lease)}>
                         {buildCell(col.key, lease)}
                       </td>
                     ))}

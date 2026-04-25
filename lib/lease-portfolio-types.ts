@@ -92,6 +92,11 @@ export interface LeasePortfolioRecord {
   // ── Portal link ───────────────────────────────────────────────────────────
   portal_lease_id?: string | null
 
+  // ── Lease ID & MLA ────────────────────────────────────────────────────────
+  lease_id?: string | null          // e.g. "A4-2026-000047" — assigned at activation
+  mla_id?:  string | null           // FK → master_lease_agreements.id
+  mla_flag?: boolean | null         // true when this vehicle is under an MLA
+
   // ── Archive ───────────────────────────────────────────────────────────────
   archived?: boolean | null
 }

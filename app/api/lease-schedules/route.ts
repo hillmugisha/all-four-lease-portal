@@ -71,6 +71,7 @@ export async function POST(req: NextRequest) {
         ? `${coLessee.firstName} ${coLessee.lastName}`.trim()
         : null,
 
+      mla_id:           raw.mla_id          || null,
       master_lease_ref: raw.masterLeaseRef || null,
       schedule_date:    raw.scheduleDate   || null,
 

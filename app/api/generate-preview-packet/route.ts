@@ -44,11 +44,14 @@ export async function POST(req: NextRequest) {
     }
 
     const htmlPages = ([htmlLease, htmlInsurance, htmlAch] as (string | null)[])
-    const renderedPdfs = await Promise.all(
-      htmlPages.map((html) => html ? renderPage(html) : Promise.resolve(null))
-    )
-
-    await browser.close()
+    let renderedPdfs: (Buffer | null)[]
+    try {
+      renderedPdfs = await Promise.all(
+        htmlPages.map((html) => html ? renderPage(html) : Promise.resolve(null))
+      )
+    } finally {
+      await browser.close()
+    }
 
     // Merge only selected PDFs into one packet using pdf-lib
     const merged = await PDFDocument.create()

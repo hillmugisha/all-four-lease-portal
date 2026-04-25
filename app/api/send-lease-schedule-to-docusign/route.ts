@@ -118,8 +118,9 @@ function buildRecord(raw: LeaseScheduleFormData): Omit<LeaseScheduleRecord, 'id'
       ? `${coLessee.firstName} ${coLessee.lastName}`.trim()
       : null,
 
-    master_lease_ref: raw.masterLeaseRef || null,
-    schedule_date:    raw.scheduleDate   || null,
+    mla_id:           raw.mla_id          || null,
+    master_lease_ref: raw.masterLeaseRef  || null,
+    schedule_date:    raw.scheduleDate    || null,
 
     docusign_envelope_id: null,
     doc_status:           'sent',
@@ -158,15 +159,18 @@ async function renderToPdf(html: string): Promise<Buffer> {
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
   })
-  const page = await browser.newPage()
-  await page.setContent(html, { waitUntil: 'networkidle0' })
-  const pdf = await page.pdf({
-    format: 'Letter',
-    printBackground: true,
-    margin: { top: '0', right: '0', bottom: '0', left: '0' },
-  })
-  await browser.close()
-  return Buffer.from(pdf)
+  try {
+    const page = await browser.newPage()
+    await page.setContent(html, { waitUntil: 'networkidle0' })
+    const pdf = await page.pdf({
+      format: 'Letter',
+      printBackground: true,
+      margin: { top: '0', right: '0', bottom: '0', left: '0' },
+    })
+    return Buffer.from(pdf)
+  } finally {
+    await browser.close()
+  }
 }
 
 // ─── Route handler ────────────────────────────────────────────────────────────

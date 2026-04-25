@@ -5,6 +5,8 @@ import { fmtDate, fmtMoney, fmtMoneyOrText } from '@/lib/table-utils'
 // ─── Shared column key type ────────────────────────────────────────────────────
 
 export type ColKey =
+  // Identity
+  | 'lease_id' | 'mla_flag'
   // Sale & Disposition
   | 'sold_date' | 'disposal_date' | 'net_sale_price' | 'mmr' | 'days_to_sell'
   | 'disposition_fees' | 'early_term_fees'
@@ -51,6 +53,9 @@ const GROSS_FORMULA = 'Gross Revenue = (Monthly Payment × Term) + Net Sale Pric
 const NET_FORMULA   = 'Net Revenue = Gross Revenue − (Lender Monthly Payment × Term) − Balloon Payment'
 
 export const COLUMNS: ColDef[] = [
+  // ── Identity ──
+  { key: 'lease_id',  label: 'Lease ID',  width: 150, tooltip: 'Stable internal ID assigned at activation (e.g. A4-2026-000047)' },
+  { key: 'mla_flag', label: 'MLA_Flag',   width:  80, tooltip: 'Y = vehicle is on a Master Lease Agreement; N = standalone' },
   // ── Sale & Disposition ──
   { key: 'sold_date',                    label: 'Sold Date',                  width: 120 },
   { key: 'disposal_date',                label: 'Disposal Date',              width: 130 },
@@ -132,15 +137,23 @@ export const COLUMNS: ColDef[] = [
   { key: 'net_book_value',               label: 'Net Book Value',             width: 130 },
 ]
 
-// ─── Default widths (keyed by ColKey, used to init per-table colWidths state) ──
+// ─── Default widths (keyed by ColKey) ─────────────────────────────────────────
 
 export const DEFAULT_WIDTHS: Record<ColKey, number> = Object.fromEntries(
   COLUMNS.map((c) => [c.key, c.width])
 ) as Record<ColKey, number>
 
+// ─── Cell title for native tooltip (returns raw string value when available) ──
+
+export function getCellTitle(key: ColKey, lease: LeasePortfolioRecord): string | undefined {
+  const raw = (lease as unknown as Record<string, unknown>)[key]
+  return typeof raw === 'string' && raw ? raw : undefined
+}
+
 // ─── Per-tab default visible columns ──────────────────────────────────────────
 
 export const DEFAULT_COLS_ACTIVE: ColKey[] = [
+  'lease_id', 'mla_flag',
   'lease_status', 'company_name', 'customer_name',
   'monthly_depreciation', 'monthly_interest', 'monthly_tax',
   'vin', 'customer_type', 'onboard_type',
@@ -148,12 +161,14 @@ export const DEFAULT_COLS_ACTIVE: ColKey[] = [
 ]
 
 export const DEFAULT_COLS_EXPIRED: ColKey[] = [
+  'lease_id', 'mla_flag',
   'out_of_service_date', 'company_name', 'customer_name',
   'model_year', 'make', 'model', 'vin', 'customer_type',
   'lease_start_date', 'lease_end_date', 'monthly_payment', 'lender',
 ]
 
 export const DEFAULT_COLS_PURCHASED: ColKey[] = [
+  'lease_id', 'mla_flag',
   'sold_date', 'disposal_date', 'net_sale_price', 'gross_revenue', 'net_revenue',
   'company_name', 'customer_name', 'customer_type',
   'model_year', 'make', 'model', 'vin', 'lender',
@@ -191,6 +206,16 @@ const MONEY = 'whitespace-nowrap text-xs text-gray-800'
 
 export function buildCell(key: ColKey, lease: LeasePortfolioRecord): React.ReactNode {
   switch (key) {
+    // ── Identity ──
+    case 'lease_id':
+      return lease.lease_id
+        ? <span className="font-mono text-xs font-semibold text-brand-700 whitespace-nowrap">{lease.lease_id}</span>
+        : <span className="text-xs text-gray-400">—</span>
+    case 'mla_flag':
+      return lease.mla_flag
+        ? <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-bold bg-purple-100 text-purple-700">Y</span>
+        : <span className="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-500">N</span>
+
     // ── Sale & Disposition ──
     case 'sold_date':
       return <span className="whitespace-nowrap text-xs font-medium text-blue-700">{fmtDate(lease.sold_date)}</span>

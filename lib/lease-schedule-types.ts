@@ -29,9 +29,11 @@ export interface LeaseScheduleFormData extends LessorInfo, LesseeInfo {
   lessorSignatoryName: string
   lessorSignatoryEmail: string
   lessorSignatoryTitle: string
-  // Optional link to the parent Master Lease Agreement
-  masterLeaseRef?: string   // e.g. "Master Lease Agreement dated April 24, 2026"
-  scheduleDate?: string     // ISO date — date of this schedule
+  // Formal FK link to master_lease_agreements (set when user picks an MLA)
+  mla_id?: string | null            // UUID → master_lease_agreements.id
+  // Legacy free-text reference (kept for backward-compat with existing records)
+  masterLeaseRef?: string
+  scheduleDate?: string             // ISO date — date of this schedule
 }
 
 // ─── Database row (snake_case) ────────────────────────────────────────────────
@@ -73,8 +75,9 @@ export interface LeaseScheduleRecord {
   customer_signer_email: string | null
   co_lessee_signer_name: string | null
 
-  master_lease_ref: string | null
-  schedule_date: string | null   // ISO date
+  mla_id: string | null             // FK → master_lease_agreements.id
+  master_lease_ref: string | null   // legacy free-text reference
+  schedule_date: string | null      // ISO date
 
   docusign_envelope_id: string | null
   doc_status: string | null

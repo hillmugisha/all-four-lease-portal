@@ -12,7 +12,7 @@ type Tab = 'reporting' | 'details'
 export default function ExpiredLeasesPage() {
   const [leases, setLeases]   = useState<LeasePortfolioRecord[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<Tab>('reporting')
+  const [activeTab, setActiveTab] = useState<Tab>('details')
 
   const load = useCallback(async () => {
     setLoading(true)
