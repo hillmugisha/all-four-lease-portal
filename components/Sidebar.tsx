@@ -13,11 +13,10 @@ export default function Sidebar() {
     path.startsWith('/current-leases') || path.startsWith('/new-lease') ||
     path.startsWith('/leases/expired') || path.startsWith('/leases/purchased')
 
-  const [leasesOpen, setLeasesOpen] = useState(isLeasesPath)
+  const [leasesOpen, setLeasesOpen] = useState(true)
 
   useEffect(() => {
     if (isLeasesPath) setLeasesOpen(true)
-    else setLeasesOpen(false)
   }, [isLeasesPath])
   const [userEmail, setUserEmail] = useState('')
 

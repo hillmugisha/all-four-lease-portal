@@ -34,23 +34,9 @@ function mergeWithDefaults(saved: string[], defaults: string[]): string[] {
  * columns into the saved preference on load.
  */
 export function usePersistedColumns(storageKey: string, defaultCols: string[]) {
-  const [visibleCols, setVisibleColsState] = useState<string[]>(() => {
-    if (typeof window === 'undefined') return defaultCols
-    try {
-      const stored = localStorage.getItem(storageKey)
-      if (stored) {
-        const parsed = JSON.parse(stored) as string[]
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return mergeWithDefaults(parsed, defaultCols)
-        }
-      }
-    } catch {
-      // ignore malformed storage
-    }
-    return defaultCols
-  })
+  const [visibleCols, setVisibleColsState] = useState<string[]>(defaultCols)
 
-  // Sync on mount in case SSR returned defaultCols
+  // Load from localStorage after hydration to avoid server/client mismatch
   useEffect(() => {
     try {
       const stored = localStorage.getItem(storageKey)
