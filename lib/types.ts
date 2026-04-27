@@ -309,4 +309,6 @@ export interface MasterLeaseAgreement {
   signed_at?:             string | null
 
   portal_lease_id?: string | null
+
+  document_url?: string | null
 }

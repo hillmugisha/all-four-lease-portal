@@ -90,6 +90,19 @@ export default function Sidebar() {
         {leasesOpen && (
           <div className="ml-4 border-l border-neutral-700 pl-3 space-y-0.5">
             <Link
+              href="/new-lease"
+              className={clsx(
+                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                path === '/new-lease'
+                  ? 'bg-white/10 text-white'
+                  : 'text-neutral-400 hover:bg-white/8 hover:text-white'
+              )}
+            >
+              <FileText size={15} className="shrink-0" />
+              New Agreement
+            </Link>
+
+            <Link
               href="/current-leases"
               className={clsx(
                 'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
@@ -128,19 +141,6 @@ export default function Sidebar() {
             >
               <ShoppingCart size={15} className="shrink-0" />
               Sold
-            </Link>
-
-            <Link
-              href="/new-lease"
-              className={clsx(
-                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                path === '/new-lease'
-                  ? 'bg-white/10 text-white'
-                  : 'text-neutral-400 hover:bg-white/8 hover:text-white'
-              )}
-            >
-              <FileText size={15} className="shrink-0" />
-              New Lease
             </Link>
           </div>
         )}

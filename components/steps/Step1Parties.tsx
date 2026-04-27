@@ -4,32 +4,12 @@ import { useState } from 'react'
 import { UseFormReturn } from 'react-hook-form'
 import { LeaseFormData } from '@/lib/types'
 import { US_STATES } from '@/lib/states'
+import { BUSINESS_NAMES, LESSORS } from '@/lib/business-names'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 
 interface Props {
   form: UseFormReturn<LeaseFormData>
 }
-
-// ─── Lessor presets ───────────────────────────────────────────────────────────
-
-const LESSORS = [
-  {
-    name:    'All Four, LLC',
-    address: '1 TeamQuest Way',
-    poBox:   'P.O. Box 147',
-    city:    'Clear Lake',
-    state:   'IA',
-    zip:     '50428',
-  },
-  {
-    name:    'North Iowa Equity, LLC',
-    address: '1 TeamQuest Way',
-    poBox:   'P.O. Box 147',
-    city:    'Clear Lake',
-    state:   'IA',
-    zip:     '50428',
-  },
-]
 
 // ─── Lease classification mappings (from Lease_Type_Data_Mappings Updated.xlsx) ─
 
@@ -467,21 +447,9 @@ export default function Step1Parties({ form }: Props) {
                     className="input"
                   >
                     <option value="">Select a business…</option>
-                    <option>Worldwide Equipment Sales, LLC</option>
-                    <option>Prescription Landscape Inc.</option>
-                    <option>Envoy Technologies LLC</option>
-                    <option>Henning Logistics</option>
-                    <option>Inner City Logistics</option>
-                    <option>Sansom Equipment Company</option>
-                    <option>Chrysler of Forest City</option>
-                    <option>Central Iowa Televising LLC</option>
-                    <option>SF Iowa Leasing, LLC</option>
-                    <option>All American Cleanup</option>
-                    <option>UCSD</option>
-                    <option>Curbtender, Inc.</option>
-                    <option>MN Care Services</option>
-                    <option>Sukup Manufacturing Co.</option>
-                    <option>Prime Time Electric LLC</option>
+                    {BUSINESS_NAMES.map((name) => (
+                      <option key={name}>{name}</option>
+                    ))}
                   </select>
                   {errors.lesseeName && <p className="field-error">{errors.lesseeName.message}</p>}
                 </div>

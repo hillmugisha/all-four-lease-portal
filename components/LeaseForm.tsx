@@ -9,7 +9,7 @@ import Step3Vehicle    from './steps/Step3Vehicle'
 import Step4Financials from './steps/Step4Financials'
 import Step5Review     from './steps/Step5Review'
 import Step5Signatures from './steps/Step5Signatures'
-import { ChevronLeft, ChevronRight, Loader2, Check, Save } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Loader2, Check, Save, ArrowLeft } from 'lucide-react'
 import StepIndicator from '@/components/StepIndicator'
 import type { VehicleOnOrderSummary } from '@/lib/types'
 import clsx from 'clsx'
@@ -179,6 +179,7 @@ export default function LeaseForm({
   vehiclePrefill,
   editRecord,
   onEditComplete,
+  onBack,
   isMasterLease,
   masterLeaseVehicles,
   isMasterLeaseAgreement,
@@ -186,6 +187,7 @@ export default function LeaseForm({
   vehiclePrefill?:          VehiclePrefill | null
   editRecord?:              LeaseRecord    | null
   onEditComplete?:          () => void
+  onBack?:                  () => void
   isMasterLease?:           boolean
   masterLeaseVehicles?:     VehicleOnOrderSummary[]
   isMasterLeaseAgreement?:  boolean
@@ -414,10 +416,20 @@ export default function LeaseForm({
     )
   }
 
-  const data = form.watch()
-
   return (
     <div className="space-y-6">
+
+      {/* ── Back to picker ───────────────────────────────────────────────── */}
+      {onBack && step === 1 && (
+        <button
+          type="button"
+          onClick={onBack}
+          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700"
+        >
+          <ArrowLeft size={15} />
+          Back
+        </button>
+      )}
 
       {/* ── Step indicator ────────────────────────────────────────────────── */}
       <StepIndicator
@@ -490,10 +502,29 @@ export default function LeaseForm({
             )}
           </button>
 
-          {step < activeSteps.length && (
+          {step < activeSteps.length ? (
             <button type="button" onClick={handleNext} className="btn-primary">
               Next
               <ChevronRight size={16} />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={saving}
+              className="btn-primary"
+            >
+              {saving ? (
+                <>
+                  <Loader2 size={15} className="animate-spin" />
+                  Generating…
+                </>
+              ) : (
+                <>
+                  {editRecord ? 'Update & Download PDF' : 'Generate PDF'}
+                  <Check size={16} />
+                </>
+              )}
             </button>
           )}
         </div>

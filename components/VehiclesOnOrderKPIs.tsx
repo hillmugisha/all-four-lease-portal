@@ -4,15 +4,6 @@ import { useMemo } from 'react'
 import { VehicleOnOrderRecord } from '@/lib/vehicles-on-order-types'
 import { HelpCircle, Clock, Calendar, Cpu, Truck, CheckCircle2, MoreHorizontal } from 'lucide-react'
 
-const NAMED_STATUSES = new Set([
-  'TBD',
-  'In Order Processing',
-  'Scheduled',
-  'In Production',
-  'In Transit',
-  'OEM Delivered',
-])
-
 interface CardDef {
   label:      string
   count:      number
@@ -62,7 +53,7 @@ export default function VehiclesOnOrderKPIs({
 
   return (
     <div>
-      <p className="text-sm font-bold text-gray-900 mb-3">Production Statuses</p>
+      <p className="text-sm font-bold text-gray-900 mb-3">OEM Production Statuses</p>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-7">
         {cards.map(({ label, count, Icon, iconClass, iconBg, accent, filterStatuses }) => (
           <div

@@ -447,11 +447,6 @@ const VehiclesOnOrderTable = forwardRef<
     router.push(`/new-lease?${params.toString()}`)
   }
 
-  function confirmMasterLease() {
-    setMasterLeaseModalOpen(false)
-    router.push('/new-lease?masterLeaseAgreement=true')
-  }
-
   function declineMasterLease() {
     const first = pendingVehicles[0]
     setMasterLeaseModalOpen(false)
@@ -764,12 +759,6 @@ const VehiclesOnOrderTable = forwardRef<
               }
             </p>
             <div className="flex flex-col gap-3">
-              <button
-                onClick={confirmMasterLease}
-                className="btn-primary w-full justify-center"
-              >
-                New Master Lease Agreement
-              </button>
               <div
                 title={pendingVehicles.length === 0 ? "Select vehicles to begin creating a new lease schedule" : undefined}
                 className="w-full"
@@ -777,7 +766,7 @@ const VehiclesOnOrderTable = forwardRef<
                 <button
                   onClick={routeToLeaseSchedule}
                   disabled={pendingVehicles.length === 0}
-                  className="btn-secondary w-full justify-center disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="btn-primary w-full justify-center disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   New Lease Schedule
                 </button>
