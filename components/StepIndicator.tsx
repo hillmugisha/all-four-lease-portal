@@ -48,7 +48,7 @@ export default function StepIndicator({ steps, currentStep, onStepClick }: Props
 
             {i < steps.length - 1 && (
               <div className={clsx(
-                'mx-2 mb-5 h-px flex-1 transition-colors',
+                'mx-6 mb-5 h-px flex-1 transition-colors',
                 isCompleted ? 'bg-brand-600' : 'bg-gray-200',
               )} />
             )}

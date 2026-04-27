@@ -47,102 +47,104 @@ export default function UploadExecutedMlaForm({ onBack, onSuccess }: Props) {
     }
   }
 
-  if (saved) {
-    return (
-      <div className="max-w-lg py-16 text-center">
-        <div className="flex justify-center mb-4">
-          <CheckCircle2 size={48} className="text-green-500" />
-        </div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-1">MLA Saved</h2>
-        <p className="text-sm text-gray-500 mb-6">
-          The executed Master Lease Agreement for <strong>{lesseeName}</strong> has been recorded.
-        </p>
-        <button type="button" onClick={onSuccess} className="btn-primary">
-          Done
-        </button>
-      </div>
-    )
-  }
-
   return (
-    <div className="max-w-lg py-10">
-      <button
-        type="button"
-        onClick={onBack}
-        className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-6"
-      >
-        <ArrowLeft size={15} />
-        Back
-      </button>
-
-      <h2 className="text-lg font-semibold text-gray-900 mb-1">Upload Executed MLA</h2>
-      <p className="text-sm text-gray-500 mb-6">
-        Record a Master Lease Agreement that was signed offline.
-      </p>
-
-      <form onSubmit={handleSubmit} className="space-y-5">
-
-        <div>
-          <label className="label">
-            Business Name <span className="req">*</span>
-          </label>
-          <div className="relative">
-            <select
-              value={lesseeName}
-              onChange={(e) => setLesseeName(e.target.value)}
-              className="input appearance-none pr-8"
-              required
-            >
-              <option value="">Select a business…</option>
-              {BUSINESS_NAMES.map((name) => (
-                <option key={name}>{name}</option>
-              ))}
-            </select>
-            <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+    <>
+      {saved && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4 p-8 text-center">
+            <div className="flex justify-center mb-4">
+              <CheckCircle2 size={48} className="text-green-500" />
+            </div>
+            <h2 className="text-lg font-semibold text-gray-900 mb-1">MLA Saved</h2>
+            <p className="text-sm text-gray-500 mb-6">
+              The executed Master Lease Agreement for <strong>{lesseeName}</strong> has been recorded.
+            </p>
+            <button type="button" onClick={onSuccess} className="btn-primary">
+              Done
+            </button>
           </div>
         </div>
+      )}
 
-        <div>
-          <label className="label flex items-center gap-1.5">
-            Executed Date <span className="req">*</span>
-            <span className="group relative inline-flex">
-              <Info size={13} className="text-gray-400 cursor-help" />
-              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 rounded bg-gray-800 px-2.5 py-1.5 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-normal">
-                The date the Master Lease Agreement was activated and signed by all parties.
-              </span>
-            </span>
-          </label>
-          <input
-            type="date"
-            value={executedDate}
-            onChange={(e) => setExecutedDate(e.target.value)}
-            className="input"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="label">
-            Signed Document (PDF) <span className="req">*</span>
-          </label>
-          <PdfFileInput file={file} onChange={setFile} required />
-        </div>
-
-        {error && <p className="field-error">{error}</p>}
-
+      <div className="max-w-lg py-10">
         <button
-          type="submit"
-          disabled={loading || !lesseeName || !executedDate || !file}
-          className="btn-primary w-full justify-center"
+          type="button"
+          onClick={onBack}
+          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-6"
         >
-          {loading ? 'Saving…' : (
-            <>
-              <Upload size={15} />
-              Save Executed MLA
-            </>
-          )}
+          <ArrowLeft size={15} />
+          Back
         </button>
-      </form>
-    </div>
+
+        <h2 className="text-lg font-semibold text-gray-900 mb-1">Upload Executed MLA</h2>
+        <p className="text-sm text-gray-500 mb-6">
+          Record a Master Lease Agreement that was signed offline.
+        </p>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+
+          <div>
+            <label className="label">
+              Business Name <span className="req">*</span>
+            </label>
+            <div className="relative">
+              <select
+                value={lesseeName}
+                onChange={(e) => setLesseeName(e.target.value)}
+                className="input appearance-none pr-8"
+                required
+              >
+                <option value="">Select a business…</option>
+                {BUSINESS_NAMES.map((name) => (
+                  <option key={name}>{name}</option>
+                ))}
+              </select>
+              <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            </div>
+          </div>
+
+          <div>
+            <label className="label flex items-center gap-1.5">
+              Executed Date <span className="req">*</span>
+              <span className="group relative inline-flex">
+                <Info size={13} className="text-gray-400 cursor-help" />
+                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 rounded bg-gray-800 px-2.5 py-1.5 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-normal">
+                  The date the Master Lease Agreement was activated and signed by all parties.
+                </span>
+              </span>
+            </label>
+            <input
+              type="date"
+              value={executedDate}
+              onChange={(e) => setExecutedDate(e.target.value)}
+              className="input"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="label">
+              Signed Document (PDF) <span className="req">*</span>
+            </label>
+            <PdfFileInput file={file} onChange={setFile} required />
+          </div>
+
+          {error && <p className="field-error">{error}</p>}
+
+          <button
+            type="submit"
+            disabled={loading || !lesseeName || !executedDate || !file}
+            className="btn-primary w-full justify-center"
+          >
+            {loading ? 'Saving…' : (
+              <>
+                <Upload size={15} />
+                Save Executed MLA
+              </>
+            )}
+          </button>
+        </form>
+      </div>
+    </>
   )
 }

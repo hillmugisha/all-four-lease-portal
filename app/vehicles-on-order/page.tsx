@@ -39,7 +39,7 @@ export default function VehiclesOnOrderPage() {
           onClick={() => tableRef.current?.createLease()}
           className="btn-primary py-2 px-4 text-sm flex items-center gap-2 shrink-0"
         >
-          <FilePlus size={15} /> Create New Lease
+          <FilePlus size={15} /> Create New Agreement
         </button>
       </div>
 

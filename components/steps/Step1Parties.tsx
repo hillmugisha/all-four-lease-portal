@@ -9,6 +9,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react'
 
 interface Props {
   form: UseFormReturn<LeaseFormData>
+  businessOnly?: boolean
 }
 
 // ─── Lease classification mappings (from Lease_Type_Data_Mappings Updated.xlsx) ─
@@ -94,7 +95,7 @@ function CollapsibleSection({
 
 const PHONE_REGEX = /^(\+1\s?)?(\(?\d{3}\)?[\s.\-]?)?\d{3}[\s.\-]?\d{4}$/
 
-export default function Step1Parties({ form }: Props) {
+export default function Step1Parties({ form, businessOnly = false }: Props) {
   const { register, setValue, watch, formState: { errors } } = form
 
   const lessorName        = watch('lessorName')
@@ -412,7 +413,7 @@ export default function Step1Parties({ form }: Props) {
                 />
                 <span className="font-medium text-gray-700">Business</span>
               </label>
-              {leaseType === 'Core' && (
+              {leaseType === 'Core' && !businessOnly && (
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
                   <input
                     type="radio"

@@ -750,7 +750,7 @@ const VehiclesOnOrderTable = forwardRef<
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMasterLeaseModalOpen(false)} />
           <div className="relative z-10 w-full max-w-md rounded-xl bg-white shadow-2xl p-6">
             <h2 className="text-base font-semibold text-gray-900 mb-2">
-              Create New Lease
+              Create New Agreement
             </h2>
             <p className="text-sm text-gray-600 mb-5">
               {pendingVehicles.length > 0

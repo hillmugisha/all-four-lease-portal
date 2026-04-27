@@ -255,6 +255,7 @@ export default function LeaseScheduleForm({
         {step === 1 && (
           <Step1Parties
             form={form as unknown as UseFormReturn<LeaseFormData>}
+            businessOnly
           />
         )}
         {step === 2 && (

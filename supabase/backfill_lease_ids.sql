@@ -38,6 +38,7 @@ begin
     select
       p.id,
       p.portal_lease_id,
+      p.company_name,
       p.lease_start_date,
       p.created_at
     from pritchard_lease_portfolio p

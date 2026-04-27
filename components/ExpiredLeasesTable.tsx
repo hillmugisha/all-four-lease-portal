@@ -3,10 +3,11 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { usePersistedColumns } from '@/lib/usePersistedColumns'
 import { LeasePortfolioRecord } from '@/lib/lease-portfolio-types'
-import { Eye, X, Search, ChevronDown, ChevronLeft, ChevronRight, Download, Columns, ShoppingCart, Loader2, AlertTriangle, Zap } from 'lucide-react'
+import { Eye, X, Search, ChevronDown, ChevronLeft, ChevronRight, Download, Upload, Columns, ShoppingCart, Loader2, AlertTriangle, Zap } from 'lucide-react'
 import LeaseDocumentsSection from '@/components/LeaseDocumentsSection'
 import clsx from 'clsx'
-import * as XLSX from 'xlsx'
+import ExportVehiclesModal from '@/components/ExportVehiclesModal'
+import ImportVehiclesModal from '@/components/ImportVehiclesModal'
 import { fmtDate, fmtMoney, fmtMoneyOrText, DR, MS } from '@/lib/table-utils'
 import OrganizeColumnsModal from '@/components/OrganizeColumnsModal'
 import { ColKey, COLUMNS, DEFAULT_COLS_EXPIRED, buildCell, getCellTitle } from '@/lib/portfolio-columns'
@@ -225,37 +226,6 @@ function MultiSelectFilter({ label, selected, onChange, options }: { label: stri
   )
 }
 
-// ─── Excel export ─────────────────────────────────────────────────────────────
-
-function exportToExcel(records: LeasePortfolioRecord[]) {
-  const rows = records.map((l) => ({
-    'Out of Service Date': l.out_of_service_date ?? '', 'Company': l.company_name ?? '', 'Customer Name': l.customer_name ?? '',
-    'Customer Type': l.customer_type ?? '', 'Driver': l.driver ?? '',
-    'Phone': l.phone ?? '', 'Email': l.email_address ?? '',
-    'Billing Address': l.billing_address ?? '', 'Billing City': l.billing_city ?? '',
-    'Billing State': l.billing_state ?? '', 'Billing ZIP': l.billing_zip_code ?? '',
-    'Year': l.model_year ?? '', 'Make': l.make ?? '', 'Model': l.model ?? '',
-    'Color': l.color ?? '', 'VIN': l.vin ?? '', 'Odometer': l.odometer ?? '',
-    'Odometer Date': l.odometer_date ?? '', 'Plate #': l.plate_number ?? '',
-    'NDVR Date': l.ndvr_date ?? '', 'Lease Start Date': l.lease_start_date ?? '',
-    'Lease End Date': l.lease_end_date ?? '', 'Term (months)': l.term ?? '',
-    'Annual Miles': l.annual_miles_limit ?? '', 'Lease End Mile Fee': l.lease_end_mile_fee ?? '',
-    'Title State': l.title_state ?? '', 'Registration Date': l.registration_date ?? '',
-    'Net Cap Cost': l.net_cap_cost ?? '', 'Monthly Depreciation': l.monthly_depreciation ?? '',
-    'Monthly Interest': l.monthly_interest ?? '', 'Monthly Tax': l.monthly_tax ?? '',
-    'Monthly Payment (Customer)': l.monthly_payment ?? '', 'Residual': l.lease_end_residual ?? '',
-    'Lender': l.lender ?? '', 'Loan/Lease #': l.lender_loan_lease_number ?? '',
-    'Liability Start': l.liability_start_date ?? '', 'Liability End': l.liability_end_date ?? '',
-    'Monthly Liability Pmt': l.monthly_liability_payment ?? '', 'Funding Amount': l.funding_amount ?? '',
-    'Balloon Payment': l.balloon_payment ?? '', 'Monthly Dep. (SL)': l.monthly_depreciation_sl ?? '',
-    'Lender Interest Rate %': l.lender_interest_rate ?? '',
-  }))
-  const ws = XLSX.utils.json_to_sheet(rows)
-  const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, 'Out of Service Leases')
-  XLSX.writeFile(wb, `out-of-service-leases-${new Date().toISOString().slice(0, 10)}.xlsx`)
-}
-
 // ─── Main component ───────────────────────────────────────────────────────────
 
 interface TableProps { leases: LeasePortfolioRecord[]; loading: boolean; onSold?: (ids: string[]) => void }
@@ -267,6 +237,8 @@ export default function ExpiredLeasesTable({ leases, loading, onSold }: TablePro
   const [checkedIds, setCheckedIds]       = useState<Set<string>>(new Set())
   const [visibleCols, setVisibleCols]     = usePersistedColumns('cols:expired-leases', DEFAULT_COLS_EXPIRED)
   const [columnsModalOpen, setColumnsModalOpen] = useState(false)
+  const [exportModalOpen, setExportModalOpen]   = useState(false)
+  const [importOpen,      setImportOpen]        = useState(false)
   const [markingSold, setMarkingSold]         = useState(false)
   const [soldConfirmOpen, setSoldConfirmOpen] = useState(false)
   const [soldError, setSoldError]             = useState<string | null>(null)
@@ -294,7 +266,7 @@ export default function ExpiredLeasesTable({ leases, loading, onSold }: TablePro
   const someChecked = filtered.some((l) => checkedIds.has(l.id))
   function toggleAll() { setCheckedIds(allChecked ? new Set() : new Set(filtered.map((l) => l.id))) }
   function toggleId(id: string) { setCheckedIds((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next }) }
-  function handleExport() { exportToExcel(someChecked ? filtered.filter((l) => checkedIds.has(l.id)) : filtered) }
+  const exportRecords = someChecked ? filtered.filter((l) => checkedIds.has(l.id)) : filtered
 
   async function handleMarkAsSoldConfirmed() {
     const ids = Array.from(checkedIds)
@@ -383,7 +355,10 @@ export default function ExpiredLeasesTable({ leases, loading, onSold }: TablePro
           <button onClick={() => setColumnsModalOpen(true)} className="btn-secondary py-1.5 text-xs flex items-center gap-1.5">
             <Columns size={13} /> Columns
           </button>
-          <button onClick={handleExport} className="btn-secondary py-1.5 text-xs" disabled={loading || filtered.length === 0}>
+          <button onClick={() => setImportOpen(true)} className="btn-secondary py-1.5 text-xs flex items-center gap-1.5">
+            <Upload size={13} /> Import
+          </button>
+          <button onClick={() => setExportModalOpen(true)} className="btn-secondary py-1.5 text-xs flex items-center gap-1.5" disabled={loading || filtered.length === 0}>
             <Download size={13} /> {someChecked ? `Export (${checkedIds.size})` : 'Export'}
           </button>
           <button
@@ -400,12 +375,6 @@ export default function ExpiredLeasesTable({ leases, loading, onSold }: TablePro
           >
             <Zap size={13} />
             Activate Lease
-          </button>
-          <button
-            disabled
-            className="btn-secondary py-1.5 text-xs flex items-center gap-1.5 opacity-40 cursor-not-allowed"
-          >
-            Mass Edit
           </button>
         </div>
 
@@ -528,6 +497,17 @@ export default function ExpiredLeasesTable({ leases, loading, onSold }: TablePro
           onClose={() => setColumnsModalOpen(false)}
         />
       )}
+
+      <ExportVehiclesModal
+        open={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        records={exportRecords}
+      />
+      <ImportVehiclesModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onSuccess={() => window.location.reload()}
+      />
     </div>
   )
 }

@@ -98,6 +98,12 @@ create table if not exists pritchard_lease_portfolio (
   liability_balance             numeric(12,2),
   net_book_value                numeric(12,2),
 
+  -- ── Classification (added via migration_add_classification_fields.sql) ────
+  contract_structure            text,   -- Closed-End Lease | TRAC / Open-End Lease | Rental / Short Term
+  lease_type                    text,   -- Core | Daily Rental | All Four Rental | Lakelife Rental
+  vehicle_use_type              text,   -- Standard Customer Use | Company Demo | Company Vehicle | Service/Loaner | Rental Use
+  lender_type                   text,   -- Loan | Lease
+
   -- ── Portal link ───────────────────────────────────────────────────────────
   portal_lease_id               uuid
 );

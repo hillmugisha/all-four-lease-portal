@@ -444,7 +444,7 @@ export default function LeaseForm({
           const activeComponent = activeSteps[step - 1].component
           return (
             <>
-              {activeComponent === 1 && <Step1Parties    form={form} />}
+              {activeComponent === 1 && <Step1Parties    form={form} businessOnly={isMasterLeaseAgreement} />}
               {activeComponent === 2 && <Step3Vehicle    form={form} prefilled={!!vehiclePrefill} isMasterLease={isMasterLease} />}
               {activeComponent === 3 && <Step4Financials form={form} isMasterLease={isMasterLease} />}
               {activeComponent === 4 && <Step5Review     form={form} isMasterLease={isMasterLease} isMasterLeaseAgreement={isMasterLeaseAgreement} />}

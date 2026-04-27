@@ -12,8 +12,8 @@ export type ColKey =
   | 'disposition_fees' | 'early_term_fees'
   // Revenue (computed)
   | 'gross_revenue' | 'net_revenue'
-  // Status / Onboarding
-  | 'lease_status' | 'onboard_type'
+  // Status / Onboarding / Classification
+  | 'lease_status' | 'onboard_type' | 'contract_structure' | 'lease_type'
   // Customer
   | 'company_name' | 'customer_name' | 'customer_type'
   | 'driver' | 'location' | 'phone' | 'email_address'
@@ -21,7 +21,7 @@ export type ColKey =
   | 'billing_address' | 'billing_city' | 'billing_state' | 'billing_zip_code'
   // Vehicle
   | 'model_year' | 'make' | 'model' | 'color' | 'vin'
-  | 'comments' | 'gps_serial_number' | 'vehicle_acquisition_date'
+  | 'comments' | 'gps_serial_number' | 'vehicle_acquisition_date' | 'vehicle_use_type'
   // Odometer
   | 'odometer_at_time_of_sale' | 'odometer' | 'odometer_date'
   // Dates
@@ -36,8 +36,9 @@ export type ColKey =
   | 'acquisition_fee' | 'incentive_recognition' | 'monthly_cash_flow'
   // Lender / Financing
   | 'lender' | 'lender_loan_lease_number' | 'liability_start_date' | 'liability_end_date'
+  | 'liability_term'
   | 'funding_amount' | 'monthly_liability_payment' | 'balloon_payment'
-  | 'monthly_depreciation_sl' | 'lender_interest_rate' | 'lender_term'
+  | 'monthly_depreciation_sl' | 'lender_interest_rate' | 'lender_term' | 'lender_type'
   | 'liability_balance' | 'net_book_value'
 
 export interface ColDef {
@@ -67,9 +68,11 @@ export const COLUMNS: ColDef[] = [
   // ── Revenue (computed) ──
   { key: 'gross_revenue',                label: 'Gross Revenue',              width: 145, tooltip: GROSS_FORMULA },
   { key: 'net_revenue',                  label: 'Net Revenue',                width: 135, tooltip: NET_FORMULA },
-  // ── Status / Onboarding ──
+  // ── Status / Onboarding / Classification ──
   { key: 'lease_status',                 label: 'Lease Status',               width: 120 },
   { key: 'onboard_type',                 label: 'Onboard Type',               width: 130 },
+  { key: 'contract_structure',           label: 'Contract Structure',         width: 180, tooltip: 'Closed-End Lease | TRAC / Open-End Lease | Rental / Short Term' },
+  { key: 'lease_type',                   label: 'Lease Type',                 width: 160, tooltip: 'Core | Daily Rental | All Four Rental | Lakelife Rental' },
   // ── Customer ──
   { key: 'company_name',                 label: 'Company',                    width: 150 },
   { key: 'customer_name',                label: 'Customer Name',              width: 170 },
@@ -92,6 +95,7 @@ export const COLUMNS: ColDef[] = [
   { key: 'comments',                     label: 'Comments',                   width: 180 },
   { key: 'gps_serial_number',            label: 'GPS Serial #',               width: 130 },
   { key: 'vehicle_acquisition_date',     label: 'Vehicle Acquisition Date',   width: 180 },
+  { key: 'vehicle_use_type',             label: 'Vehicle Use Type',           width: 180, tooltip: 'Standard Customer Use | Company Demo | Company Vehicle | Service/Loaner | Rental Use' },
   // ── Odometer ──
   { key: 'odometer_at_time_of_sale',     label: 'Sold Odometer',              width: 130 },
   { key: 'odometer',                     label: 'Odometer',                   width: 120 },
@@ -127,12 +131,14 @@ export const COLUMNS: ColDef[] = [
   { key: 'lender_loan_lease_number',     label: 'Loan/Lease #',               width: 130 },
   { key: 'liability_start_date',         label: 'Liability Start',            width: 130 },
   { key: 'liability_end_date',           label: 'Liability End',              width: 130 },
+  { key: 'liability_term',               label: 'Liability Term',             width: 130, tooltip: 'Calculated: months from Liability Start to Liability End' },
   { key: 'funding_amount',               label: 'Funding Amount',             width: 140 },
   { key: 'monthly_liability_payment',    label: 'Monthly Liability Pmt.',     width: 170 },
   { key: 'balloon_payment',              label: 'Balloon Payment',            width: 140 },
   { key: 'monthly_depreciation_sl',      label: 'Mon. Dep. (SL)',             width: 130 },
   { key: 'lender_interest_rate',         label: 'Lender Int. Rate',           width: 140 },
   { key: 'lender_term',                  label: 'Lender Term',                width: 120 },
+  { key: 'lender_type',                  label: 'Lender Type',                width: 110, tooltip: 'Loan | Lease' },
   { key: 'liability_balance',            label: 'Liability Balance',          width: 140 },
   { key: 'net_book_value',               label: 'Net Book Value',             width: 130 },
 ]
@@ -254,6 +260,10 @@ export function buildCell(key: ColKey, lease: LeasePortfolioRecord): React.React
     }
     case 'onboard_type':
       return <div className={TRUNC}>{lease.onboard_type ?? '—'}</div>
+    case 'contract_structure':
+      return <div className={TRUNC}>{lease.contract_structure ?? '—'}</div>
+    case 'lease_type':
+      return <div className={TRUNC}>{lease.lease_type ?? '—'}</div>
 
     // ── Customer ──
     case 'company_name':
@@ -298,6 +308,8 @@ export function buildCell(key: ColKey, lease: LeasePortfolioRecord): React.React
       return <span className={XS}>{lease.gps_serial_number ?? '—'}</span>
     case 'vehicle_acquisition_date':
       return <span className="whitespace-nowrap text-xs text-gray-600">{fmtDate(lease.vehicle_acquisition_date)}</span>
+    case 'vehicle_use_type':
+      return <div className={TRUNC}>{lease.vehicle_use_type ?? '—'}</div>
 
     // ── Odometer ──
     case 'odometer_at_time_of_sale':
@@ -368,6 +380,15 @@ export function buildCell(key: ColKey, lease: LeasePortfolioRecord): React.React
       return <span className="whitespace-nowrap text-xs text-gray-600">{fmtDate(lease.liability_start_date)}</span>
     case 'liability_end_date':
       return <span className="whitespace-nowrap text-xs text-gray-600">{fmtDate(lease.liability_end_date)}</span>
+    case 'liability_term': {
+      const start = lease.liability_start_date ? new Date(lease.liability_start_date) : null
+      const end   = lease.liability_end_date   ? new Date(lease.liability_end_date)   : null
+      if (!start || !end || isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return <span className={XS}>—</span>
+      }
+      const months = (end.getUTCFullYear() - start.getUTCFullYear()) * 12 + (end.getUTCMonth() - start.getUTCMonth())
+      return <span className={XS}>{months > 0 ? `${months} mo` : '—'}</span>
+    }
     case 'funding_amount':
       return <span className={MONEY}>{fmtMoney(lease.funding_amount)}</span>
     case 'monthly_liability_payment':
@@ -380,6 +401,8 @@ export function buildCell(key: ColKey, lease: LeasePortfolioRecord): React.React
       return <span className={XS}>{lease.lender_interest_rate != null ? `${(Number(lease.lender_interest_rate) * 100).toFixed(3)}%` : '—'}</span>
     case 'lender_term':
       return <span className={XS}>{lease.lender_term ?? '—'}</span>
+    case 'lender_type':
+      return <div className={TRUNC}>{lease.lender_type ?? '—'}</div>
     case 'liability_balance':
       return <span className={MONEY}>{fmtMoney(lease.liability_balance)}</span>
     case 'net_book_value':

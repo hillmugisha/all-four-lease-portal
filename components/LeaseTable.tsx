@@ -856,7 +856,7 @@ export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
             </p>
             <button onClick={onCreateNew} className="btn-primary mt-6">
               <Plus size={15} />
-              Create New Lease
+              Create New Agreement
             </button>
           </div>
         )}

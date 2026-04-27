@@ -97,6 +97,12 @@ export interface LeasePortfolioRecord {
   mla_id?:  string | null           // FK → master_lease_agreements.id
   mla_flag?: boolean | null         // true when this vehicle is under an MLA
 
+  // ── Classification (from schema doc) ─────────────────────────────────────
+  contract_structure: string | null    // Closed-End Lease | TRAC / Open-End Lease | Rental / Short Term
+  lease_type:         string | null    // Core | Daily Rental | All Four Rental | Lakelife Rental
+  vehicle_use_type:   string | null    // Standard Customer Use | Company Demo | Company Vehicle | Service/Loaner | Rental Use
+  lender_type:        string | null    // Loan | Lease
+
   // ── Archive ───────────────────────────────────────────────────────────────
   archived?: boolean | null
 }
