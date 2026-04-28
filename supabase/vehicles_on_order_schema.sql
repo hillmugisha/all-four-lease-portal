@@ -58,3 +58,8 @@ create policy "Allow delete" on public."Vehicles_On_Order"
 -- New fields are stored as JSON keys — no further migrations needed for new fields.
 alter table public."Vehicles_On_Order"
   add column if not exists app_data jsonb default '{}';
+
+-- Migration: disposition tracking — null = on order, 'leased' | 'sold' | 'out_of_service'
+alter table public."Vehicles_On_Order"
+  add column if not exists disposition text
+  check (disposition is null or disposition in ('leased', 'sold', 'out_of_service'));

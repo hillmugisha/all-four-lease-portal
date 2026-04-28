@@ -19,11 +19,8 @@ export async function POST(req: NextRequest) {
       : renderLease(templateData)
 
     // Launch headless Chrome and print to PDF
-    const puppeteer = await import('puppeteer')
-    const browser = await puppeteer.default.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    })
+    const { launchBrowser } = await import('@/lib/browser')
+    const browser = await launchBrowser()
     let pdf: Uint8Array
     try {
       const page = await browser.newPage()

@@ -201,6 +201,18 @@ export async function POST(req: NextRequest) {
       if (archiveErr) console.error('[activate] auto-archive failed:', archiveErr.message)
     }
 
+    // 7. Auto-dispose VOO records that spawned these leases (best-effort)
+    const vooStockNumbers = toActivate
+      .map((l) => (l as LeaseRecord & { voo_stock_number?: string | null }).voo_stock_number)
+      .filter((s): s is string => typeof s === 'string' && s.length > 0)
+    if (vooStockNumbers.length > 0) {
+      const { error: vooErr } = await supabase
+        .from('Vehicles_On_Order')
+        .update({ disposition: 'leased' })
+        .in('stock_number', vooStockNumbers)
+      if (vooErr) console.error('[activate] VOO auto-dispose failed:', vooErr.message)
+    }
+
     // 7. Auto-attach signed PDF from DocuSign for portal leases (best-effort — never blocks activation)
     try {
       const apiClient = await getDocuSignClient()

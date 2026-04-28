@@ -13,22 +13,48 @@ import type { VehicleOnOrderSummary } from '@/lib/types'
 
 type Tab = 'dashboard' | 'create'
 
+interface VooPrefill {
+  vin: string
+  year: string
+  make: string
+  model: string
+  vooStockNumber?: string | null
+  appData?: Record<string, unknown> | null
+}
+
 function NewLeaseContent() {
   const searchParams = useSearchParams()
-  const vin   = searchParams.get('vin')   ?? ''
-  const year  = searchParams.get('year')  ?? ''
-  const make  = searchParams.get('make')  ?? ''
-  const model = searchParams.get('model') ?? ''
   const isMasterLease          = searchParams.get('masterLease') === 'true'
   const isMasterLeaseAgreement = searchParams.get('masterLeaseAgreement') === 'true'
   const isStandardFromUrl      = searchParams.get('leaseType') === 'standard'
 
-  const prefill = vin ? { vin, year, make, model } : null
-
+  const [vooPrefill, setVooPrefill]             = useState<VooPrefill | null>(null)
   const [masterLeaseVehicles, setMasterLeaseVehicles] = useState<VehicleOnOrderSummary[]>([])
   const [masterLeaseReady, setMasterLeaseReady] = useState(!isMasterLease)
 
   useEffect(() => {
+    // Read vooPreload written by VehiclesOnOrderTable when "Create Lease" is clicked
+    try {
+      const raw = sessionStorage.getItem('vooPreload')
+      if (raw) {
+        const parsed = JSON.parse(raw) as {
+          stock_number?: string; vin?: string; year?: string;
+          make?: string; model?: string; app_data?: Record<string, unknown>
+        }
+        sessionStorage.removeItem('vooPreload')
+        setVooPrefill({
+          vin:            parsed.vin   ?? '',
+          year:           parsed.year  ?? '',
+          make:           parsed.make  ?? '',
+          model:          parsed.model ?? '',
+          vooStockNumber: parsed.stock_number ?? null,
+          appData:        parsed.app_data ?? null,
+        })
+      }
+    } catch {
+      // ignore parse errors
+    }
+
     if (isMasterLease) {
       try {
         const stored = sessionStorage.getItem('masterLeaseVehicles')
@@ -46,7 +72,7 @@ function NewLeaseContent() {
 
   function initialLeaseMode(): LeaseMode | null {
     if (isMasterLeaseAgreement) return 'master_agreement'
-    if (prefill || isMasterLease || isStandardFromUrl) return 'standard'
+    if (isMasterLease || isStandardFromUrl) return 'standard'
     return null
   }
 
@@ -112,17 +138,17 @@ function NewLeaseContent() {
         <LeaseTable onCreateNew={handleCreateNew} />
       )}
 
-      {activeTab === 'create' && !isMasterLease && leaseMode === null && (
+      {activeTab === 'create' && !isMasterLease && leaseMode === null && !vooPrefill && (
         <LeaseTypePicker onSelect={setLeaseMode} />
       )}
 
-      {activeTab === 'create' && (isMasterLease || (leaseMode !== null && !isUploadMode)) && masterLeaseReady && (
+      {activeTab === 'create' && (isMasterLease || vooPrefill || (leaseMode !== null && !isUploadMode)) && masterLeaseReady && (
         <LeaseForm
-          vehiclePrefill={prefill}
+          vehiclePrefill={vooPrefill}
           isMasterLease={isMasterLease}
           masterLeaseVehicles={masterLeaseVehicles}
           isMasterLeaseAgreement={leaseMode === 'master_agreement'}
-          onBack={!isMasterLease ? () => setLeaseMode(null) : undefined}
+          onBack={!isMasterLease ? () => { setVooPrefill(null); setLeaseMode(null) } : undefined}
         />
       )}
 

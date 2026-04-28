@@ -66,7 +66,8 @@ export async function POST(req: NextRequest) {
 
   let skipped = 0
   const errors: { row: number; id: string; message: string }[] = []
-  const upserts: { id: number; app_data: Record<string, unknown> }[] = []
+  const upserts:    { id: number; app_data: Record<string, unknown> }[] = []
+  const fieldCounts: number[] = []  // parallel to upserts — patch size per row
 
   for (let i = 0; i < rows.length; i++) {
     const row    = rows[i]
@@ -119,6 +120,7 @@ export async function POST(req: NextRequest) {
     }
 
     upserts.push({ id: record.id, app_data: { ...record.app_data, ...patch } })
+    fieldCounts.push(Object.keys(patch).length)
   }
 
   // Batch all updates in one DB round-trip instead of N separate calls
@@ -126,12 +128,12 @@ export async function POST(req: NextRequest) {
   if (upserts.length > 0) {
     const { error: upsertErr } = await supabase
       .from('Vehicles_On_Order')
-      .upsert(upserts)
+      .upsert(upserts, { onConflict: 'id' })
     if (upsertErr) {
       return NextResponse.json({ error: upsertErr.message }, { status: 500 })
     }
     updated = upserts.length
   }
 
-  return NextResponse.json({ updated, skipped, errors })
+  return NextResponse.json({ updated, skipped, errors, fieldCounts })
 }

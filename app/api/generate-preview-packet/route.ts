@@ -25,11 +25,8 @@ export async function POST(req: NextRequest) {
     const htmlAch       = selectedDocs.ach       ? renderAchAuthorizationForLessor(templateData) : null
 
     // Launch a single browser and render selected pages in parallel
-    const puppeteer = await import('puppeteer')
-    const browser   = await puppeteer.default.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    })
+    const { launchBrowser } = await import('@/lib/browser')
+    const browser = await launchBrowser()
 
     const renderPage = async (html: string): Promise<Buffer> => {
       const page = await browser.newPage()

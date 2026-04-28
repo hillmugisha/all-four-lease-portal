@@ -52,7 +52,7 @@ function buildTemplateData(raw: LeaseScheduleFormData): LeaseScheduleTemplateDat
       email:   raw.email   || '',
     },
     schedule: {
-      schedule_date:    raw.scheduleDate   || null,
+      schedule_date:    raw.scheduleDate   || new Date().toISOString().slice(0, 10),
       master_lease_ref: raw.masterLeaseRef || null,
     },
     vehicles: raw.vehicles ?? [],
@@ -154,11 +154,8 @@ function dateTab(anchorString: string): docusign.DateSigned {
 // ─── PDF generation helper ────────────────────────────────────────────────────
 
 async function renderToPdf(html: string): Promise<Buffer> {
-  const puppeteer = await import('puppeteer')
-  const browser = await puppeteer.default.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
-  })
+  const { launchBrowser } = await import('@/lib/browser')
+  const browser = await launchBrowser()
   try {
     const page = await browser.newPage()
     await page.setContent(html, { waitUntil: 'networkidle0' })

@@ -13,6 +13,7 @@ import { ChevronLeft, ChevronRight, Loader2, Check, Save, ArrowLeft } from 'luci
 import StepIndicator from '@/components/StepIndicator'
 import type { VehicleOnOrderSummary } from '@/lib/types'
 import clsx from 'clsx'
+import { VOO_TO_LEASE_COLUMN_MAP } from '@/lib/voo-app-fields'
 
 // ─── Map a saved LeaseRecord back to form fields for editing ─────────────────
 function recordToFormData(record: LeaseRecord): Partial<LeaseFormData> {
@@ -173,7 +174,29 @@ const DEFAULT_VALUES: Partial<LeaseFormData> = {
 
 }
 
-interface VehiclePrefill { vin: string; year: string; make: string; model: string }
+interface VehiclePrefill {
+  vin: string
+  year: string
+  make: string
+  model: string
+  vooStockNumber?: string | null
+  appData?: Record<string, unknown> | null
+}
+
+// Map VOO app_data fields to LeaseFormData field names for pre-population
+function appDataToFormFields(appData: Record<string, unknown>): Partial<LeaseFormData> {
+  const out: Partial<LeaseFormData> = {}
+  if (appData.lease_start_date)   out.firstPaymentDate     = String(appData.lease_start_date)
+  if (appData.term != null)       out.numPayments          = Number(appData.term)
+  if (appData.monthly_tax != null) out.monthlySalesTax     = Number(appData.monthly_tax)
+  if (appData.residual_value != null) out.residualValue    = Number(appData.residual_value)
+  if (appData.annual_miles_limit != null) out.milesPerYear = Number(appData.annual_miles_limit)
+  if (appData.lease_end_mile_fee != null) out.excessMileageRate = Number(appData.lease_end_mile_fee)
+  if (appData.disposition_fees != null) out.dispositionFee = Number(appData.disposition_fees)
+  if (appData.early_term_fees != null) out.earlyTerminationFee = Number(appData.early_term_fees)
+  if (appData.acquisition_fee != null) out.acquisitionFee  = Number(appData.acquisition_fee)
+  return out
+}
 
 export default function LeaseForm({
   vehiclePrefill,
@@ -214,6 +237,7 @@ export default function LeaseForm({
         year:  vehiclePrefill.year,
         make:  vehiclePrefill.make,
         model: vehiclePrefill.model,
+        ...(vehiclePrefill.appData ? appDataToFormFields(vehiclePrefill.appData) : {}),
       } : {}),
       ...(isMasterLease ? {
         is_master_lease: true,
@@ -316,6 +340,13 @@ export default function LeaseForm({
 
       is_master_lease: raw.is_master_lease ?? false,
       vehicles_json:   raw.vehicles_json   || null,
+
+      voo_stock_number: vehiclePrefill?.vooStockNumber ?? null,
+      supplemental_data: vehiclePrefill?.appData
+        ? Object.fromEntries(
+            Object.entries(vehiclePrefill.appData).filter(([k]) => !(k in VOO_TO_LEASE_COLUMN_MAP))
+          )
+        : undefined,
     }
   }
 
@@ -459,7 +490,19 @@ export default function LeaseForm({
               {activeComponent === 2 && <Step3Vehicle    form={form} prefilled={!!vehiclePrefill} isMasterLease={isMasterLease} />}
               {activeComponent === 3 && <Step4Financials form={form} isMasterLease={isMasterLease} />}
               {activeComponent === 4 && <Step5Review     form={form} isMasterLease={isMasterLease} isMasterLeaseAgreement={isMasterLeaseAgreement} />}
-              {activeComponent === 5 && <Step5Signatures form={form} />}
+              {activeComponent === 5 && (
+                <Step5Signatures
+                  form={form}
+                  vooStockNumber={vehiclePrefill?.vooStockNumber ?? null}
+                  supplementalData={
+                    vehiclePrefill?.appData
+                      ? Object.fromEntries(
+                          Object.entries(vehiclePrefill.appData).filter(([k]) => !(k in VOO_TO_LEASE_COLUMN_MAP))
+                        )
+                      : null
+                  }
+                />
+              )}
             </>
           )
         })()}

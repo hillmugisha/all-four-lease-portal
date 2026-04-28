@@ -13,9 +13,10 @@ export interface ExportCol<T> {
 }
 
 export interface ColGroup<T> {
-  name:     string
-  required: boolean
-  cols:     ExportCol<T>[]
+  name:         string
+  required:     boolean
+  cols:         ExportCol<T>[]
+  bucketHeader?: string   // renders a section label above this group
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -153,7 +154,14 @@ export default function ExportVehiclesModal<T>({ open, onClose, records, groups,
             const isOpen = expanded.has(group.name)
 
             return (
-              <div key={group.name} className="border border-gray-100 rounded-lg overflow-hidden">
+              <div key={group.name}>
+                {group.bucketHeader && (
+                  <div className="flex items-center gap-2 pt-1 pb-1">
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">{group.bucketHeader}</span>
+                    <div className="flex-1 h-px bg-gray-100" />
+                  </div>
+                )}
+              <div className="border border-gray-100 rounded-lg overflow-hidden">
                 <div className="flex items-center gap-2.5 px-3 py-2 bg-gray-50 cursor-pointer select-none"
                   onClick={() => toggleExpanded(group.name)}>
                   <button
@@ -211,6 +219,7 @@ export default function ExportVehiclesModal<T>({ open, onClose, records, groups,
                     })}
                   </div>
                 )}
+              </div>
               </div>
             )
           })}

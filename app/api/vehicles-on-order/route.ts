@@ -14,6 +14,7 @@ export async function GET() {
       const { data, error } = await getSupabaseAdmin()
         .from('Vehicles_On_Order')
         .select('*')
+        .is('disposition', null)
         .order('id', { ascending: true })
         .range(from, from + BATCH - 1)
 

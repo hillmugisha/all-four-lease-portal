@@ -139,7 +139,11 @@ create table if not exists leases (
 
   -- ─── Master Lease Agreement ───────────────────────────────────────────────
   is_master_lease        boolean       not null default false,
-  vehicles_json          jsonb
+  vehicles_json          jsonb,
+
+  -- ─── VOO Link & Supplemental Data ────────────────────────────────────────
+  voo_stock_number       text,
+  supplemental_data      jsonb         default '{}'
 );
 
 -- ─── Auto-update updated_at on any row change ─────────────────────────────────

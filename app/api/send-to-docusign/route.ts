@@ -146,11 +146,8 @@ function buildRecord(raw: LeaseFormData): Omit<LeaseRecord, 'id' | 'created_at' 
 // ─── Helper: generate PDF bytes from HTML ─────────────────────────────────────
 
 async function renderToPdf(html: string): Promise<Buffer> {
-  const puppeteer = await import('puppeteer')
-  const browser   = await puppeteer.default.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
-  })
+  const { launchBrowser } = await import('@/lib/browser')
+  const browser = await launchBrowser()
   try {
     const page = await browser.newPage()
     await page.setContent(html, { waitUntil: 'networkidle0' })
@@ -417,14 +414,24 @@ async function createEnvelope(
 
 export async function POST(req: NextRequest) {
   try {
-    const { formData, selectedDocs = { lease: true, insurance: true, ach: true } } =
-      (await req.json()) as {
-        formData: LeaseFormData
-        selectedDocs?: { lease: boolean; insurance: boolean; ach: boolean }
-      }
+    const {
+      formData,
+      selectedDocs = { lease: true, insurance: true, ach: true },
+      vooStockNumber  = null,
+      supplementalData = null,
+    } = (await req.json()) as {
+      formData: LeaseFormData
+      selectedDocs?: { lease: boolean; insurance: boolean; ach: boolean }
+      vooStockNumber?: string | null
+      supplementalData?: Record<string, unknown> | null
+    }
 
     // 1. Build the record shape from form data
-    const recordData = buildRecord(formData)
+    const recordData = {
+      ...buildRecord(formData),
+      voo_stock_number: vooStockNumber,
+      supplemental_data: supplementalData,
+    }
 
     // 2. Save to Supabase first so we have an ID even if DocuSign fails
     const { data: saved, error: insertError } = await getSupabaseAdmin()

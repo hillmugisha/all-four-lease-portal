@@ -184,7 +184,7 @@
   <!-- ── Opening Statement ──────────────────────────────────── -->
   <p class="opening-stmt">
     The following vehicle is hereby added to the Master Lease Agreement dated
-    <span class="fill">{{#if schedule.master_lease_ref}}{{schedule.master_lease_ref}}{{else}}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{/if}}</span>,
+    <span class="fill">{{#if schedule.master_lease_ref}}{{schedule.master_lease_ref}}{{else}}{{fmtDateShort schedule.schedule_date}}{{/if}}</span>,
     between
     <span class="fill">{{lessor.name}}</span> (Lessor) and
     <span class="fill">{{lessee.name}}</span> (Lessee).

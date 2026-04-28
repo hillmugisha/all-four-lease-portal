@@ -266,6 +266,10 @@ export interface LeaseRecord {
   // Activation — set when a completed lease is promoted to Current Leases
   is_active?:    boolean | null
   activated_at?: string  | null
+
+  // VOO link & supplemental app data (fields not mapped to dedicated columns)
+  voo_stock_number?:  string | null
+  supplemental_data?: Record<string, unknown> | null
 }
 
 // ─── Master Lease Agreement (separate entity from leases) ────────────────────

@@ -1,21 +1,52 @@
 'use client'
 
-import { useFieldArray, UseFormReturn } from 'react-hook-form'
+import { useState } from 'react'
+import { useFieldArray, UseFormReturn, Controller } from 'react-hook-form'
 import type { LeaseScheduleFormData } from '@/lib/lease-schedule-types'
 
 const inputCls =
   'w-full rounded border border-gray-300 bg-white px-2 py-1 text-sm text-right text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-200'
 
-function MoneyInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
+const moneyCls =
+  'w-full rounded border border-gray-300 bg-white pl-5 pr-1 py-1 text-xs text-right text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-200'
+
+function formatMoney(val: number): string {
+  if (!val) return ''
+  return val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+interface MoneyInputProps {
+  value: number
+  onChange: (v: number) => void
+  onBlur: () => void
+}
+
+function MoneyInput({ value, onChange, onBlur }: MoneyInputProps) {
+  const [focused, setFocused] = useState(false)
+  const [rawText, setRawText] = useState('')
+
   return (
     <div className="relative">
       <span className="pointer-events-none absolute inset-y-0 left-2 flex items-center text-gray-400 text-xs">$</span>
       <input
-        {...props}
-        type="number"
-        step="0.01"
-        min="0"
-        className="w-full rounded border border-gray-300 bg-white pl-5 pr-1 py-1 text-xs text-right text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-200"
+        type="text"
+        inputMode="decimal"
+        value={focused ? rawText : formatMoney(value)}
+        onFocus={() => {
+          setFocused(true)
+          setRawText(value ? String(value) : '')
+        }}
+        onChange={(e) => {
+          const stripped = e.target.value.replace(/[^0-9.]/g, '')
+          setRawText(stripped)
+          const parsed = parseFloat(stripped)
+          onChange(isNaN(parsed) ? 0 : parsed)
+        }}
+        onBlur={() => {
+          setFocused(false)
+          onBlur()
+        }}
+        className={moneyCls}
       />
     </div>
   )
@@ -93,14 +124,32 @@ export default function LeaseScheduleStep2Vehicles({ form }: Props) {
                       className={inputCls}
                     />
                   </td>
-                  <td className="px-2 py-1.5 align-middle min-w-[110px]">
-                    <MoneyInput {...register(`vehicles.${i}.net_cap_cost`, { valueAsNumber: true })} />
+                  <td className="px-2 py-1.5 align-middle min-w-[130px]">
+                    <Controller
+                      control={control}
+                      name={`vehicles.${i}.net_cap_cost`}
+                      render={({ field: f }) => (
+                        <MoneyInput value={f.value ?? 0} onChange={f.onChange} onBlur={f.onBlur} />
+                      )}
+                    />
                   </td>
-                  <td className="px-2 py-1.5 align-middle min-w-[110px]">
-                    <MoneyInput {...register(`vehicles.${i}.monthly_payment`, { valueAsNumber: true })} />
+                  <td className="px-2 py-1.5 align-middle min-w-[130px]">
+                    <Controller
+                      control={control}
+                      name={`vehicles.${i}.monthly_payment`}
+                      render={({ field: f }) => (
+                        <MoneyInput value={f.value ?? 0} onChange={f.onChange} onBlur={f.onBlur} />
+                      )}
+                    />
                   </td>
-                  <td className="px-2 py-1.5 align-middle min-w-[110px]">
-                    <MoneyInput {...register(`vehicles.${i}.residual_value`, { valueAsNumber: true })} />
+                  <td className="px-2 py-1.5 align-middle min-w-[130px]">
+                    <Controller
+                      control={control}
+                      name={`vehicles.${i}.residual_value`}
+                      render={({ field: f }) => (
+                        <MoneyInput value={f.value ?? 0} onChange={f.onChange} onBlur={f.onBlur} />
+                      )}
+                    />
                   </td>
                 </tr>
               ))}

@@ -9,9 +9,11 @@ import { PdfViewerModal } from '@/components/PdfViewerModal'
 
 interface Props {
   form: UseFormReturn<LeaseFormData>
+  vooStockNumber?: string | null
+  supplementalData?: Record<string, unknown> | null
 }
 
-export default function Step5Signatures({ form }: Props) {
+export default function Step5Signatures({ form, vooStockNumber, supplementalData }: Props) {
   const { register, control, watch, setValue, formState: { errors } } = form
 
   const [multiple, setMultiple] = useState(false)
@@ -89,7 +91,12 @@ export default function Step5Signatures({ form }: Props) {
       const res = await fetch('/api/send-to-docusign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ formData: form.getValues(), selectedDocs }),
+        body: JSON.stringify({
+          formData: form.getValues(),
+          selectedDocs,
+          vooStockNumber:  vooStockNumber  ?? null,
+          supplementalData: supplementalData ?? null,
+        }),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'Failed to send to DocuSign')

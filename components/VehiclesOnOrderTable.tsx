@@ -4,7 +4,7 @@ import { useState, useMemo, useRef, useEffect, forwardRef, useImperativeHandle }
 import { usePersistedColumns } from '@/lib/usePersistedColumns'
 import { useRouter } from 'next/navigation'
 import { VehicleOnOrderRecord } from '@/lib/vehicles-on-order-types'
-import { Columns, X, Search, ChevronDown, ChevronLeft, ChevronRight, Eye, Download, Upload, PlusCircle } from 'lucide-react'
+import { Columns, X, Search, ChevronDown, ChevronLeft, ChevronRight, Eye, Download, Upload, PlusCircle, AlertTriangle, Loader2, Wrench, ShoppingCart } from 'lucide-react'
 import OrganizeColumnsModal from '@/components/OrganizeColumnsModal'
 import ExportVehiclesModal, { ColGroup } from '@/components/ExportVehiclesModal'
 import ImportVehiclesModal from '@/components/ImportVehiclesModal'
@@ -230,6 +230,7 @@ const VOO_EXPORT_GROUPS: ColGroup<VehicleOnOrderRecord>[] = [
   },
   {
     name: 'Order Info', required: false,
+    bucketHeader: 'SHAED Tracking Data',
     cols: [
       { label: 'OEM Order #',    key: 'oem_order_number'   },
       { label: 'Order Date',     key: 'order_date'         },
@@ -289,9 +290,10 @@ const VOO_EXPORT_GROUPS: ColGroup<VehicleOnOrderRecord>[] = [
   {
     // Lease Terms group — data-driven from the registry; new fields appear here automatically
     name: 'Lease Terms', required: false,
+    bucketHeader: 'Internal Lease Data',
     cols: VOO_APP_FIELDS.map(f => ({
       label:    f.label,
-      getValue: (v: VehicleOnOrderRecord) => v.app_data?.[f.key] ?? '',
+      getValue: (v: VehicleOnOrderRecord) => v.app_data?.[f.key] ?? null,
     })),
   },
 ]
@@ -447,6 +449,62 @@ export interface VehiclesOnOrderTableHandle {
   createLease: () => void
 }
 
+// ─── Dispose confirmation modals ─────────────────────────────────────────────
+
+function DisposeConfirmModal({
+  title, bodyText, count, onConfirm, onCancel, confirming, error,
+}: {
+  title: string
+  bodyText: string
+  count: number
+  onConfirm: () => void
+  onCancel: () => void
+  confirming: boolean
+  error?: string | null
+}) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
+      <div className="relative z-10 w-full max-w-sm rounded-xl bg-white shadow-2xl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle size={18} className="text-amber-500 shrink-0" />
+            <span className="text-sm font-semibold text-gray-900">{title}</span>
+          </div>
+          <button onClick={onCancel} className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
+            <X size={16} />
+          </button>
+        </div>
+        <div className="px-5 py-4 space-y-3">
+          <p className="text-sm text-gray-600">
+            Are you sure you want to mark {count === 1 ? 'this vehicle' : `these ${count} vehicles`}?
+          </p>
+          <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 space-y-0.5">
+            <p className="text-xs font-semibold text-gray-700">
+              {count === 1 ? '1 vehicle' : `${count} vehicles`}
+            </p>
+            <p className="text-xs text-gray-500">{bodyText}</p>
+          </div>
+          {error && <p className="text-xs font-medium text-red-600">{error}</p>}
+        </div>
+        <div className="flex justify-end gap-2.5 px-5 py-4 border-t border-gray-100">
+          <button type="button" onClick={onCancel} disabled={confirming} className="btn-secondary">
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={confirming}
+            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+          >
+            {confirming ? <><Loader2 size={14} className="animate-spin" /> Saving…</> : 'Continue'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 const VehiclesOnOrderTable = forwardRef<
@@ -457,7 +515,7 @@ const VehiclesOnOrderTable = forwardRef<
     onRefresh:         () => void
     onSelectionChange?: (count: number) => void
   }
->(function VehiclesOnOrderTable({ vehicles, loading, onRefresh: _onRefresh, onSelectionChange }, ref) {
+>(function VehiclesOnOrderTable({ vehicles, loading, onRefresh, onSelectionChange }, ref) {
   const router = useRouter()
   const [filters, setFilters]               = useState<Filters>(EMPTY_FILTERS)
   const [page, setPage]                     = useState(1)
@@ -469,6 +527,10 @@ const VehiclesOnOrderTable = forwardRef<
   const [pendingVehicles, setPendingVehicles] = useState<VehicleOnOrderRecord[]>([])
   const [exportModalOpen, setExportModalOpen] = useState(false)
   const [importModalOpen, setImportModalOpen] = useState(false)
+  const [soldConfirmOpen, setSoldConfirmOpen] = useState(false)
+  const [oosConfirmOpen, setOosConfirmOpen]   = useState(false)
+  const [disposeLoading, setDisposeLoading]   = useState(false)
+  const [disposeError, setDisposeError]       = useState<string | null>(null)
 
   const filtered       = useMemo(() => applyFilters(vehicles, filters),                    [vehicles, filters])
   const inventoryTypes = useMemo(() => distinct(applyFilters(vehicles, filters, 'inventoryType'), (v) => v.inventory_type).sort(), [vehicles, filters])
@@ -525,12 +587,16 @@ const VehiclesOnOrderTable = forwardRef<
   }), [])
 
   function routeToSingleLease(vehicle: VehicleOnOrderRecord) {
-    const params = new URLSearchParams()
-    if (vehicle.vin)          params.set('vin',   vehicle.vin)
-    if (vehicle.model_year)   params.set('year',  vehicle.model_year)
-    if (vehicle.oem)          params.set('make',  vehicle.oem)
-    if (vehicle.vehicle_line) params.set('model', vehicle.vehicle_line)
-    router.push(`/new-lease?${params.toString()}`)
+    sessionStorage.setItem('vooPreload', JSON.stringify({
+      stock_number: vehicle.stock_number,
+      vin:          vehicle.vin,
+      year:         vehicle.model_year,
+      make:         vehicle.oem,
+      model:        vehicle.vehicle_line,
+      color:        vehicle.color,
+      app_data:     vehicle.app_data ?? {},
+    }))
+    router.push('/new-lease')
   }
 
   function declineMasterLease() {
@@ -542,9 +608,36 @@ const VehiclesOnOrderTable = forwardRef<
 
   function routeToLeaseSchedule() {
     if (pendingVehicles.length === 0) return
+    // Include app_data and stock_number so LeaseScheduleForm can persist them to the leases table
     sessionStorage.setItem('leaseScheduleVehicles', JSON.stringify(pendingVehicles))
     setMasterLeaseModalOpen(false)
     router.push('/new-lease-schedule')
+  }
+
+  async function handleDispose(disposition: 'sold' | 'out_of_service') {
+    const ids = Array.from(checkedIds)
+    setDisposeLoading(true)
+    setDisposeError(null)
+    try {
+      const res = await fetch('/api/vehicles-on-order/dispose', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids, disposition }),
+      })
+      const body = await res.json()
+      if (!res.ok) {
+        setDisposeError(body.error ?? `Server error (${res.status}) — please try again.`)
+        return
+      }
+      setSoldConfirmOpen(false)
+      setOosConfirmOpen(false)
+      setCheckedIds(new Set())
+      onRefresh()
+    } catch {
+      setDisposeError('Network error — please check your connection and try again.')
+    } finally {
+      setDisposeLoading(false)
+    }
   }
 
   const visibleDefs = visibleCols
@@ -664,6 +757,22 @@ const VehiclesOnOrderTable = forwardRef<
           </button>
           <button onClick={() => setExportModalOpen(true)} className="btn-secondary py-1.5 text-xs flex items-center gap-1.5">
             <Download size={13} /> Export
+          </button>
+          <button
+            onClick={() => { setDisposeError(null); setOosConfirmOpen(true) }}
+            disabled={!someChecked || disposeLoading}
+            className="btn-primary py-1.5 text-xs flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Wrench size={13} />
+            {someChecked ? `Mark Out of Service (${checkedIds.size})` : 'Mark Out of Service'}
+          </button>
+          <button
+            onClick={() => { setDisposeError(null); setSoldConfirmOpen(true) }}
+            disabled={!someChecked || disposeLoading}
+            className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+          >
+            <ShoppingCart size={13} />
+            {someChecked ? `Mark as Sold (${checkedIds.size})` : 'Mark as Sold'}
           </button>
         </div>
 
@@ -841,7 +950,7 @@ const VehiclesOnOrderTable = forwardRef<
       <ImportVehiclesModal
         open={importModalOpen}
         onClose={() => setImportModalOpen(false)}
-        onSuccess={() => { setImportModalOpen(false); _onRefresh() }}
+        onSuccess={() => { setImportModalOpen(false); onRefresh() }}
         apiEndpoint="/api/vehicles-on-order/import"
         matchKey="Stock #"
         columnGroups={VOO_IMPORT_GROUPS}
@@ -891,6 +1000,30 @@ const VehiclesOnOrderTable = forwardRef<
             </div>
           </div>
         </div>
+      )}
+
+      {oosConfirmOpen && (
+        <DisposeConfirmModal
+          title="Mark Out of Service"
+          bodyText="Will be removed from Vehicles on Order."
+          count={checkedIds.size}
+          onConfirm={() => handleDispose('out_of_service')}
+          onCancel={() => setOosConfirmOpen(false)}
+          confirming={disposeLoading}
+          error={disposeError}
+        />
+      )}
+
+      {soldConfirmOpen && (
+        <DisposeConfirmModal
+          title="Mark as Sold"
+          bodyText="Will be removed from Vehicles on Order."
+          count={checkedIds.size}
+          onConfirm={() => handleDispose('sold')}
+          onCancel={() => setSoldConfirmOpen(false)}
+          confirming={disposeLoading}
+          error={disposeError}
+        />
       )}
     </div>
   )
