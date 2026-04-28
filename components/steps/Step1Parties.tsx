@@ -149,6 +149,8 @@ export default function Step1Parties({ form, businessOnly = false }: Props) {
     setValue('vehicleUse', getVehicleUses(leaseType, contractStructure, ct)[0] ?? '')
     setValue('department', '')
     setValue('departmentOther', '')
+    if (ct === 'Business') setValue('lesseeType', 'business')
+    if (ct === 'Individual') setValue('lesseeType', 'individual')
   }
 
   const [leaseSetupOpen, setLeaseSetupOpen] = useState(false)
@@ -402,18 +404,20 @@ export default function Step1Parties({ form, businessOnly = false }: Props) {
           <div className="sm:col-span-6">
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Lessee Type</p>
             <div className="flex gap-6">
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="radio"
-                  value="business"
-                  {...register('lesseeType')}
-                  checked={isBusiness}
-                  onChange={() => setValue('lesseeType', 'business')}
-                  className="accent-brand-600"
-                />
-                <span className="font-medium text-gray-700">Business</span>
-              </label>
-              {leaseType === 'Core' && !businessOnly && (
+              {customerType !== 'Individual' && (
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="radio"
+                    value="business"
+                    {...register('lesseeType')}
+                    checked={isBusiness}
+                    onChange={() => setValue('lesseeType', 'business')}
+                    className="accent-brand-600"
+                  />
+                  <span className="font-medium text-gray-700">Business</span>
+                </label>
+              )}
+              {leaseType === 'Core' && !businessOnly && customerType !== 'Business' && (
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
                   <input
                     type="radio"

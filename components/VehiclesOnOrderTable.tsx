@@ -4,7 +4,8 @@ import { useState, useMemo, useRef, useEffect, forwardRef, useImperativeHandle }
 import { usePersistedColumns } from '@/lib/usePersistedColumns'
 import { useRouter } from 'next/navigation'
 import { VehicleOnOrderRecord } from '@/lib/vehicles-on-order-types'
-import { Columns, X, Search, ChevronDown, ChevronLeft, ChevronRight, Eye, Download, Upload, PlusCircle, AlertTriangle, Loader2, Wrench, ShoppingCart } from 'lucide-react'
+import { Columns, X, Search, ChevronLeft, ChevronRight, Eye, Download, Upload, PlusCircle, AlertTriangle, Loader2, Wrench, ShoppingCart } from 'lucide-react'
+import MultiSelectFilter from '@/components/MultiSelectFilter'
 import OrganizeColumnsModal from '@/components/OrganizeColumnsModal'
 import ExportVehiclesModal, { ColGroup } from '@/components/ExportVehiclesModal'
 import ImportVehiclesModal from '@/components/ImportVehiclesModal'
@@ -326,80 +327,6 @@ const EMPTY_FILTERS: Filters = {
   search: '', inventoryType: [], stage: [], year: [], make: [], model: [], shaedStatus: [],
 }
 
-function MultiSelectFilter({
-  label, selected, onChange, options,
-}: {
-  label:    string
-  selected: string[]
-  onChange: (v: string[]) => void
-  options:  string[]
-}) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [open])
-
-  function toggleOption(opt: string) {
-    if (selected.includes(opt)) onChange(selected.filter((s) => s !== opt))
-    else onChange([...selected, opt])
-  }
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className={clsx(
-          'inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors',
-          open
-            ? 'border-brand-500 bg-white text-gray-900 shadow-sm'
-            : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-        )}
-      >
-        <span>{label}</span>
-        {selected.length > 0 && (
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-600 text-[10px] font-bold text-white leading-none">
-            {selected.length}
-          </span>
-        )}
-        <ChevronDown size={13} className={clsx('text-gray-400 transition-transform', open && 'rotate-180')} />
-      </button>
-
-      {open && (
-        <div className="absolute left-0 top-full z-30 mt-1 min-w-[180px] rounded-lg border border-gray-200 bg-white shadow-lg py-1">
-          <label className="flex cursor-pointer items-center gap-2.5 px-3 py-1.5 hover:bg-gray-50">
-            <input
-              type="checkbox"
-              checked={selected.length === 0}
-              onChange={() => onChange([])}
-              className="h-3.5 w-3.5 rounded border-gray-300 accent-brand-600"
-            />
-            <span className="text-sm text-gray-700">All</span>
-          </label>
-          {options.map((opt) => (
-            <label key={opt} className="flex cursor-pointer items-center gap-2.5 px-3 py-1.5 hover:bg-gray-50">
-              <input
-                type="checkbox"
-                checked={selected.includes(opt)}
-                onChange={() => toggleOption(opt)}
-                className="h-3.5 w-3.5 rounded border-gray-300 accent-brand-600"
-              />
-              <span className="text-sm text-gray-700 whitespace-nowrap">{opt}</span>
-            </label>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
 function applyFilters(
   vehicles: VehicleOnOrderRecord[],
   f: Filters,
@@ -540,7 +467,7 @@ const VehiclesOnOrderTable = forwardRef<
   const models         = useMemo(() => distinct(applyFilters(vehicles, filters, 'model'),         (v) => v.vehicle_line).sort(),    [vehicles, filters])
   const shaedStatuses  = useMemo(() => distinct(applyFilters(vehicles, filters, 'shaedStatus'),   (v) => v.shaed_status).sort(),    [vehicles, filters])
 
-  const hasDropdownFilters = filters.inventoryType.length > 0 || filters.stage.length > 0 || filters.year.length > 0 || filters.make.length > 0 || filters.model.length > 0 || filters.shaedStatus.length > 0
+  const hasDropdownFilters = !!filters.search || filters.inventoryType.length > 0 || filters.stage.length > 0 || filters.year.length > 0 || filters.make.length > 0 || filters.model.length > 0 || filters.shaedStatus.length > 0
 
   const totalPages  = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const currentPage = Math.min(page, totalPages)
@@ -704,6 +631,24 @@ const VehiclesOnOrderTable = forwardRef<
           onChange={(v) => { setFilters((f) => ({ ...f, shaedStatus: v })); setPage(1) }}
           options={shaedStatuses}
         />
+        <div className="relative">
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search by Stock #, VIN, OEM…"
+            value={filters.search}
+            onChange={(e) => { setFilters((f) => ({ ...f, search: e.target.value })); setPage(1) }}
+            className="input pl-7 py-1.5 text-sm w-80"
+          />
+          {filters.search && (
+            <button
+              onClick={() => { setFilters((f) => ({ ...f, search: '' })); setPage(1) }}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              <X size={13} />
+            </button>
+          )}
+        </div>
         {hasDropdownFilters && (
           <button
             onClick={() => { setFilters(EMPTY_FILTERS); setPage(1) }}
@@ -717,31 +662,11 @@ const VehiclesOnOrderTable = forwardRef<
       {/* ── Table card ── */}
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
 
-        {/* Toolbar: count left · search + buttons right */}
+        {/* Toolbar: count left · buttons right */}
         <div className="flex items-center gap-3 border-b border-gray-200 px-5 py-3">
           <p className="text-xs text-gray-500 shrink-0 mr-auto">
             {filtered.length.toLocaleString()} of {vehicles.length.toLocaleString()} vehicles
           </p>
-
-          {/* Search */}
-          <div className="relative">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Search by Stock #, VIN, OEM…"
-              value={filters.search}
-              onChange={(e) => { setFilters((f) => ({ ...f, search: e.target.value })); setPage(1) }}
-              className="input pl-7 py-1.5 text-sm w-80"
-            />
-            {filters.search && (
-              <button
-                onClick={() => { setFilters((f) => ({ ...f, search: '' })); setPage(1) }}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                <X size={13} />
-              </button>
-            )}
-          </div>
 
           <button
             onClick={() => setColumnsModalOpen(true)}

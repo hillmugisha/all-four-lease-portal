@@ -4,7 +4,8 @@ import { useEffect, useState, useMemo, useCallback } from 'react'
 import { usePersistedColumns } from '@/lib/usePersistedColumns'
 import { LeaseRecord } from '@/lib/types'
 import { fmt, fmtDate } from '@/lib/calculations'
-import { FileDown, Columns, Plus, Eye, X, Search, ChevronDown, Trash2, AlertTriangle, Zap, Loader2, CheckCircle2, Pencil, Copy } from 'lucide-react'
+import { FileDown, Columns, Plus, Eye, X, Search, Trash2, AlertTriangle, Zap, Loader2, CheckCircle2, Pencil, Copy } from 'lucide-react'
+import MultiSelectFilter from '@/components/MultiSelectFilter'
 import Toast, { ToastState } from '@/components/Toast'
 import LeaseDocumentsSection from '@/components/LeaseDocumentsSection'
 import clsx from 'clsx'
@@ -475,8 +476,8 @@ function getCellTitle(col: ColKey, lease: LeaseRecord): string | undefined {
 
 // ─── Filters ─────────────────────────────────────────────────────────────────
 
-interface Filters { search: string; status: string; year: string; make: string; model: string }
-const EMPTY_FILTERS: Filters = { search: '', status: '', year: '', make: '', model: '' }
+interface Filters { search: string; status: string[]; year: string[]; make: string[]; model: string[] }
+const EMPTY_FILTERS: Filters = { search: '', status: [], year: [], make: [], model: [] }
 
 // Calculate lease end date: first_payment_date + (num_payments - 1) months
 function leaseEndDate(firstPayment: string, numPayments: number): string {
@@ -686,7 +687,9 @@ export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
 
   // Unique sorted years and makes from loaded data
   const statuses = useMemo(() =>
-    Array.from(new Set(leases.map((l) => l.doc_status).filter(Boolean))).sort(),
+    Array.from(new Set(leases.map((l) => l.doc_status).filter(Boolean)))
+      .sort()
+      .map((s) => STATUS_LABELS[s as LeaseRecord['doc_status']] ?? s),
     [leases]
   )
   const years = useMemo(() =>
@@ -709,14 +712,17 @@ export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
       const hay = [l.lessee_name, l.lessee_email, l.vehicle_vin, l.vehicle_year, l.vehicle_make, l.vehicle_model].join(' ').toLowerCase()
       if (!hay.includes(q)) return false
     }
-    if (filters.status && l.doc_status !== filters.status) return false
-    if (filters.year   && l.vehicle_year !== filters.year) return false
-    if (filters.make   && l.vehicle_make !== filters.make) return false
-    if (filters.model  && !l.vehicle_model.toLowerCase().includes(filters.model.toLowerCase())) return false
+    if (filters.status.length > 0) {
+      const label = STATUS_LABELS[l.doc_status as LeaseRecord['doc_status']] ?? l.doc_status
+      if (!filters.status.includes(label)) return false
+    }
+    if (filters.year.length > 0  && !filters.year.includes(l.vehicle_year))   return false
+    if (filters.make.length > 0  && !filters.make.includes(l.vehicle_make))   return false
+    if (filters.model.length > 0 && !filters.model.includes(l.vehicle_model)) return false
     return true
   }), [leases, filters])
 
-  const hasFilters = Object.values(filters).some(Boolean)
+  const hasFilters = !!filters.search || filters.status.length > 0 || filters.year.length > 0 || filters.make.length > 0 || filters.model.length > 0
 
   // Ordered visible column definitions
   const visibleDefs = visibleCols.map((k) => COLUMNS.find((c) => c.key === k)!).filter(Boolean)
@@ -725,39 +731,24 @@ export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
     <div className="flex flex-col gap-4">
       {/* ── Filters ── */}
       <div className="flex flex-wrap gap-[17px] items-center">
+        <MultiSelectFilter label="Status" selected={filters.status} onChange={(v) => setFilters((f) => ({ ...f, status: v }))} options={statuses} />
+        <MultiSelectFilter label="Year"   selected={filters.year}   onChange={(v) => setFilters((f) => ({ ...f, year: v }))}   options={years} />
+        <MultiSelectFilter label="Make"   selected={filters.make}   onChange={(v) => setFilters((f) => ({ ...f, make: v }))}   options={makes} />
+        <MultiSelectFilter label="Model"  selected={filters.model}  onChange={(v) => setFilters((f) => ({ ...f, model: v }))}  options={models} />
         <div className="relative">
-          <select
-            value={filters.status}
-            onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
-            className="input py-1.5 text-sm appearance-none pr-7"
-          >
-            <option value="">All statuses</option>
-            {statuses.map((s) => (
-              <option key={s} value={s}>{STATUS_LABELS[s as LeaseRecord['doc_status']] ?? s}</option>
-            ))}
-          </select>
-          <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-        </div>
-        <div className="relative">
-          <select value={filters.year} onChange={(e) => setFilters((f) => ({ ...f, year: e.target.value }))} className="input py-1.5 text-sm appearance-none pr-7">
-            <option value="">All years</option>
-            {years.map((y) => <option key={y} value={y}>{y}</option>)}
-          </select>
-          <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-        </div>
-        <div className="relative">
-          <select value={filters.make} onChange={(e) => setFilters((f) => ({ ...f, make: e.target.value }))} className="input py-1.5 text-sm appearance-none pr-7">
-            <option value="">All makes</option>
-            {makes.map((m) => <option key={m} value={m}>{m}</option>)}
-          </select>
-          <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-        </div>
-        <div className="relative">
-          <select value={filters.model} onChange={(e) => setFilters((f) => ({ ...f, model: e.target.value }))} className="input py-1.5 text-sm appearance-none pr-7">
-            <option value="">All models</option>
-            {models.map((m) => <option key={m} value={m}>{m}</option>)}
-          </select>
-          <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search by name, email, VIN, vehicle…"
+            value={filters.search}
+            onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
+            className="input pl-7 py-1.5 text-sm w-80"
+          />
+          {filters.search && (
+            <button onClick={() => setFilters((f) => ({ ...f, search: '' }))} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              <X size={13} />
+            </button>
+          )}
         </div>
         {hasFilters && (
           <button onClick={() => setFilters(EMPTY_FILTERS)} className="inline-flex items-center gap-1.5 rounded-md border border-red-300 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-100 hover:border-red-400 transition-colors">
@@ -774,22 +765,6 @@ export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
             <p className="text-xs text-gray-400 mt-0.5">
               {hasFilters ? `${filtered.length} of ${leases.length}` : leases.length} total
             </p>
-          </div>
-          {/* Search */}
-          <div className="relative">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Search by name, email, VIN, vehicle…"
-              value={filters.search}
-              onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
-              className="input pl-7 py-1.5 text-sm w-80"
-            />
-            {filters.search && (
-              <button onClick={() => setFilters((f) => ({ ...f, search: '' }))} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                <X size={13} />
-              </button>
-            )}
           </div>
           <button
             onClick={() => setShowActivateModal(true)}

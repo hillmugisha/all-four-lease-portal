@@ -1,9 +1,10 @@
 'use client'
 
-import React, { useState, useMemo, useRef, useEffect } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { usePersistedColumns } from '@/lib/usePersistedColumns'
 import { LeasePortfolioRecord } from '@/lib/lease-portfolio-types'
-import { Eye, X, Search, ChevronDown, ChevronLeft, ChevronRight, Download, Columns } from 'lucide-react'
+import { Eye, X, Search, ChevronLeft, ChevronRight, Download, Columns } from 'lucide-react'
+import MultiSelectFilter from '@/components/MultiSelectFilter'
 import LeaseDocumentsSection from '@/components/LeaseDocumentsSection'
 import clsx from 'clsx'
 import * as XLSX from 'xlsx'
@@ -107,59 +108,6 @@ function LeaseHistoryDetailModal({
 interface Filters { name: string; make: string[]; company: string[]; customerType: string[]; term: string[]; lender: string[] }
 const EMPTY_FILTERS: Filters = { name: '', make: [], company: [], customerType: [], term: [], lender: [] }
 
-function MultiSelectFilter({ label, selected, onChange, options }: { label: string; selected: string[]; onChange: (v: string[]) => void; options: string[] }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [open])
-
-  function toggleOption(opt: string) {
-    selected.includes(opt) ? onChange(selected.filter((s) => s !== opt)) : onChange([...selected, opt])
-  }
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className={clsx(
-          'inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors',
-          open ? 'border-brand-500 bg-white text-gray-900 shadow-sm' : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-        )}
-      >
-        <span>{label}</span>
-        {selected.length > 0 && (
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-600 text-[10px] font-bold text-white leading-none">
-            {selected.length}
-          </span>
-        )}
-        <ChevronDown size={13} className={clsx('text-gray-400 transition-transform', open && 'rotate-180')} />
-      </button>
-      {open && (
-        <div className="absolute left-0 top-full z-30 mt-1 min-w-[180px] rounded-lg border border-gray-200 bg-white shadow-lg py-1">
-          <label className="flex cursor-pointer items-center gap-2.5 px-3 py-1.5 hover:bg-gray-50">
-            <input type="checkbox" checked={selected.length === 0} onChange={() => onChange([])} className="h-3.5 w-3.5 rounded border-gray-300 accent-brand-600" />
-            <span className="text-sm text-gray-700">All</span>
-          </label>
-          {options.map((opt) => (
-            <label key={opt} className="flex cursor-pointer items-center gap-2.5 px-3 py-1.5 hover:bg-gray-50">
-              <input type="checkbox" checked={selected.includes(opt)} onChange={() => toggleOption(opt)} className="h-3.5 w-3.5 rounded border-gray-300 accent-brand-600" />
-              <span className="text-sm text-gray-700 whitespace-nowrap">{opt}</span>
-            </label>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
 // ─── Excel export ─────────────────────────────────────────────────────────────
 
 function exportToExcel(records: LeasePortfolioRecord[]) {
@@ -250,6 +198,21 @@ export default function LeaseHistoryTable({ leases, loading }: TableProps) {
           <MultiSelectFilter label="Customer Type" selected={filters.customerType} onChange={(v) => setFilters((f) => ({ ...f, customerType: v }))} options={customerTypes} />
           <MultiSelectFilter label="Term"          selected={filters.term}         onChange={(v) => setFilters((f) => ({ ...f, term: v }))}         options={terms} />
           <MultiSelectFilter label="Lender"        selected={filters.lender}       onChange={(v) => setFilters((f) => ({ ...f, lender: v }))}       options={lenders} />
+          <div className="relative">
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search by customer, company, VIN…"
+              value={filters.name}
+              onChange={(e) => setFilters({ ...filters, name: e.target.value })}
+              className="input pl-7 py-1.5 text-sm w-[28rem]"
+            />
+            {filters.name && (
+              <button onClick={() => setFilters({ ...filters, name: '' })} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <X size={13} />
+              </button>
+            )}
+          </div>
           {hasFilters && (
             <button onClick={() => setFilters(EMPTY_FILTERS)} className="inline-flex items-center gap-1.5 rounded-md border border-red-300 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-100 hover:border-red-400 transition-colors">
               <X size={12} /> Clear filters
@@ -266,21 +229,6 @@ export default function LeaseHistoryTable({ leases, loading }: TableProps) {
               {hasFilters ? `${filtered.length} of ${leases.length}` : leases.length} total
               {totalPages > 1 && ` · page ${page} of ${totalPages}`}
             </p>
-          </div>
-          <div className="relative">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Search by customer, company, VIN…"
-              value={filters.name}
-              onChange={(e) => setFilters({ ...filters, name: e.target.value })}
-              className="input pl-7 py-1.5 text-sm w-80"
-            />
-            {filters.name && (
-              <button onClick={() => setFilters({ ...filters, name: '' })} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                <X size={13} />
-              </button>
-            )}
           </div>
           <button onClick={() => setColumnsModalOpen(true)} className="btn-secondary py-1.5 text-xs flex items-center gap-1.5">
             <Columns size={13} /> Columns
