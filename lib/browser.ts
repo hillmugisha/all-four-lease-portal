@@ -10,7 +10,7 @@ export async function launchBrowser(): Promise<Browser> {
       executablePath: await chromium.executablePath(
         process.env.CHROMIUM_PACK_URL
       ),
-      headless: true,
+      headless: 'shell',
     })
   }
 
