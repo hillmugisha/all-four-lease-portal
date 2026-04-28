@@ -52,19 +52,12 @@ export default function LeaseScheduleStep3Review({ form }: Props) {
       </div>
 
       {/* ── Reference ── */}
-      {(data.scheduleDate || data.masterLeaseRef) && (
+      {data.scheduleDate && (
         <div className="rounded-lg border border-gray-200 bg-white p-4">
           <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-2">Schedule Reference</p>
-          {data.scheduleDate && (
-            <p className="text-sm text-gray-700">
-              <span className="text-gray-500">Date: </span>{fmtDate(data.scheduleDate)}
-            </p>
-          )}
-          {data.masterLeaseRef && (
-            <p className="text-sm text-gray-700">
-              <span className="text-gray-500">Pursuant to: </span>{data.masterLeaseRef}
-            </p>
-          )}
+          <p className="text-sm text-gray-700">
+            <span className="text-gray-500">Date: </span>{fmtDate(data.scheduleDate)}
+          </p>
         </div>
       )}
 

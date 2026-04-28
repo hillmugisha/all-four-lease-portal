@@ -171,14 +171,20 @@ export default function LeaseScheduleForm({
     defaultValues: {
       ...DEFAULT_VALUES,
       scheduleDate,
-      vehicles: initialVehicles.map((v) => ({
-        ...v,
-        lease_start_date: scheduleDate,
-        term: 24,
-        net_cap_cost: 0,
-        monthly_payment: 0,
-        residual_value: 0,
-      })),
+      vehicles: initialVehicles.map((v) => {
+        // app_data carries lease terms imported into Vehicles on Order.
+        // Use stored values when present; fall back to safe defaults.
+        // null = not set (use default); 0 = valid imported value (keep as-is).
+        const d = (v as { app_data?: Record<string, unknown> | null }).app_data ?? {}
+        return {
+          ...v,
+          lease_start_date: (d.lease_start_date as string | undefined) || scheduleDate,
+          term:             d.term         != null && Number(d.term) > 0  ? Number(d.term)         : 24,
+          net_cap_cost:     d.net_cap_cost     != null ? Number(d.net_cap_cost)     : 0,
+          monthly_payment:  d.monthly_payment  != null ? Number(d.monthly_payment)  : 0,
+          residual_value:   d.residual_value   != null ? Number(d.residual_value)   : 0,
+        }
+      }),
     },
     mode: 'onTouched',
   })
@@ -272,9 +278,15 @@ export default function LeaseScheduleForm({
         <div className="flex items-center justify-between pt-4 border-t border-gray-200">
           <button
             type="button"
-            onClick={handleBack}
-            disabled={step === 1}
-            className="btn-secondary flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
+            onClick={() => {
+              if (step === 1) {
+                setSelectedMla(null)
+                form.setValue('mla_id', null)
+              } else {
+                handleBack()
+              }
+            }}
+            className="btn-secondary flex items-center gap-1"
           >
             <ChevronLeft size={15} /> Back
           </button>

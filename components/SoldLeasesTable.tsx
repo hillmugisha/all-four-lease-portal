@@ -8,6 +8,7 @@ import LeaseDocumentsSection from '@/components/LeaseDocumentsSection'
 import clsx from 'clsx'
 import ExportVehiclesModal from '@/components/ExportVehiclesModal'
 import ImportVehiclesModal from '@/components/ImportVehiclesModal'
+import { PORTFOLIO_EXPORT_GROUPS, PORTFOLIO_IMPORT_GROUPS } from '@/lib/portfolio-export-groups'
 import { fmtDate, fmtMoney, DR, MS } from '@/lib/table-utils'
 import OrganizeColumnsModal from '@/components/OrganizeColumnsModal'
 import { ColKey, COLUMNS, DEFAULT_COLS_PURCHASED, buildCell, calcRevenue, getCellTitle } from '@/lib/portfolio-columns'
@@ -390,11 +391,17 @@ export default function SoldLeasesTable({ leases, loading }: TableProps) {
         open={exportModalOpen}
         onClose={() => setExportModalOpen(false)}
         records={exportRecords}
+        groups={PORTFOLIO_EXPORT_GROUPS}
+        filename="lease-portfolio"
+        sheetName="Lease Portfolio"
       />
       <ImportVehiclesModal
         open={importOpen}
         onClose={() => setImportOpen(false)}
         onSuccess={() => window.location.reload()}
+        apiEndpoint="/api/portfolio/import"
+        matchKey="Lease ID"
+        columnGroups={PORTFOLIO_IMPORT_GROUPS}
       />
     </div>
   )

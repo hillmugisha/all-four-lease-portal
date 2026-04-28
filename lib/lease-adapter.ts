@@ -155,10 +155,10 @@ export function recordToTemplateData(r: LeaseRecord): LeaseTemplateData {
     },
 
     ach: {
-      billing_address: r.ach_billing_address ?? r.lessee_address ?? null,
-      billing_city:    r.ach_billing_city    ?? ([r.lessee_city, r.lessee_state, r.lessee_zip].filter(Boolean).join('  ') || null),
-      billing_phone:   r.ach_billing_phone   ?? r.lessee_phone ?? null,
-      billing_email:   r.ach_billing_email   ?? r.lessee_email ?? null,
+      billing_address: r.ach_billing_address ?? null,
+      billing_city:    r.ach_billing_city    ?? null,
+      billing_phone:   r.ach_billing_phone   ?? null,
+      billing_email:   r.ach_billing_email   ?? null,
       bank_name:       r.ach_bank_name       ?? null,
       routing_number:  r.ach_routing_number  ?? null,
       account_number:  r.ach_account_number  ?? null,

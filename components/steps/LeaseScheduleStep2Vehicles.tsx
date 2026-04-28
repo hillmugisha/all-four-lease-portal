@@ -110,28 +110,15 @@ export default function LeaseScheduleStep2Vehicles({ form }: Props) {
       )}
 
       {/* ── Schedule reference fields ── */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 pt-2">
-        <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">
-            Schedule Date
-          </label>
-          <input
-            {...register('scheduleDate')}
-            type="date"
-            className="w-full rounded border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-200"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">
-            Pursuant to (Master Lease Reference) <span className="text-gray-400 font-normal">optional</span>
-          </label>
-          <input
-            {...register('masterLeaseRef')}
-            type="text"
-            placeholder="e.g. Master Lease Agreement dated April 24, 2026"
-            className="w-full rounded border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-200"
-          />
-        </div>
+      <div className="pt-2 max-w-xs">
+        <label className="block text-xs font-semibold text-gray-700 mb-1">
+          Schedule Date
+        </label>
+        <input
+          {...register('scheduleDate')}
+          type="date"
+          className="w-full rounded border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-200"
+        />
       </div>
     </div>
   )

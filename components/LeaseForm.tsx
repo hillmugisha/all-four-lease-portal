@@ -179,6 +179,8 @@ export default function LeaseForm({
   vehiclePrefill,
   editRecord,
   onEditComplete,
+  cloneRecord,
+  onCloneComplete,
   onBack,
   isMasterLease,
   masterLeaseVehicles,
@@ -187,6 +189,8 @@ export default function LeaseForm({
   vehiclePrefill?:          VehiclePrefill | null
   editRecord?:              LeaseRecord    | null
   onEditComplete?:          () => void
+  cloneRecord?:             LeaseRecord    | null
+  onCloneComplete?:         () => void
   onBack?:                  () => void
   isMasterLease?:           boolean
   masterLeaseVehicles?:     VehicleOnOrderSummary[]
@@ -203,7 +207,8 @@ export default function LeaseForm({
   const form = useForm<LeaseFormData>({
     defaultValues: {
       ...DEFAULT_VALUES,
-      ...(editRecord    ? recordToFormData(editRecord) : {}),
+      ...(editRecord    ? recordToFormData(editRecord)  : {}),
+      ...(cloneRecord   ? recordToFormData(cloneRecord) : {}),
       ...(vehiclePrefill ? {
         vin:   vehiclePrefill.vin,
         year:  vehiclePrefill.year,
@@ -321,7 +326,7 @@ export default function LeaseForm({
     setDraftSaved(false)
     try {
       const raw = form.getValues()
-      const payload = { ...buildPayload(raw), status: 'draft' }
+      const payload = buildPayload(raw)
       const res = await fetch('/api/leases', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -362,6 +367,12 @@ export default function LeaseForm({
 
       const saved = await saveRes.json() as LeaseRecord & { error?: string }
       if (!saveRes.ok) throw new Error(saved.error ?? (editRecord ? 'Update failed' : 'Save failed'))
+
+      // Clone mode: save as draft only — skip PDF generation
+      if (cloneRecord) {
+        onCloneComplete?.()
+        return
+      }
 
       const pdfRes = await fetch('/api/generate-pdf', {
         method: 'POST',

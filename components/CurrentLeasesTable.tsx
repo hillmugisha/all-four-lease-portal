@@ -10,6 +10,7 @@ import { fmtDate, fmtMoney, fmtMoneyOrText, DR, MS } from '@/lib/table-utils'
 import OrganizeColumnsModal from '@/components/OrganizeColumnsModal'
 import ExportVehiclesModal from '@/components/ExportVehiclesModal'
 import ImportVehiclesModal from '@/components/ImportVehiclesModal'
+import { PORTFOLIO_EXPORT_GROUPS, PORTFOLIO_IMPORT_GROUPS } from '@/lib/portfolio-export-groups'
 import { ColKey, COLUMNS, DEFAULT_COLS_ACTIVE, buildCell, getCellTitle, STATUS_STYLES } from '@/lib/portfolio-columns'
 
 const PAGE_SIZE = 100
@@ -721,11 +722,17 @@ export default function CurrentLeasesTable({ leases, loading, initialFilters, on
         open={exportModalOpen}
         onClose={() => setExportModalOpen(false)}
         records={exportRecords}
+        groups={PORTFOLIO_EXPORT_GROUPS}
+        filename="lease-portfolio"
+        sheetName="Lease Portfolio"
       />
       <ImportVehiclesModal
         open={importOpen}
         onClose={() => setImportOpen(false)}
         onSuccess={() => window.location.reload()}
+        apiEndpoint="/api/portfolio/import"
+        matchKey="Lease ID"
+        columnGroups={PORTFOLIO_IMPORT_GROUPS}
       />
     </div>
   )

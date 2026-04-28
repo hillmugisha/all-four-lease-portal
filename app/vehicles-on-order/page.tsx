@@ -13,7 +13,7 @@ export default function VehiclesOnOrderPage() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const res  = await fetch('/api/vehicles-on-order')
+      const res  = await fetch('/api/vehicles-on-order', { cache: 'no-store' })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data: VehicleOnOrderRecord[] = await res.json()
       setVehicles(data)

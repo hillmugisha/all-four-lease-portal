@@ -4,7 +4,8 @@ import { useEffect, useState, useMemo, useCallback } from 'react'
 import { usePersistedColumns } from '@/lib/usePersistedColumns'
 import { LeaseRecord } from '@/lib/types'
 import { fmt, fmtDate } from '@/lib/calculations'
-import { FileDown, Columns, Plus, Eye, X, Search, ChevronDown, Trash2, AlertTriangle, Zap, Loader2, CheckCircle2, Pencil } from 'lucide-react'
+import { FileDown, Columns, Plus, Eye, X, Search, ChevronDown, Trash2, AlertTriangle, Zap, Loader2, CheckCircle2, Pencil, Copy } from 'lucide-react'
+import Toast, { ToastState } from '@/components/Toast'
 import LeaseDocumentsSection from '@/components/LeaseDocumentsSection'
 import clsx from 'clsx'
 import { PdfViewerModal } from '@/components/PdfViewerModal'
@@ -433,26 +434,6 @@ function ActivateConfirmModal({
   )
 }
 
-// ─── Toast ────────────────────────────────────────────────────────────────────
-
-interface ToastState { message: string; type: 'success' | 'error' }
-
-function Toast({ toast }: { toast: ToastState }) {
-  return (
-    <div className={clsx(
-      'fixed bottom-6 left-1/2 z-50 -translate-x-1/2 flex items-center gap-2.5',
-      'rounded-lg px-5 py-3 text-sm font-medium shadow-lg pointer-events-none',
-      toast.type === 'success'
-        ? 'bg-green-600 text-white'
-        : 'bg-red-600 text-white',
-    )}>
-      {toast.type === 'success'
-        ? <CheckCircle2 size={16} />
-        : <AlertTriangle size={16} />}
-      {toast.message}
-    </div>
-  )
-}
 
 // ─── Column definitions ───────────────────────────────────────────────────────
 
@@ -553,7 +534,8 @@ export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
   const [loading, setLoading]         = useState(true)
   const [selected, setSelected]       = useState<LeaseRecord | null>(null)
   const [viewingPdf, setViewingPdf]   = useState<LeaseRecord | null>(null)
-  const [editingLease, setEditingLease] = useState<LeaseRecord | null>(null)
+  const [editingLease, setEditingLease]   = useState<LeaseRecord | null>(null)
+  const [cloningLease, setCloningLease]   = useState<LeaseRecord | null>(null)
   const [deletingLease, setDeletingLease] = useState<LeaseRecord | null>(null)
   const [deleteInProgress, setDeleteInProgress] = useState(false)
   const [filters, setFilters]         = useState<Filters>(EMPTY_FILTERS)
@@ -620,10 +602,10 @@ export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
         setLeases((prev) => prev.filter((l) => l.id !== deletingLease.id))
         setDeletingLease(null)
       } else {
-        alert('Failed to delete lease. Please try again.')
+        fireToast('Failed to delete lease. Please try again.', 'error')
       }
     } catch {
-      alert('Failed to delete lease. Please try again.')
+      fireToast('Failed to delete lease. Please try again.', 'error')
     } finally {
       setDeleteInProgress(false)
     }
@@ -654,7 +636,6 @@ export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
   // ── Toast ───────────────────────────────────────────────────────────────────
   function fireToast(message: string, type: ToastState['type']) {
     setToast({ message, type })
-    setTimeout(() => setToast(null), 4000)
   }
 
   // ── Activate ────────────────────────────────────────────────────────────────
@@ -960,6 +941,10 @@ export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
                             </button>
                           )
                         })()}
+                        <button onClick={() => setCloningLease(lease)} title="Clone lease"
+                          className="rounded p-1 text-violet-500 hover:bg-violet-50 transition-colors">
+                          <Copy size={15} />
+                        </button>
                         <button onClick={() => setDeletingLease(lease)} title="Delete lease"
                           className="rounded p-1 text-red-500 hover:bg-red-50 transition-colors">
                           <Trash2 size={15} />
@@ -983,7 +968,7 @@ export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
         />
       )}
 
-      {toast && <Toast toast={toast} />}
+      {toast && <Toast toast={toast} onClose={() => setToast(null)} />}
 
       {columnsModalOpen && (
         <OrganizeColumnsModal
@@ -1045,6 +1030,42 @@ export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
               <LeaseForm
                 editRecord={editingLease}
                 onEditComplete={() => { setEditingLease(null); load() }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Clone lease modal ── */}
+      {cloningLease && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setCloningLease(null)}
+          />
+          <div className="relative z-10 mx-auto my-8 w-full max-w-4xl rounded-xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+              <div>
+                <h2 className="text-base font-semibold text-gray-900">Clone Lease</h2>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  {cloningLease.lessee_name}
+                  {(cloningLease.vehicle_year || cloningLease.vehicle_make || cloningLease.vehicle_model) && (
+                    <> &middot; {[cloningLease.vehicle_year, cloningLease.vehicle_make, cloningLease.vehicle_model].filter(Boolean).join(' ')}</>
+                  )}
+                  <span className="ml-2 text-violet-500">&rarr; new draft</span>
+                </p>
+              </div>
+              <button
+                onClick={() => setCloningLease(null)}
+                className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="px-6 py-6">
+              <LeaseForm
+                cloneRecord={cloningLease}
+                onCloneComplete={() => { setCloningLease(null); load() }}
               />
             </div>
           </div>

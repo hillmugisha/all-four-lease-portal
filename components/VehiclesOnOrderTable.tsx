@@ -4,12 +4,14 @@ import { useState, useMemo, useRef, useEffect, forwardRef, useImperativeHandle }
 import { usePersistedColumns } from '@/lib/usePersistedColumns'
 import { useRouter } from 'next/navigation'
 import { VehicleOnOrderRecord } from '@/lib/vehicles-on-order-types'
-import { Columns, X, Search, ChevronDown, ChevronLeft, ChevronRight, Eye, FilePlus, PlusCircle } from 'lucide-react'
+import { Columns, X, Search, ChevronDown, ChevronLeft, ChevronRight, Eye, Download, Upload, PlusCircle } from 'lucide-react'
 import OrganizeColumnsModal from '@/components/OrganizeColumnsModal'
+import ExportVehiclesModal, { ColGroup } from '@/components/ExportVehiclesModal'
+import ImportVehiclesModal from '@/components/ImportVehiclesModal'
 import VehiclesOnOrderKPIs from '@/components/VehiclesOnOrderKPIs'
 import clsx from 'clsx'
-import * as XLSX from 'xlsx'
 import { DR, MS } from '@/lib/table-utils'
+import { VOO_APP_FIELDS } from '@/lib/voo-app-fields'
 
 const PAGE_SIZE = 50
 
@@ -120,6 +122,16 @@ function VehicleDetailModal({ vehicle, onClose }: { vehicle: VehicleOnOrderRecor
             <DR label="Logistics Status"      value={vehicle.logistics_status} />
             <DR label="SHAED Status"          value={vehicle.shaed_status} />
           </MS>
+
+          <MS title="Lease Terms">
+            {VOO_APP_FIELDS.map(f => {
+              const raw = vehicle.app_data?.[f.key]
+              const display = raw == null ? null
+                : f.type === 'currency' ? Number(raw).toLocaleString('en-US', { style: 'currency', currency: 'USD' })
+                : String(raw)
+              return <DR key={f.key} label={f.label} value={display} />
+            })}
+          </MS>
         </div>
 
         <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-3 rounded-b-xl flex justify-end">
@@ -142,6 +154,7 @@ type ColKey =
   | 'upfitter_name' | 'date_received_at_upfitter' | 'upfit_status'
   | 'estimated_upfit_completion_date' | 'actual_upfit_completion_date'
   | 'logistics_status' | 'expected_delivery_date' | 'stage' | 'inventory_type'
+  | `app.${string}`
 
 interface ColDef {
   key:     ColKey
@@ -189,6 +202,111 @@ const COLUMNS: ColDef[] = [
 ]
 
 const DEFAULT_COLS: ColKey[] = COLUMNS.filter((c) => c.default).map((c) => c.key)
+
+// App-owned columns — driven by the registry; hidden by default, toggleable via column widget
+const APP_COLS: ColDef[] = VOO_APP_FIELDS.map(f => ({
+  key:     `app.${f.key}` as ColKey,
+  label:   f.label,
+  default: false,
+  width:   f.colWidth ?? 120,
+}))
+
+const ALL_COLUMNS     = [...COLUMNS, ...APP_COLS]
+const ALL_DEFAULT_COLS = DEFAULT_COLS
+
+// ─── Export / Import configuration ───────────────────────────────────────────
+
+const VOO_EXPORT_GROUPS: ColGroup<VehicleOnOrderRecord>[] = [
+  {
+    name: 'Identifiers', required: true,
+    cols: [
+      { label: 'ID',           key: 'id'           },
+      { label: 'Stock #',      key: 'stock_number'  },
+      { label: 'VIN',          key: 'vin'           },
+      { label: 'Model Year',   key: 'model_year'    },
+      { label: 'OEM',          key: 'oem'           },
+      { label: 'Vehicle Line', key: 'vehicle_line'  },
+    ],
+  },
+  {
+    name: 'Order Info', required: false,
+    cols: [
+      { label: 'OEM Order #',    key: 'oem_order_number'   },
+      { label: 'Order Date',     key: 'order_date'         },
+      { label: 'Tracking Type',  key: 'tracking_type'      },
+      { label: 'Body Code',      key: 'body_code'          },
+      { label: 'Color',          key: 'color'              },
+      { label: 'Ship To',        key: 'ship_to_location'   },
+      { label: 'Stage',          key: 'stage'              },
+      { label: 'Inventory Type', key: 'inventory_type'     },
+    ],
+  },
+  {
+    name: 'Production & Delivery', required: false,
+    cols: [
+      { label: 'Target Production Wk',  key: 'target_production_week'  },
+      { label: 'OEM Status',            key: 'oem_status'              },
+      { label: 'SHAED Status',          key: 'shaed_status'            },
+      { label: 'Chassis ETA',           key: 'chassis_eta'             },
+      { label: 'Expected Delivery',     key: 'expected_delivery_date'  },
+    ],
+  },
+  {
+    name: 'Customer / PO', required: false,
+    cols: [
+      { label: 'Customer Name',    key: 'customer_name'      },
+      { label: 'Sales Person',     key: 'sales_person'       },
+      { label: 'Customer PO #',    key: 'customer_po_number' },
+      { label: 'Customer PO Date', key: 'customer_po_date'   },
+    ],
+  },
+  {
+    name: 'Invoice', required: false,
+    cols: [
+      { label: 'Customer Invoice #', key: 'customer_invoice_number' },
+      { label: 'Invoice Amount',     key: 'invoice_amount'          },
+      { label: 'Invoice Date',       key: 'invoice_date'            },
+      { label: 'Invoice Due Date',   key: 'invoice_due_date'        },
+      { label: 'Payment Date',       key: 'payment_date'            },
+    ],
+  },
+  {
+    name: 'Upfit', required: false,
+    cols: [
+      { label: 'Upfitter Name',           key: 'upfitter_name'                    },
+      { label: 'Rcvd at Upfitter',        key: 'date_received_at_upfitter'        },
+      { label: 'Upfit Status',            key: 'upfit_status'                     },
+      { label: 'Est. Upfit Completion',   key: 'estimated_upfit_completion_date'  },
+      { label: 'Actual Upfit Completion', key: 'actual_upfit_completion_date'     },
+    ],
+  },
+  {
+    name: 'Logistics', required: false,
+    cols: [
+      { label: 'Logistics Status', key: 'logistics_status' },
+    ],
+  },
+  {
+    // Lease Terms group — data-driven from the registry; new fields appear here automatically
+    name: 'Lease Terms', required: false,
+    cols: VOO_APP_FIELDS.map(f => ({
+      label:    f.label,
+      getValue: (v: VehicleOnOrderRecord) => v.app_data?.[f.key] ?? '',
+    })),
+  },
+]
+
+const VOO_IMPORT_GROUPS = [
+  {
+    name: 'Reference (do not edit)',
+    cols: ['Stock #', 'VIN', 'Model Year', 'OEM', 'Vehicle Line'],
+  },
+  {
+    // Editable fields — updates automatically when VOO_APP_FIELDS is extended
+    name: 'Editable Fields',
+    cols: VOO_APP_FIELDS.map(f => f.label),
+  },
+]
 
 // ─── Filters ──────────────────────────────────────────────────────────────────
 
@@ -305,54 +423,20 @@ function distinct(arr: VehicleOnOrderRecord[], key: (v: VehicleOnOrderRecord) =>
   return Array.from(new Set(arr.map(key).filter((x): x is string => x !== null)))
 }
 
-// ─── Excel export ─────────────────────────────────────────────────────────────
-
-function exportToExcel(records: VehicleOnOrderRecord[]) {
-  const rows = records.map((v) => ({
-    'Stock #':                       v.stock_number ?? '',
-    'Customer Name':                 v.customer_name ?? '',
-    'Sales Person':                  v.sales_person ?? '',
-    'OEM':                           v.oem ?? '',
-    'OEM Order #':                   v.oem_order_number ?? '',
-    'Model Year':                    v.model_year ?? '',
-    'Body Code':                     v.body_code ?? '',
-    'VIN':                           v.vin ?? '',
-    'Customer PO #':                 v.customer_po_number ?? '',
-    'Customer PO Date':              v.customer_po_date ?? '',
-    'Tracking Type':                 v.tracking_type ?? '',
-    'Order Date':                    v.order_date ?? '',
-    'Vehicle Line':                  v.vehicle_line ?? '',
-    'Color':                         v.color ?? '',
-    'Ship To Location':              v.ship_to_location ?? '',
-    'Target Production Week':        v.target_production_week ?? '',
-    'OEM Status':                    v.oem_status ?? '',
-    'Chassis ETA':                   v.chassis_eta ?? '',
-    'SHAED Status':                  v.shaed_status ?? '',
-    'Customer Invoice #':            v.customer_invoice_number ?? '',
-    'Invoice Amount':                v.invoice_amount ?? '',
-    'Invoice Date':                  v.invoice_date ?? '',
-    'Invoice Due Date':              v.invoice_due_date ?? '',
-    'Payment Date':                  v.payment_date ?? '',
-    'Upfitter Name':                 v.upfitter_name ?? '',
-    'Date Received at Upfitter':     v.date_received_at_upfitter ?? '',
-    'Upfit Status':                  v.upfit_status ?? '',
-    'Est. Upfit Completion Date':    v.estimated_upfit_completion_date ?? '',
-    'Actual Upfit Completion Date':  v.actual_upfit_completion_date ?? '',
-    'Logistics Status':              v.logistics_status ?? '',
-    'Expected Delivery Date':        v.expected_delivery_date ?? '',
-    'Stage':                         v.stage ?? '',
-    'Inventory Type':                v.inventory_type ?? '',
-  }))
-  const ws  = XLSX.utils.json_to_sheet(rows)
-  const wb  = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, 'Vehicles on Order')
-  XLSX.writeFile(wb, 'vehicles-on-order.xlsx')
-}
-
 // ─── Cell renderer ────────────────────────────────────────────────────────────
 
 function Cell({ col, vehicle }: { col: ColKey; vehicle: VehicleOnOrderRecord }) {
-  const v = vehicle[col]
+  if (col.startsWith('app.')) {
+    const key      = col.slice(4)
+    const fieldDef = VOO_APP_FIELDS.find(f => f.key === key)
+    const raw      = vehicle.app_data?.[key]
+    if (raw == null) return <span className="text-gray-300">—</span>
+    if (fieldDef?.type === 'currency') {
+      return <span>{Number(raw).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</span>
+    }
+    return <span>{String(raw)}</span>
+  }
+  const v = vehicle[col as keyof VehicleOnOrderRecord] as string | null
   if (col === 'shaed_status') return <ShaedBadge status={v} />
   return <span className={clsx(col === 'vin' && 'font-mono text-xs')}>{v ?? '—'}</span>
 }
@@ -383,6 +467,8 @@ const VehiclesOnOrderTable = forwardRef<
   const [checkedIds, setCheckedIds]         = useState<Set<number>>(new Set())
   const [masterLeaseModalOpen, setMasterLeaseModalOpen] = useState(false)
   const [pendingVehicles, setPendingVehicles] = useState<VehicleOnOrderRecord[]>([])
+  const [exportModalOpen, setExportModalOpen] = useState(false)
+  const [importModalOpen, setImportModalOpen] = useState(false)
 
   const filtered       = useMemo(() => applyFilters(vehicles, filters),                    [vehicles, filters])
   const inventoryTypes = useMemo(() => distinct(applyFilters(vehicles, filters, 'inventoryType'), (v) => v.inventory_type).sort(), [vehicles, filters])
@@ -462,7 +548,7 @@ const VehiclesOnOrderTable = forwardRef<
   }
 
   const visibleDefs = visibleCols
-    .map((k) => COLUMNS.find((c) => c.key === k)!)
+    .map((k) => ALL_COLUMNS.find((c) => c.key === k)!)
     .filter(Boolean)
 
   return (
@@ -573,8 +659,11 @@ const VehiclesOnOrderTable = forwardRef<
           <button disabled className="inline-flex items-center gap-1.5 rounded-md border border-brand-600 bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm opacity-40 cursor-not-allowed">
             <PlusCircle size={13} /> Add Vehicle
           </button>
-          <button onClick={() => exportToExcel(filtered)} className="btn-secondary py-1.5 text-xs flex items-center gap-1.5">
-            <FilePlus size={13} /> Export
+          <button onClick={() => setImportModalOpen(true)} className="btn-secondary py-1.5 text-xs flex items-center gap-1.5">
+            <Upload size={13} /> Import
+          </button>
+          <button onClick={() => setExportModalOpen(true)} className="btn-secondary py-1.5 text-xs flex items-center gap-1.5">
+            <Download size={13} /> Export
           </button>
         </div>
 
@@ -652,7 +741,7 @@ const VehiclesOnOrderTable = forwardRef<
                       <td
                         key={col.key}
                         className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2.5 text-gray-700"
-                        title={vehicle[col.key] ?? undefined}
+                        title={col.key.startsWith('app.') ? undefined : (vehicle[col.key as keyof VehicleOnOrderRecord] as string | null) ?? undefined}
                       >
                         <Cell col={col.key} vehicle={vehicle} />
                       </td>
@@ -733,13 +822,35 @@ const VehiclesOnOrderTable = forwardRef<
       {/* ── Organize Columns modal ── */}
       {columnsModalOpen && (
         <OrganizeColumnsModal
-          allColumns={COLUMNS}
-          defaultCols={DEFAULT_COLS}
+          allColumns={ALL_COLUMNS}
+          defaultCols={ALL_DEFAULT_COLS}
           visible={visibleCols}
           onApply={(cols) => setVisibleCols(cols as ColKey[])}
           onClose={() => setColumnsModalOpen(false)}
         />
       )}
+
+      <ExportVehiclesModal
+        open={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        records={filtered}
+        groups={VOO_EXPORT_GROUPS}
+        filename="vehicles-on-order"
+        sheetName="Vehicles on Order"
+      />
+      <ImportVehiclesModal
+        open={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        onSuccess={() => { setImportModalOpen(false); _onRefresh() }}
+        apiEndpoint="/api/vehicles-on-order/import"
+        matchKey="Stock #"
+        columnGroups={VOO_IMPORT_GROUPS}
+        tips={[
+          'Export vehicles first to get the correct template with Stock # and column headers',
+          'Fill in the Editable Fields columns — do not edit Stock #, VIN, or other reference columns',
+          'Column names must match the template exactly',
+        ]}
+      />
 
       {/* ── Master Lease modal ── */}
       {masterLeaseModalOpen && (

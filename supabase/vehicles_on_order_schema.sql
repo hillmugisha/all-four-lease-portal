@@ -53,3 +53,8 @@ create policy "Allow update" on public."Vehicles_On_Order"
 
 create policy "Allow delete" on public."Vehicles_On_Order"
   for delete using (true);
+
+-- Migration: add app-owned data column (run once in Supabase SQL editor)
+-- New fields are stored as JSON keys — no further migrations needed for new fields.
+alter table public."Vehicles_On_Order"
+  add column if not exists app_data jsonb default '{}';

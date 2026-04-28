@@ -34,4 +34,5 @@ export interface VehicleOnOrderRecord {
   stage:                           string | null
   inventory_type:                  string | null
   created_at:                      string
+  app_data:                        Record<string, unknown> | null
 }

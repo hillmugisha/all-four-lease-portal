@@ -467,24 +467,45 @@ export default function Step5Signatures({ form }: Props) {
               <span className="ml-1.5 text-xs font-normal text-gray-400">(always included)</span>
             </span>
           </label>
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={selectedDocs.insurance}
-              onChange={(e) => setSelectedDocs((s) => ({ ...s, insurance: e.target.checked }))}
-              className="accent-brand-600 h-4 w-4"
-            />
-            <span className="text-sm font-medium text-gray-700">Insurance Acknowledgement</span>
-          </label>
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={selectedDocs.ach}
-              onChange={(e) => setSelectedDocs((s) => ({ ...s, ach: e.target.checked }))}
-              className="accent-brand-600 h-4 w-4"
-            />
-            <span className="text-sm font-medium text-gray-700">ACH Authorization Form</span>
-          </label>
+          {lesseeType === 'individual' ? (
+            <>
+              <label className="flex items-center gap-3 cursor-not-allowed">
+                <input type="checkbox" checked disabled className="accent-brand-600 h-4 w-4" />
+                <span className="text-sm font-medium text-gray-700">
+                  Insurance Acknowledgement
+                  <span className="ml-1.5 text-xs font-normal text-gray-400">(always included)</span>
+                </span>
+              </label>
+              <label className="flex items-center gap-3 cursor-not-allowed">
+                <input type="checkbox" checked disabled className="accent-brand-600 h-4 w-4" />
+                <span className="text-sm font-medium text-gray-700">
+                  ACH Authorization Form
+                  <span className="ml-1.5 text-xs font-normal text-gray-400">(always included)</span>
+                </span>
+              </label>
+            </>
+          ) : (
+            <>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selectedDocs.insurance}
+                  onChange={(e) => setSelectedDocs((s) => ({ ...s, insurance: e.target.checked }))}
+                  className="accent-brand-600 h-4 w-4"
+                />
+                <span className="text-sm font-medium text-gray-700">Insurance Acknowledgement</span>
+              </label>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selectedDocs.ach}
+                  onChange={(e) => setSelectedDocs((s) => ({ ...s, ach: e.target.checked }))}
+                  className="accent-brand-600 h-4 w-4"
+                />
+                <span className="text-sm font-medium text-gray-700">ACH Authorization Form</span>
+              </label>
+            </>
+          )}
         </div>
       </div>
 

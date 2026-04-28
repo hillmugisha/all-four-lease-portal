@@ -3,195 +3,51 @@
 import { useState } from 'react'
 import { X, ChevronDown, ChevronUp, Download, Minus } from 'lucide-react'
 import * as XLSX from 'xlsx'
-import { LeasePortfolioRecord } from '@/lib/lease-portfolio-types'
 
-// ─── Column definitions ───────────────────────────────────────────────────────
+// ─── Generic column / group types ────────────────────────────────────────────
 
-interface ExportCol {
-  label: string
-  key:   keyof LeasePortfolioRecord
+export interface ExportCol<T> {
+  label:     string
+  key?:      keyof T                 // direct property access on the record
+  getValue?: (record: T) => unknown  // custom accessor (e.g. nested app_data fields)
 }
 
-interface ColGroup {
+export interface ColGroup<T> {
   name:     string
   required: boolean
-  cols:     ExportCol[]
+  cols:     ExportCol<T>[]
 }
-
-const GROUPS: ColGroup[] = [
-  {
-    name: 'Identifiers',
-    required: true,
-    cols: [
-      { label: 'Lease ID', key: 'lease_id' },
-    ],
-  },
-  {
-    name: 'Status',
-    required: false,
-    cols: [
-      { label: 'Lease Status',       key: 'lease_status' },
-      { label: 'Onboard Type',       key: 'onboard_type' },
-      { label: 'Contract Structure', key: 'contract_structure' },
-      { label: 'Lease Type',         key: 'lease_type' },
-    ],
-  },
-  {
-    name: 'Customer',
-    required: false,
-    cols: [
-      { label: 'Company',       key: 'company_name' },
-      { label: 'Customer Name', key: 'customer_name' },
-      { label: 'Customer Type', key: 'customer_type' },
-      { label: 'Driver',        key: 'driver' },
-      { label: 'Location',      key: 'location' },
-      { label: 'Phone',         key: 'phone' },
-      { label: 'Email',         key: 'email_address' },
-    ],
-  },
-  {
-    name: 'Billing',
-    required: false,
-    cols: [
-      { label: 'Billing Address', key: 'billing_address' },
-      { label: 'Billing City',    key: 'billing_city' },
-      { label: 'Billing State',   key: 'billing_state' },
-      { label: 'Billing ZIP',     key: 'billing_zip_code' },
-    ],
-  },
-  {
-    name: 'Vehicle',
-    required: false,
-    cols: [
-      { label: 'Year',                     key: 'model_year' },
-      { label: 'Make',                     key: 'make' },
-      { label: 'Model',                    key: 'model' },
-      { label: 'Color',                    key: 'color' },
-      { label: 'VIN',                      key: 'vin' },
-      { label: 'Comments',                 key: 'comments' },
-      { label: 'GPS Serial #',             key: 'gps_serial_number' },
-      { label: 'Vehicle Acquisition Date', key: 'vehicle_acquisition_date' },
-      { label: 'Vehicle Use Type',         key: 'vehicle_use_type' },
-      { label: 'MLA Flag',                 key: 'mla_flag' },
-    ],
-  },
-  {
-    name: 'Odometer',
-    required: false,
-    cols: [
-      { label: 'Odometer',      key: 'odometer' },
-      { label: 'Odometer Date', key: 'odometer_date' },
-      { label: 'Sold Odometer', key: 'odometer_at_time_of_sale' },
-    ],
-  },
-  {
-    name: 'Dates',
-    required: false,
-    cols: [
-      { label: 'Lease Start',              key: 'lease_start_date' },
-      { label: 'Lease End',                key: 'lease_end_date' },
-      { label: 'Term (mo.)',               key: 'term' },
-      { label: 'NDVR Date',                key: 'ndvr_date' },
-      { label: 'Out of Service Date',      key: 'out_of_service_date' },
-      { label: 'Insurance Exp. Date',      key: 'insurance_expiration_date' },
-      { label: 'First Liability Pmt Date', key: 'first_liability_payment_date' },
-    ],
-  },
-  {
-    name: 'Lease Terms',
-    required: false,
-    cols: [
-      { label: 'Annual Miles',       key: 'annual_miles_limit' },
-      { label: 'Lease End Mile Fee', key: 'lease_end_mile_fee' },
-      { label: 'Title State',        key: 'title_state' },
-      { label: 'Registration Date',  key: 'registration_date' },
-      { label: 'Plate #',            key: 'plate_number' },
-      { label: 'Tax Type',           key: 'tax_type' },
-    ],
-  },
-  {
-    name: 'Financials',
-    required: false,
-    cols: [
-      { label: 'Net Cap Cost',          key: 'net_cap_cost' },
-      { label: 'Mon. Depreciation',     key: 'monthly_depreciation' },
-      { label: 'Mon. Interest',         key: 'monthly_interest' },
-      { label: 'Mon. Tax',              key: 'monthly_tax' },
-      { label: 'Mon. Payment',          key: 'monthly_payment' },
-      { label: 'Lease End Residual',    key: 'lease_end_residual' },
-      { label: 'Tax Paid Upfront',      key: 'tax_paid_upfront' },
-      { label: 'Acquisition Fee',       key: 'acquisition_fee' },
-      { label: 'Incentive Recognition', key: 'incentive_recognition' },
-      { label: 'Mon. Cash Flow',        key: 'monthly_cash_flow' },
-    ],
-  },
-  {
-    name: 'Sale & Disposition',
-    required: false,
-    cols: [
-      { label: 'Sold Date',        key: 'sold_date' },
-      { label: 'Disposal Date',    key: 'disposal_date' },
-      { label: 'Net Sale Price',   key: 'net_sale_price' },
-      { label: 'MMR',              key: 'mmr' },
-      { label: 'Days to Sell',     key: 'days_to_sell' },
-      { label: 'Disposition Fees', key: 'disposition_fees' },
-      { label: 'Early Term Fees',  key: 'early_term_fees' },
-    ],
-  },
-  {
-    name: 'Lender',
-    required: false,
-    cols: [
-      { label: 'Lender',                  key: 'lender' },
-      { label: 'Loan/Lease #',            key: 'lender_loan_lease_number' },
-      { label: 'Liability Start',         key: 'liability_start_date' },
-      { label: 'Liability End',           key: 'liability_end_date' },
-      { label: 'Funding Amount',          key: 'funding_amount' },
-      { label: 'Monthly Liability Pmt.',  key: 'monthly_liability_payment' },
-      { label: 'Balloon Payment',         key: 'balloon_payment' },
-      { label: 'Mon. Dep. (SL)',          key: 'monthly_depreciation_sl' },
-      { label: 'Lender Int. Rate',        key: 'lender_interest_rate' },
-      { label: 'Lender Term',             key: 'lender_term' },
-      { label: 'Lender Type',             key: 'lender_type' },
-      { label: 'Liability Balance',       key: 'liability_balance' },
-      { label: 'Net Book Value',          key: 'net_book_value' },
-    ],
-  },
-]
-
-// All optional column labels (used for Select All)
-const ALL_OPTIONAL_LABELS: string[] = GROUPS.flatMap((g) =>
-  g.required ? [] : g.cols.map((c) => c.label)
-)
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-interface Props {
-  open:    boolean
-  onClose: () => void
-  records: LeasePortfolioRecord[]
+interface Props<T> {
+  open:       boolean
+  onClose:    () => void
+  records:    T[]
+  groups:     ColGroup<T>[]
+  filename:   string    // base filename without extension, e.g. 'lease-portfolio'
+  sheetName?: string    // defaults to 'Export'
 }
 
-export default function ExportVehiclesModal({ open, onClose, records }: Props) {
-  // checked set holds only optional column labels (required are always exported)
-  const [checked,  setChecked]  = useState<Set<string>>(new Set(ALL_OPTIONAL_LABELS))
-  const [expanded, setExpanded] = useState<Set<string>>(new Set(GROUPS.map((g) => g.name)))
+export default function ExportVehiclesModal<T>({ open, onClose, records, groups, filename, sheetName = 'Export' }: Props<T>) {
+  const allOptionalLabels: string[] = groups.flatMap((g) =>
+    g.required ? [] : g.cols.map((c) => c.label)
+  )
+
+  const [checked,  setChecked]  = useState<Set<string>>(new Set(allOptionalLabels))
+  const [expanded, setExpanded] = useState<Set<string>>(new Set(groups.map((g) => g.name)))
 
   if (!open) return null
 
-  // ── Select All helpers ────────────────────────────────────────────────────
-
-  const allChecked  = checked.size === ALL_OPTIONAL_LABELS.length
+  const allChecked  = checked.size === allOptionalLabels.length
   const noneChecked = checked.size === 0
   const partial     = !allChecked && !noneChecked
 
   function toggleSelectAll() {
-    setChecked(allChecked ? new Set() : new Set(ALL_OPTIONAL_LABELS))
+    setChecked(allChecked ? new Set() : new Set(allOptionalLabels))
   }
 
-  // ── Group-level helpers ───────────────────────────────────────────────────
-
-  function groupState(group: ColGroup): 'all' | 'none' | 'partial' {
+  function groupState(group: ColGroup<T>): 'all' | 'none' | 'partial' {
     if (group.required) return 'all'
     const labels = group.cols.map((c) => c.label)
     const n = labels.filter((l) => checked.has(l)).length
@@ -200,7 +56,7 @@ export default function ExportVehiclesModal({ open, onClose, records }: Props) {
     return 'partial'
   }
 
-  function toggleGroup(group: ColGroup) {
+  function toggleGroup(group: ColGroup<T>) {
     if (group.required) return
     const labels = group.cols.map((c) => c.label)
     const state  = groupState(group)
@@ -228,13 +84,10 @@ export default function ExportVehiclesModal({ open, onClose, records }: Props) {
     })
   }
 
-  // ── Export ────────────────────────────────────────────────────────────────
-
   function handleExport() {
-    // Build ordered column list: required first, then selected optional in group order
-    const exportCols: ExportCol[] = [
-      ...GROUPS.filter((g) => g.required).flatMap((g) => g.cols),
-      ...GROUPS.filter((g) => !g.required).flatMap((g) =>
+    const exportCols: ExportCol<T>[] = [
+      ...groups.filter((g) => g.required).flatMap((g) => g.cols),
+      ...groups.filter((g) => !g.required).flatMap((g) =>
         g.cols.filter((c) => checked.has(c.label))
       ),
     ]
@@ -242,20 +95,19 @@ export default function ExportVehiclesModal({ open, onClose, records }: Props) {
     const rows = records.map((r) => {
       const row: Record<string, unknown> = {}
       for (const col of exportCols) {
-        const val = r[col.key]
-        row[col.label] = val ?? ''
+        row[col.label] = col.getValue
+          ? col.getValue(r)
+          : col.key != null ? (r[col.key] ?? '') : ''
       }
       return row
     })
 
     const ws = XLSX.utils.json_to_sheet(rows)
     const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'Lease Portfolio')
-    XLSX.writeFile(wb, `lease-portfolio-${new Date().toISOString().slice(0, 10)}.xlsx`)
+    XLSX.utils.book_append_sheet(wb, ws, sheetName)
+    XLSX.writeFile(wb, `${filename}-${new Date().toISOString().slice(0, 10)}.xlsx`)
     onClose()
   }
-
-  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -296,16 +148,14 @@ export default function ExportVehiclesModal({ open, onClose, records }: Props) {
           </div>
 
           {/* Groups */}
-          {GROUPS.map((group) => {
-            const state   = groupState(group)
-            const isOpen  = expanded.has(group.name)
+          {groups.map((group) => {
+            const state  = groupState(group)
+            const isOpen = expanded.has(group.name)
 
             return (
               <div key={group.name} className="border border-gray-100 rounded-lg overflow-hidden">
-                {/* Group header */}
                 <div className="flex items-center gap-2.5 px-3 py-2 bg-gray-50 cursor-pointer select-none"
                   onClick={() => toggleExpanded(group.name)}>
-                  {/* Group checkbox */}
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); toggleGroup(group) }}
@@ -326,7 +176,6 @@ export default function ExportVehiclesModal({ open, onClose, records }: Props) {
                       <span className="block w-2 h-2 bg-white rounded-sm" />
                     ) : null}
                   </button>
-
                   <span className="flex-1 text-xs font-semibold text-gray-800">{group.name}</span>
                   {group.required && (
                     <span className="text-xs text-gray-400 font-normal">(Required)</span>
@@ -334,7 +183,6 @@ export default function ExportVehiclesModal({ open, onClose, records }: Props) {
                   {isOpen ? <ChevronUp size={13} className="text-gray-400" /> : <ChevronDown size={13} className="text-gray-400" />}
                 </div>
 
-                {/* Group columns */}
                 {isOpen && (
                   <div className="px-3 py-2.5 grid grid-cols-3 gap-x-4 gap-y-2">
                     {group.cols.map((col) => {
@@ -371,11 +219,7 @@ export default function ExportVehiclesModal({ open, onClose, records }: Props) {
         {/* Footer */}
         <div className="flex justify-end gap-2.5 px-5 py-4 border-t border-gray-100">
           <button type="button" onClick={onClose} className="btn-secondary">Cancel</button>
-          <button
-            type="button"
-            onClick={handleExport}
-            className="btn-primary flex items-center gap-1.5"
-          >
+          <button type="button" onClick={handleExport} className="btn-primary flex items-center gap-1.5">
             <Download size={14} />
             Export
           </button>

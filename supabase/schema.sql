@@ -8,7 +8,7 @@ create table if not exists leases (
   created_at  timestamptz default now() not null,
   updated_at  timestamptz default now() not null,
   doc_status  text        default 'draft'
-              check (doc_status in ('draft', 'generated', 'sent', 'signed')),
+              check (doc_status in ('draft', 'generated', 'sent', 'customer_signed', 'completed')),
 
   -- ─── Lessor (All Four, LLC — defaults pre-filled, editable per deal) ──────
   lessor_name     text not null default 'All Four, LLC',
@@ -121,6 +121,9 @@ create table if not exists leases (
   -- ─── DocuSign (Phase 2) ───────────────────────────────────────────────────
   customer_signer_name   text,
   customer_signer_email  text,
+  customer_signer_title  text,
+  lessor_signer_name     text,
+  lessor_signer_title    text,
   docusign_envelope_id   text,
   signed_at              timestamptz,
 
