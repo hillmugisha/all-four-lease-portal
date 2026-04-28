@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
 
     const renderPage = async (html: string): Promise<Buffer> => {
       const page = await browser.newPage()
-      await page.setContent(html, { waitUntil: 'networkidle0' })
+      await page.setContent(html, { waitUntil: 'load' })
       const pdf = await page.pdf({
         format: 'Letter',
         printBackground: true,

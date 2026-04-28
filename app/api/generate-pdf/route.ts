@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     let pdf: Uint8Array
     try {
       const page = await browser.newPage()
-      await page.setContent(html, { waitUntil: 'networkidle0' })
+      await page.setContent(html, { waitUntil: 'load' })
       pdf = await page.pdf({
         format: 'Letter',
         printBackground: true,
