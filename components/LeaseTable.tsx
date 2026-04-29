@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react'
 import { usePersistedColumns } from '@/lib/usePersistedColumns'
 import { LeaseRecord } from '@/lib/types'
 import { fmt, fmtDate } from '@/lib/calculations'
-import { FileDown, Columns, Plus, Eye, X, Search, Trash2, AlertTriangle, Zap, Loader2, CheckCircle2, Pencil, Copy } from 'lucide-react'
+import { FileDown, Columns, Plus, Eye, X, Search, Trash2, AlertTriangle, Zap, Loader2, CheckCircle2, Pencil, Copy, ChevronLeft, ChevronRight } from 'lucide-react'
 import { ActionsDropdown } from '@/components/ActionsDropdown'
 import MultiSelectFilter from '@/components/MultiSelectFilter'
 import Toast, { ToastState } from '@/components/Toast'
@@ -14,6 +14,8 @@ import { PdfViewerModal } from '@/components/PdfViewerModal'
 import { DR as DetailRow, MS as ModalSection } from '@/lib/table-utils'
 import LeaseForm from '@/components/LeaseForm'
 import OrganizeColumnsModal from '@/components/OrganizeColumnsModal'
+
+const PAGE_SIZE = 100
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
 
@@ -726,6 +728,19 @@ export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
 
   const hasFilters = !!filters.search || filters.status.length > 0 || filters.year.length > 0 || filters.make.length > 0 || filters.model.length > 0
 
+  const [page, setPage] = useState(1)
+  useEffect(() => { setPage(1) }, [filters])
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const paginated  = useMemo(() => filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [filtered, page])
+
+  const pageNumbers = useMemo((): (number | string)[] => {
+    const visible = Array.from({ length: totalPages }, (_, i) => i + 1).filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+    const result: (number | string)[] = []
+    visible.forEach((p, idx) => { if (idx > 0 && p - visible[idx - 1] > 1) result.push('…'); result.push(p) })
+    return result
+  }, [totalPages, page])
+
   // Ordered visible column definitions
   const visibleDefs = visibleCols.map((k) => COLUMNS.find((c) => c.key === k)!).filter(Boolean)
 
@@ -766,6 +781,7 @@ export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
             <h2 className="text-sm font-semibold text-gray-900">Lease Records</h2>
             <p className="text-xs text-gray-400 mt-0.5">
               {hasFilters ? `${filtered.length} of ${leases.length}` : leases.length} total
+              {totalPages > 1 && ` · page ${page} of ${totalPages}`}
             </p>
           </div>
           <ActionsDropdown
@@ -870,7 +886,7 @@ export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 bg-white">
-                {filtered.map((lease) => (
+                {paginated.map((lease) => (
                   <tr key={lease.id} className={clsx('hover:bg-gray-50 transition-colors', checkedIds.has(lease.id) && 'bg-brand-50')}>
                     {/* Checkbox */}
                     <td className="border-r border-gray-100 px-3 py-2.5">
@@ -929,6 +945,29 @@ export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {!loading && totalPages > 1 && (
+          <div className="flex items-center justify-between border-t border-gray-200 px-5 py-3">
+            <p className="text-xs text-gray-500">
+              Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
+            </p>
+            <div className="flex items-center gap-1">
+              <button onClick={() => setPage(1)} disabled={page === 1} className="rounded px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed">«</button>
+              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="inline-flex items-center gap-0.5 rounded px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed">
+                <ChevronLeft size={13} /> Prev
+              </button>
+              {pageNumbers.map((p, i) =>
+                typeof p === 'string' ? <span key={`ellipsis-${i}`} className="px-1 text-xs text-gray-400">…</span> : (
+                  <button key={p} onClick={() => setPage(p)} className={clsx('min-w-[28px] rounded px-2 py-1 text-xs font-medium', page === p ? 'bg-brand-600 text-white' : 'text-gray-600 hover:bg-gray-100')}>{p}</button>
+                )
+              )}
+              <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="inline-flex items-center gap-0.5 rounded px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed">
+                Next <ChevronRight size={13} />
+              </button>
+              <button onClick={() => setPage(totalPages)} disabled={page === totalPages} className="rounded px-2 py-1 text-xs text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed">»</button>
+            </div>
           </div>
         )}
       </div>

@@ -35,7 +35,9 @@ export async function POST(req: NextRequest) {
     .eq('email', normalised)
     .then(() => {})
 
-  const secret = new TextEncoder().encode(process.env.AUTH_SECRET!)
+  const rawSecret = process.env.AUTH_SECRET
+  if (!rawSecret) throw new Error('AUTH_SECRET environment variable is not set')
+  const secret = new TextEncoder().encode(rawSecret)
   const token = await new SignJWT({ email: data.email, name: data.name ?? '' })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
@@ -46,7 +48,7 @@ export async function POST(req: NextRequest) {
 
   res.cookies.set('allfour_auth', token, {
     httpOnly: true,
-    sameSite: 'lax',
+    sameSite: 'strict',
     path: '/',
     maxAge: 60 * 60 * 24 * 7,
     secure: process.env.NODE_ENV === 'production',

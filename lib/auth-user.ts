@@ -7,7 +7,9 @@ export async function getUserEmailFromRequest(req: Request): Promise<string> {
 
   const token = raw.split('=').slice(1).join('=')
   try {
-    const secret = new TextEncoder().encode(process.env.AUTH_SECRET!)
+    const rawSecret = process.env.AUTH_SECRET
+    if (!rawSecret) return 'unknown'
+    const secret = new TextEncoder().encode(rawSecret)
     const { payload } = await jwtVerify(token, secret)
     return (payload.email as string) ?? 'unknown'
   } catch {
