@@ -35,7 +35,7 @@ export async function PATCH(
           .map(([k, v]) => [k, { before: (before as Record<string, unknown>)[k], after: v }]),
       )
       if (Object.keys(changes).length > 0) {
-        const userEmail = getUserEmailFromRequest(req)
+        const userEmail = await getUserEmailFromRequest(req)
         await logAudit(userEmail, 'lease.updated', params.id, { changes })
       }
     }
@@ -84,7 +84,7 @@ export async function DELETE(
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-    const userEmail = getUserEmailFromRequest(req)
+    const userEmail = await getUserEmailFromRequest(req)
     await logAudit(userEmail, 'lease.deleted', params.id, { snapshot })
 
     return NextResponse.json({ success: true })

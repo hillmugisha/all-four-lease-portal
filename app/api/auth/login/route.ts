@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { SignJWT } from 'jose'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
 export async function POST(req: NextRequest) {
@@ -36,20 +37,17 @@ export async function POST(req: NextRequest) {
     .eq('email', normalised)
     .then(() => {})
 
-  const payload = Buffer.from(JSON.stringify({ email: data.email, name: data.name ?? '', iat: Date.now() })).toString('base64')
+  const secret = new TextEncoder().encode(process.env.AUTH_SECRET!)
+  const token = await new SignJWT({ email: data.email, name: data.name ?? '' })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('7d')
+    .sign(secret)
 
   const res = NextResponse.json({ ok: true, name: data.name ?? '' })
 
-  res.cookies.set('allfour_auth', payload, {
+  res.cookies.set('allfour_auth', token, {
     httpOnly: true,
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 60 * 60 * 24 * 7,
-    secure: process.env.NODE_ENV === 'production',
-  })
-
-  res.cookies.set('allfour_user', JSON.stringify({ email: data.email, name: data.name ?? '' }), {
-    httpOnly: false,
     sameSite: 'lax',
     path: '/',
     maxAge: 60 * 60 * 24 * 7,

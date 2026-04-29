@@ -21,13 +21,10 @@ export default function Sidebar({ isOpen, onToggle }: { isOpen: boolean; onToggl
   const [userEmail, setUserEmail] = useState('')
 
   useEffect(() => {
-    try {
-      const cookie = document.cookie.split('; ').find((c) => c.startsWith('allfour_user='))
-      if (cookie) {
-        const val = JSON.parse(decodeURIComponent(cookie.split('=').slice(1).join('=')))
-        setUserEmail(val.email ?? '')
-      }
-    } catch { /* ignore */ }
+    fetch('/api/auth/me')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => { if (data?.email) setUserEmail(data.email) })
+      .catch(() => {})
   }, [])
 
   async function handleLogout() {

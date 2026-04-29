@@ -30,7 +30,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
 
   if (dbError) return NextResponse.json({ error: dbError.message }, { status: 500 })
 
-  const userEmail = getUserEmailFromRequest(_req)
+  const userEmail = await getUserEmailFromRequest(_req)
   await logAudit(userEmail, 'document.deleted', id, {
     lease_id:  doc.lease_id,
     file_name: doc.file_name,

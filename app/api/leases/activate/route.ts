@@ -263,7 +263,7 @@ export async function POST(req: NextRequest) {
       console.error('[activate] DocuSign auto-attach step failed (non-fatal):', e)
     }
 
-    const userEmail = getUserEmailFromRequest(req)
+    const userEmail = await getUserEmailFromRequest(req)
     await logAudit(userEmail, 'lease.activated', undefined, {
       count:   toActivate.length,
       skipped: leases.length - toActivate.length,

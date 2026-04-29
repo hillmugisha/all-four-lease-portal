@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: dbError.message }, { status: 500 })
   }
 
-  const userEmail = getUserEmailFromRequest(req)
+  const userEmail = await getUserEmailFromRequest(req)
   await logAudit(userEmail, 'document.uploaded', data.id, {
     lease_id:  leaseId,
     file_name: file.name,

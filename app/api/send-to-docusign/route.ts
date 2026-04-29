@@ -472,7 +472,7 @@ export async function POST(req: NextRequest) {
       .update({ doc_status: 'sent', docusign_envelope_id: envelopeId })
       .eq('id', savedRecord.id)
 
-    const userEmail = getUserEmailFromRequest(req)
+    const userEmail = await getUserEmailFromRequest(req)
     const primary   = formData.lesseeSignatories?.[0]
     const coLessee  = formData.lesseeSignatories?.[1]
     await logAudit(userEmail, 'lease.sent_to_docusign', savedRecord.id, {

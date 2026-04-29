@@ -1,10 +1,15 @@
-export function getUserEmailFromRequest(req: Request): string {
+import { jwtVerify } from 'jose'
+
+export async function getUserEmailFromRequest(req: Request): Promise<string> {
   const cookieHeader = req.headers.get('cookie') ?? ''
-  const raw = cookieHeader.split('; ').find((c) => c.startsWith('allfour_user='))
+  const raw = cookieHeader.split('; ').find((c) => c.startsWith('allfour_auth='))
   if (!raw) return 'unknown'
+
+  const token = raw.split('=').slice(1).join('=')
   try {
-    const val = JSON.parse(decodeURIComponent(raw.split('=').slice(1).join('=')))
-    return val.email ?? 'unknown'
+    const secret = new TextEncoder().encode(process.env.AUTH_SECRET!)
+    const { payload } = await jwtVerify(token, secret)
+    return (payload.email as string) ?? 'unknown'
   } catch {
     return 'unknown'
   }
