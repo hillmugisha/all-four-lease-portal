@@ -28,7 +28,7 @@ export default function LoginPage() {
         return
       }
 
-      router.push('/vehicles-on-order')
+      router.push('/portfolio-overview')
     } catch {
       setError('Unable to connect. Please try again.')
     } finally {

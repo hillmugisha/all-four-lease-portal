@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { FileText, FolderOpen, Truck, FileSignature, CalendarX, ShoppingCart, ClipboardList, LogOut, History, Menu } from 'lucide-react'
+import { FileText, FolderOpen, Truck, FileSignature, CalendarX, ShoppingCart, ClipboardList, LogOut, History, Menu, LayoutDashboard } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import clsx from 'clsx'
 
@@ -56,6 +56,20 @@ export default function Sidebar({ isOpen, onToggle }: { isOpen: boolean; onToggl
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-0.5">
+
+        {/* ── Portfolio Overview ── */}
+        <Link
+          href="/portfolio-overview"
+          className={clsx(
+            'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+            path.startsWith('/portfolio-overview')
+              ? 'bg-white/10 text-white'
+              : 'text-neutral-400 hover:bg-white/8 hover:text-white'
+          )}
+        >
+          <LayoutDashboard size={17} className="shrink-0" />
+          Portfolio Overview
+        </Link>
 
         {/* ── Vehicles On Order ── */}
         <Link

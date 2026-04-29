@@ -86,6 +86,7 @@ export default function ExpiredLeasesPage() {
           onSold={(ids) => {
             const soldSet = new Set(ids)
             setLeases(prev => prev.filter(l => !soldSet.has(l.id)))
+            try { new BroadcastChannel('lease-updates').postMessage({ type: 'lease-status-changed' }) } catch { /* ignore */ }
           }}
         />
       )}

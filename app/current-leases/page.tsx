@@ -96,8 +96,14 @@ export default function CurrentLeasesPage() {
           leases={leases}
           loading={loading}
           initialFilters={drillFilters}
-          onOutOfService={() => load()}
-          onSold={() => load()}
+          onOutOfService={() => {
+            load()
+            try { new BroadcastChannel('lease-updates').postMessage({ type: 'lease-status-changed' }) } catch { /* ignore */ }
+          }}
+          onSold={() => {
+            load()
+            try { new BroadcastChannel('lease-updates').postMessage({ type: 'lease-status-changed' }) } catch { /* ignore */ }
+          }}
         />
       )}
     </div>
