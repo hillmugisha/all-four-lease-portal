@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { SignJWT } from 'jose'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
+import { parseBody, LoginSchema } from '@/lib/validation'
 
 export async function POST(req: NextRequest) {
-  const { email } = await req.json() as { email?: string }
+  const parsed = parseBody(LoginSchema, await req.json())
+  if (!parsed.ok) return NextResponse.json({ error: 'Email is required.' }, { status: 400 })
 
-  if (!email || typeof email !== 'string') {
-    return NextResponse.json({ error: 'Email is required.' }, { status: 400 })
-  }
-
-  const normalised = email.trim().toLowerCase()
+  const normalised = parsed.data.email.trim().toLowerCase()
 
   if (!normalised.endsWith('@pritchards.com')) {
     return NextResponse.json({ error: 'Must be a @pritchards.com email address.' }, { status: 403 })

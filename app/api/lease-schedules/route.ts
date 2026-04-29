@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
-import type { LeaseScheduleFormData, LeaseScheduleRecord } from '@/lib/lease-schedule-types'
+import type { LeaseScheduleRecord } from '@/lib/lease-schedule-types'
+import { parseBody, LeaseScheduleFormDataBodySchema } from '@/lib/validation'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,8 +22,9 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as { formData: LeaseScheduleFormData }
-    const raw = body.formData
+    const parsed = parseBody(LeaseScheduleFormDataBodySchema, await req.json())
+    if (!parsed.ok) return parsed.response
+    const raw = parsed.data.formData
 
     const primary  = raw.lesseeSignatories?.[0]
     const coLessee = raw.lesseeSignatories?.[1]

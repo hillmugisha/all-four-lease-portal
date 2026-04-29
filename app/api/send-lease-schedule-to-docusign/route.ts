@@ -21,6 +21,7 @@ import type {
   LeaseScheduleTemplateData,
   LeaseScheduleRecord,
 } from '@/lib/lease-schedule-types'
+import { parseBody, LeaseScheduleFormDataBodySchema } from '@/lib/validation'
 
 export const dynamic = 'force-dynamic'
 
@@ -174,7 +175,9 @@ async function renderToPdf(html: string): Promise<Buffer> {
 
 export async function POST(req: NextRequest) {
   try {
-    const { formData } = (await req.json()) as { formData: LeaseScheduleFormData }
+    const parsed = parseBody(LeaseScheduleFormDataBodySchema, await req.json())
+    if (!parsed.ok) return parsed.response
+    const { formData } = parsed.data
 
     // 1. Build and save DB record
     const record = buildRecord(formData)

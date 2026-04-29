@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { renderInsuranceAck } from '@/lib/lease-renderer'
 import { recordToTemplateData } from '@/lib/lease-adapter'
 import { LeaseRecord } from '@/lib/types'
+import { parseBody } from '@/lib/validation'
+import { z } from 'zod'
+
+const GenerateInsurancePdfBodySchema = z.object({ record: z.record(z.unknown()) })
 
 /**
  * POST /api/generate-insurance-pdf
@@ -10,7 +14,9 @@ import { LeaseRecord } from '@/lib/types'
  */
 export async function POST(req: NextRequest) {
   try {
-    const { record } = (await req.json()) as { record: LeaseRecord }
+    const parsed = parseBody(GenerateInsurancePdfBodySchema, await req.json())
+    if (!parsed.ok) return parsed.response
+    const record = parsed.data.record as unknown as LeaseRecord
 
     const html = renderInsuranceAck(recordToTemplateData(record))
 

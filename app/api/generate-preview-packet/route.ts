@@ -3,6 +3,17 @@ import { PDFDocument } from 'pdf-lib'
 import { renderLease, renderMasterLease, renderInsuranceAck, renderAchAuthorizationForLessor } from '@/lib/lease-renderer'
 import { recordToTemplateData } from '@/lib/lease-adapter'
 import type { LeaseRecord } from '@/lib/types'
+import { parseBody } from '@/lib/validation'
+import { z } from 'zod'
+
+const GeneratePreviewBodySchema = z.object({
+  record: z.record(z.unknown()),
+  selectedDocs: z.object({
+    lease: z.boolean(),
+    insurance: z.boolean(),
+    ach: z.boolean(),
+  }).optional(),
+})
 
 /**
  * POST /api/generate-preview-packet
@@ -11,11 +22,10 @@ import type { LeaseRecord } from '@/lib/types'
  */
 export async function POST(req: NextRequest) {
   try {
-    const { record, selectedDocs = { lease: true, insurance: true, ach: true } } =
-      (await req.json()) as {
-        record: LeaseRecord
-        selectedDocs?: { lease: boolean; insurance: boolean; ach: boolean }
-      }
+    const parsed = parseBody(GeneratePreviewBodySchema, await req.json())
+    if (!parsed.ok) return parsed.response
+    const record = parsed.data.record as unknown as LeaseRecord
+    const selectedDocs = parsed.data.selectedDocs ?? { lease: true, insurance: true, ach: true }
 
     const templateData = recordToTemplateData(record)
     const htmlLease     = record.is_master_lease

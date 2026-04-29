@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { logAudit } from '@/lib/audit'
 import { getUserEmailFromRequest } from '@/lib/auth-user'
+import { parseBody, LeaseUpdateSchema } from '@/lib/validation'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,7 +12,13 @@ export async function PATCH(
   { params }: { params: { id: string } },
 ) {
   try {
-    const body = await req.json()
+    const parsed = parseBody(LeaseUpdateSchema, await req.json())
+    if (!parsed.ok) return parsed.response
+    const body = parsed.data
+
+    if (Object.keys(body).length === 0) {
+      return NextResponse.json({ error: 'No updatable fields provided' }, { status: 400 })
+    }
 
     const { data: before } = await getSupabaseAdmin()
       .from('leases')

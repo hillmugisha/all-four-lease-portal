@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
-import type { MasterLeaseAgreement } from '@/lib/types'
+import { parseBody, MasterLeaseAgreementCreateSchema } from '@/lib/validation'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,7 +31,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as Partial<MasterLeaseAgreement> & { portal_lease_id?: string }
+    const parsed = parseBody(MasterLeaseAgreementCreateSchema, await req.json())
+    if (!parsed.ok) return parsed.response
+    const body = parsed.data
 
     const record = {
       status:        'draft' as const,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
+import { IsoDateSchema } from '@/lib/validation'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,6 +26,10 @@ export async function POST(req: NextRequest) {
         { error: 'lessee_name, executed_date, and file are required' },
         { status: 400 }
       )
+    }
+
+    if (!IsoDateSchema.safeParse(executedDate).success) {
+      return NextResponse.json({ error: 'executed_date must be YYYY-MM-DD' }, { status: 400 })
     }
 
     const buffer   = Buffer.from(await file.arrayBuffer())

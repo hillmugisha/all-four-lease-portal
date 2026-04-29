@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
+import { parseBody } from '@/lib/validation'
+import { z } from 'zod'
+
+const ImportBodySchema = z.object({
+  rows: z.array(z.record(z.union([z.string(), z.number(), z.null()]))).min(1).max(5000),
+})
 
 // ─── Column header → DB field map ─────────────────────────────────────────────
 // These are the only fields a user can update via import.
@@ -95,14 +101,9 @@ const PROTECTED = new Set([
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
-    const rows: Record<string, string>[] = body?.rows
-
-    if (!Array.isArray(rows) || rows.length === 0)
-      return NextResponse.json({ error: 'No data rows provided.' }, { status: 400 })
-
-    if (rows.length > 5000)
-      return NextResponse.json({ error: 'Too many rows. Maximum allowed is 5,000 per import.' }, { status: 400 })
+    const parsed = parseBody(ImportBodySchema, await req.json())
+    if (!parsed.ok) return parsed.response
+    const rows = parsed.data.rows
 
     // Validate every row has Lease ID
     for (let i = 0; i < rows.length; i++) {

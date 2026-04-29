@@ -1,24 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { VOO_APP_FIELDS } from '@/lib/voo-app-fields'
+import { parseBody } from '@/lib/validation'
+import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
 
+const VooImportBodySchema = z.object({
+  rows: z.array(z.record(z.unknown())).min(1).max(5000),
+})
+
 export async function POST(req: NextRequest) {
-  let body: { rows: Record<string, unknown>[] }
+  let rawBody: unknown
   try {
-    body = await req.json()
+    rawBody = await req.json()
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 })
   }
 
-  const rows = body?.rows
-  if (!Array.isArray(rows) || rows.length === 0) {
-    return NextResponse.json({ error: 'No data rows provided.' }, { status: 400 })
-  }
-  if (rows.length > 5000) {
-    return NextResponse.json({ error: 'Too many rows. Maximum is 5,000 per import.' }, { status: 400 })
-  }
+  const parsed = parseBody(VooImportBodySchema, rawBody)
+  if (!parsed.ok) return parsed.response
+  const rows = parsed.data.rows
 
   // Validate every row has a non-empty Stock #
   for (let i = 0; i < rows.length; i++) {

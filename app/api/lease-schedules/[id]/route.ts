@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
+import { parseBody, LeaseScheduleUpdateSchema } from '@/lib/validation'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,7 +21,9 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const updates = await req.json()
+    const parsed = parseBody(LeaseScheduleUpdateSchema, await req.json())
+    if (!parsed.ok) return parsed.response
+    const updates = parsed.data
 
     const { data, error } = await getSupabaseAdmin()
       .from('lease_schedules')

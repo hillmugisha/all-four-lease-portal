@@ -23,6 +23,7 @@ import { recordToTemplateData } from '@/lib/lease-adapter'
 import { calculateLease } from '@/lib/calculations'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import type { LeaseFormData, FinancialInputs, LeaseRecord } from '@/lib/types'
+import { parseBody, SendToDocusignBodySchema } from '@/lib/validation'
 
 export const dynamic = 'force-dynamic'
 
@@ -414,17 +415,15 @@ async function createEnvelope(
 
 export async function POST(req: NextRequest) {
   try {
+    const parsed = parseBody(SendToDocusignBodySchema, await req.json())
+    if (!parsed.ok) return parsed.response
+
     const {
       formData,
       selectedDocs = { lease: true, insurance: true, ach: true },
       vooStockNumber  = null,
       supplementalData = null,
-    } = (await req.json()) as {
-      formData: LeaseFormData
-      selectedDocs?: { lease: boolean; insurance: boolean; ach: boolean }
-      vooStockNumber?: string | null
-      supplementalData?: Record<string, unknown> | null
-    }
+    } = parsed.data
 
     // 1. Build the record shape from form data
     const recordData = {

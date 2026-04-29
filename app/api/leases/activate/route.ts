@@ -20,6 +20,7 @@ import { getUserEmailFromRequest } from '@/lib/auth-user'
 import { getDocuSignClient, getAccountId } from '@/lib/docusign'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import type { LeaseRecord } from '@/lib/types'
+import { parseBody, StringIdsSchema } from '@/lib/validation'
 
 export const dynamic = 'force-dynamic'
 
@@ -97,11 +98,9 @@ function toCurrentLeaseRow(l: LeaseRecord) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { ids } = (await req.json()) as { ids: string[] }
-
-    if (!Array.isArray(ids) || ids.length === 0) {
-      return NextResponse.json({ error: 'No lease IDs provided' }, { status: 400 })
-    }
+    const parsed = parseBody(StringIdsSchema, await req.json())
+    if (!parsed.ok) return parsed.response
+    const { ids } = parsed.data
 
     const supabase = getSupabaseAdmin()
 

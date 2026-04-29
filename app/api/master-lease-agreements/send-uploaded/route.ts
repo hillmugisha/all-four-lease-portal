@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { getDocuSignClient, getAccountId } from '@/lib/docusign'
+import { EmailSchema } from '@/lib/validation'
 import { PDFDocument } from 'pdf-lib'
 import docusign from 'docusign-esign'
 
@@ -42,6 +43,13 @@ export async function POST(req: NextRequest) {
 
     if (!lesseeName || !signerName || !signerEmail || !lessorName || !lessorFirstName || !lessorLastName || !lessorEmail || !file) {
       return NextResponse.json({ error: 'lessee_name, signer_name, signer_email, lessor_name, lessor_first_name, lessor_last_name, lessor_email, and file are required' }, { status: 400 })
+    }
+
+    if (!EmailSchema.safeParse(signerEmail).success) {
+      return NextResponse.json({ error: 'signer_email must be a valid email address' }, { status: 400 })
+    }
+    if (!EmailSchema.safeParse(lessorEmail).success) {
+      return NextResponse.json({ error: 'lessor_email must be a valid email address' }, { status: 400 })
     }
 
     const buffer = Buffer.from(await file.arrayBuffer())

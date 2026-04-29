@@ -4,6 +4,7 @@ import { calculateLease } from '@/lib/calculations'
 import { FinancialInputs } from '@/lib/types'
 import { logAudit } from '@/lib/audit'
 import { getUserEmailFromRequest } from '@/lib/auth-user'
+import { parseBody, LeaseCreateBodySchema } from '@/lib/validation'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,7 +27,9 @@ export async function GET() {
 // POST /api/leases — create a new lease record
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
+    const parsed = parseBody(LeaseCreateBodySchema, await req.json())
+    if (!parsed.ok) return parsed.response
+    const body = parsed.data
 
     // Build the financial inputs shape for calculation
     const fi: FinancialInputs = {
