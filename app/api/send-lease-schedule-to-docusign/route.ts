@@ -158,7 +158,7 @@ async function renderToPdf(html: string): Promise<Buffer> {
   const browser = await launchBrowser()
   try {
     const page = await browser.newPage()
-    await page.setContent(html, { waitUntil: 'networkidle0' })
+    await page.setContent(html, { waitUntil: 'load' })
     const pdf = await page.pdf({
       format: 'Letter',
       printBackground: true,

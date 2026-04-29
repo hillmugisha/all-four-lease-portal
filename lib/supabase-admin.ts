@@ -11,6 +11,10 @@ export function getSupabaseAdmin(): SupabaseClient {
     if (!url || !key) throw new Error('SUPABASE_SECRET_KEY is not set')
     _adminClient = createClient(url, key, {
       auth: { persistSession: false, autoRefreshToken: false },
+      global: {
+        fetch: (input: RequestInfo | URL, init?: RequestInit) =>
+          fetch(input, { ...init, cache: 'no-store' }),
+      },
     })
   }
   return _adminClient

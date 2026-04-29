@@ -249,6 +249,8 @@ export default function LeaseForm({
         make:      masterLeaseVehicles?.[0]?.oem ?? '',
         model:     masterLeaseVehicles?.[0]?.vehicle_line ?? '',
         bodyStyle: '',
+      } : isMasterLeaseAgreement ? {
+        is_master_lease: true,
       } : {}),
     },
     mode: 'onTouched',
@@ -493,6 +495,7 @@ export default function LeaseForm({
               {activeComponent === 5 && (
                 <Step5Signatures
                   form={form}
+                  isMasterLeaseAgreement={isMasterLeaseAgreement}
                   vooStockNumber={vehiclePrefill?.vooStockNumber ?? null}
                   supplementalData={
                     vehiclePrefill?.appData

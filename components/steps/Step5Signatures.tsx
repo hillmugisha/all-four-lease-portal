@@ -9,11 +9,12 @@ import { PdfViewerModal } from '@/components/PdfViewerModal'
 
 interface Props {
   form: UseFormReturn<LeaseFormData>
+  isMasterLeaseAgreement?: boolean
   vooStockNumber?: string | null
   supplementalData?: Record<string, unknown> | null
 }
 
-export default function Step5Signatures({ form, vooStockNumber, supplementalData }: Props) {
+export default function Step5Signatures({ form, isMasterLeaseAgreement, vooStockNumber, supplementalData }: Props) {
   const { register, control, watch, setValue, formState: { errors } } = form
 
   const [multiple, setMultiple] = useState(false)
@@ -27,7 +28,14 @@ export default function Step5Signatures({ form, vooStockNumber, supplementalData
   const [sentEnvelopeId, setSentEnvelopeId] = useState<string | null>(null)
   const [classificationError, setClassificationError] = useState<string | null>(null)
 
+  const [mlaIncludeAch, setMlaIncludeAch] = useState(true)
   const [selectedDocs, setSelectedDocs] = useState({ lease: true, insurance: true, ach: true })
+
+  useEffect(() => {
+    if (isMasterLeaseAgreement) {
+      setSelectedDocs({ lease: true, insurance: false, ach: mlaIncludeAch })
+    }
+  }, [isMasterLeaseAgreement, mlaIncludeAch])
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -43,6 +51,12 @@ export default function Step5Signatures({ form, vooStockNumber, supplementalData
     : lesseeType === 'business'
     ? lesseeName
     : ''
+
+  useEffect(() => {
+    if (lesseeType === 'individual') {
+      setSelectedDocs({ lease: true, insurance: true, ach: true })
+    }
+  }, [lesseeType])
 
   // Pre-populate first signatory from lessee info if blank
   useEffect(() => {
@@ -467,50 +481,83 @@ export default function Step5Signatures({ form, vooStockNumber, supplementalData
       <div>
         <h3 className="text-sm font-semibold text-gray-700 mb-3">Documents to Send to Customer</h3>
         <div className="rounded-lg border border-gray-200 p-4 space-y-3">
-          <label className="flex items-center gap-3 cursor-not-allowed">
-            <input type="checkbox" checked disabled className="accent-brand-600 h-4 w-4" />
-            <span className="text-sm font-medium text-gray-700">
-              Lease Agreement
-              <span className="ml-1.5 text-xs font-normal text-gray-400">(always included)</span>
-            </span>
-          </label>
-          {lesseeType === 'individual' ? (
+          {isMasterLeaseAgreement ? (
             <>
-              <label className="flex items-center gap-3 cursor-not-allowed">
-                <input type="checkbox" checked disabled className="accent-brand-600 h-4 w-4" />
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="mlaDocOption"
+                  checked={mlaIncludeAch}
+                  onChange={() => setMlaIncludeAch(true)}
+                  className="mt-0.5 accent-brand-600 h-4 w-4"
+                />
                 <span className="text-sm font-medium text-gray-700">
-                  Insurance Acknowledgement
-                  <span className="ml-1.5 text-xs font-normal text-gray-400">(always included)</span>
+                  Master Lease Agreement &amp; ACH Form
+                  <span className="ml-1.5 text-xs font-normal text-green-600">(Recommended)</span>
                 </span>
               </label>
-              <label className="flex items-center gap-3 cursor-not-allowed">
-                <input type="checkbox" checked disabled className="accent-brand-600 h-4 w-4" />
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="mlaDocOption"
+                  checked={!mlaIncludeAch}
+                  onChange={() => setMlaIncludeAch(false)}
+                  className="mt-0.5 accent-brand-600 h-4 w-4"
+                />
                 <span className="text-sm font-medium text-gray-700">
-                  ACH Authorization Form
-                  <span className="ml-1.5 text-xs font-normal text-gray-400">(always included)</span>
+                  Master Lease Agreement without ACH Form
+                  <span className="ml-1.5 text-xs font-normal text-amber-600">(Not Recommended)</span>
                 </span>
               </label>
             </>
           ) : (
             <>
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={selectedDocs.insurance}
-                  onChange={(e) => setSelectedDocs((s) => ({ ...s, insurance: e.target.checked }))}
-                  className="accent-brand-600 h-4 w-4"
-                />
-                <span className="text-sm font-medium text-gray-700">Insurance Acknowledgement</span>
+              <label className="flex items-center gap-3 cursor-not-allowed">
+                <input type="checkbox" checked disabled className="accent-brand-600 h-4 w-4" />
+                <span className="text-sm font-medium text-gray-700">
+                  Lease Agreement
+                  <span className="ml-1.5 text-xs font-normal text-gray-400">(always included)</span>
+                </span>
               </label>
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={selectedDocs.ach}
-                  onChange={(e) => setSelectedDocs((s) => ({ ...s, ach: e.target.checked }))}
-                  className="accent-brand-600 h-4 w-4"
-                />
-                <span className="text-sm font-medium text-gray-700">ACH Authorization Form</span>
-              </label>
+              {lesseeType === 'individual' ? (
+                <>
+                  <label className="flex items-center gap-3 cursor-not-allowed">
+                    <input type="checkbox" checked disabled className="accent-brand-600 h-4 w-4" />
+                    <span className="text-sm font-medium text-gray-700">
+                      Insurance Acknowledgement
+                      <span className="ml-1.5 text-xs font-normal text-gray-400">(always included)</span>
+                    </span>
+                  </label>
+                  <label className="flex items-center gap-3 cursor-not-allowed">
+                    <input type="checkbox" checked disabled className="accent-brand-600 h-4 w-4" />
+                    <span className="text-sm font-medium text-gray-700">
+                      ACH Authorization Form
+                      <span className="ml-1.5 text-xs font-normal text-gray-400">(always included)</span>
+                    </span>
+                  </label>
+                </>
+              ) : (
+                <>
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedDocs.insurance}
+                      onChange={(e) => setSelectedDocs((s) => ({ ...s, insurance: e.target.checked }))}
+                      className="accent-brand-600 h-4 w-4"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Insurance Acknowledgement</span>
+                  </label>
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedDocs.ach}
+                      onChange={(e) => setSelectedDocs((s) => ({ ...s, ach: e.target.checked }))}
+                      className="accent-brand-600 h-4 w-4"
+                    />
+                    <span className="text-sm font-medium text-gray-700">ACH Authorization Form</span>
+                  </label>
+                </>
+              )}
             </>
           )}
         </div>

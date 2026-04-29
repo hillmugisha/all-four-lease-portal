@@ -3,9 +3,11 @@
   "outputDirectory": ".next",
   "framework": "nextjs",
   "functions": {
-    "app/api/generate-pdf/route.ts": {
-      "memory": 1024,
-      "maxDuration": 30
-    }
+    "app/api/generate-pdf/route.ts":                    { "memory": 1024, "maxDuration": 30 },
+    "app/api/generate-insurance-pdf/route.ts":          { "memory": 1024, "maxDuration": 30 },
+    "app/api/generate-lease-schedule-pdf/route.ts":     { "memory": 1024, "maxDuration": 30 },
+    "app/api/generate-preview-packet/route.ts":         { "memory": 1024, "maxDuration": 30 },
+    "app/api/send-to-docusign/route.ts":                { "memory": 1024, "maxDuration": 60 },
+    "app/api/send-lease-schedule-to-docusign/route.ts": { "memory": 1024, "maxDuration": 60 }
   }
 }

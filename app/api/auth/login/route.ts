@@ -21,13 +21,13 @@ export async function POST(req: NextRequest) {
     .eq('email', normalised)
     .maybeSingle()
 
-  if (error || !data) {
-    return NextResponse.json({ error: 'Access not granted. Contact your administrator.' }, { status: 403 })
-  }
+  const denied = NextResponse.json(
+    { error: 'Access denied. Reach out to hill.mugisha@pritchards.com to get access.' },
+    { status: 403 },
+  )
 
-  if (!data.access_granted) {
-    return NextResponse.json({ error: 'Your access has been revoked. Contact your administrator.' }, { status: 403 })
-  }
+  if (error || !data) return denied
+  if (!data.access_granted) return denied
 
   // Update login_count and last_login (fire-and-forget — don't block the response)
   supabase
