@@ -14,7 +14,7 @@ import type { PnLMonthlyPoint } from '@/app/api/portfolio/pnl-monthly/route'
 import type { LenderLOC } from '@/app/api/portfolio/loc-summary/route'
 
 const POLL_INTERVAL = 60_000
-const CHART_YEAR = 2025
+const CURRENT_MONTH_IDX = new Date().getMonth() // 0-indexed; Jan=0, Apr=3
 
 const PALETTE = ['#4f46e5', '#7c3aed', '#0891b2', '#059669', '#d97706', '#db2777', '#dc2626', '#65a30d']
 
@@ -58,16 +58,19 @@ function addDays(d: Date, n: number): Date {
 
 // ─── Shared sub-components ────────────────────────────────────────────────────
 
-const YearDropdown = (
-  <select
-    defaultValue={2025}
-    className="text-xs text-gray-500 border border-gray-200 rounded-md px-2 py-1 bg-white focus:outline-none cursor-pointer"
-  >
-    <option value={2024}>2024</option>
-    <option value={2025}>2025</option>
-    <option value={2026}>2026</option>
-  </select>
-)
+function YearDropdown({ value, onChange }: { value: number; onChange: (y: number) => void }) {
+  return (
+    <select
+      value={value}
+      onChange={e => onChange(Number(e.target.value))}
+      className="text-xs text-gray-500 border border-gray-200 rounded-md px-2 py-1 bg-white focus:outline-none cursor-pointer"
+    >
+      <option value={2024}>2024</option>
+      <option value={2025}>2025</option>
+      <option value={2026}>2026</option>
+    </select>
+  )
+}
 
 function KPICard({ title, subtitle, children, headerRight }: { title: string; subtitle?: string; children: React.ReactNode; headerRight?: React.ReactNode }) {
   return (
@@ -243,6 +246,8 @@ export default function PortfolioOverview() {
   const [locData, setLocData]           = useState<LenderLOC[]>([])
   const [loading, setLoading]           = useState(true)
   const [error, setError]               = useState<string | null>(null)
+  const [netCashYear, setNetCashYear] = useState(2025)
+  const [pnlYear, setPnlYear]         = useState(2025)
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
@@ -403,46 +408,54 @@ export default function PortfolioOverview() {
 
   // Net cash chart data + YTD KPI tiles
   const netCashChartData = useMemo(() =>
-    netCashData.map(d => ({
-      month:    d.month,
-      active:   d.inflows_active,
-      oos:      d.inflows_oos,
-      demo:     d.inflows_demo,
-      outflows: -d.outflows_financing,
-      net_cash: d.inflows_active + d.inflows_oos + d.inflows_demo - d.outflows_financing,
-    })),
-  [netCashData])
+    netCashData.map((d, i) => {
+      const isFuture = netCashYear === 2026 && i > CURRENT_MONTH_IDX
+      return {
+        month:    d.month,
+        active:   isFuture ? 0 : d.inflows_active,
+        oos:      isFuture ? 0 : d.inflows_oos,
+        demo:     isFuture ? 0 : d.inflows_demo,
+        outflows: isFuture ? 0 : -d.outflows_financing,
+        net_cash: isFuture ? null : d.inflows_active + d.inflows_oos + d.inflows_demo - d.outflows_financing,
+      }
+    }),
+  [netCashData, netCashYear])
 
   const { ytdInflowsK, ytdOutflowsK, ytdNetK } = useMemo(() => {
+    const slice = netCashYear === 2026 ? netCashData.slice(0, CURRENT_MONTH_IDX + 1) : netCashData
     let inflows = 0, outflows = 0
-    for (const d of netCashData) {
+    for (const d of slice) {
       inflows  += d.inflows_active + d.inflows_oos + d.inflows_demo
       outflows += d.outflows_financing
     }
     return { ytdInflowsK: inflows, ytdOutflowsK: outflows, ytdNetK: inflows - outflows }
-  }, [netCashData])
+  }, [netCashData, netCashYear])
 
   const pnlChartData = useMemo(() =>
-    pnlData.map(d => ({
-      month:       d.month,
-      rev_active:  d.revenue_active,
-      rev_oos:     d.revenue_oos,
-      rev_demo:    d.revenue_demo,
-      interest:    -d.interest_expense,
-      depreciation:-d.depreciation,
-      profit:      d.revenue_active + d.revenue_oos + d.revenue_demo - d.interest_expense - d.depreciation,
-    })),
-  [pnlData])
+    pnlData.map((d, i) => {
+      const isFuture = pnlYear === 2026 && i > CURRENT_MONTH_IDX
+      return {
+        month:        d.month,
+        rev_active:   isFuture ? 0 : d.revenue_active,
+        rev_oos:      isFuture ? 0 : d.revenue_oos,
+        rev_demo:     isFuture ? 0 : d.revenue_demo,
+        interest:     isFuture ? 0 : -d.interest_expense,
+        depreciation: isFuture ? 0 : -d.depreciation,
+        profit:       isFuture ? null : d.revenue_active + d.revenue_oos + d.revenue_demo - d.interest_expense - d.depreciation,
+      }
+    }),
+  [pnlData, pnlYear])
 
   const { ytdRevenueK, ytdInterestK, ytdDepreciationK, ytdProfitK } = useMemo(() => {
+    const slice = pnlYear === 2026 ? pnlData.slice(0, CURRENT_MONTH_IDX + 1) : pnlData
     let rev = 0, interest = 0, dep = 0
-    for (const d of pnlData) {
+    for (const d of slice) {
       rev      += d.revenue_active + d.revenue_oos + d.revenue_demo
       interest += d.interest_expense
       dep      += d.depreciation
     }
     return { ytdRevenueK: rev, ytdInterestK: interest, ytdDepreciationK: dep, ytdProfitK: rev - interest - dep }
-  }, [pnlData])
+  }, [pnlData, pnlYear])
 
   // OOS leases grouped by company
   const { byCompanyData, noCompanyCount } = useMemo(() => {
@@ -530,18 +543,18 @@ export default function PortfolioOverview() {
         />
         <StatCard
           label="Total Units — Employee Demo"
+          count={45}
           Icon={Users}
           iconClass="text-purple-600"
           iconBg="bg-purple-100"
           accent="from-purple-50"
-          comingSoon
         />
       </div>
 
       {/* ── Row 2: Net Cash (left) + P&L Performance (right) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-        <KPICard title="Net cash" subtitle="Monthly lease inflows vs. financing outflows" headerRight={YearDropdown}>
+        <KPICard title="Net cash" subtitle="Monthly lease inflows vs. financing outflows" headerRight={<YearDropdown value={netCashYear} onChange={setNetCashYear} />}>
           {/* KPI tiles */}
           <div className="grid grid-cols-3 gap-3 mb-4">
             <div className="bg-gray-100 rounded-lg p-4">
@@ -588,7 +601,7 @@ export default function PortfolioOverview() {
                 axisLine={false}
                 tickLine={false}
                 interval={0}
-                label={{ value: String(CHART_YEAR), position: 'insideBottom', offset: -10, fontSize: 12, fill: '#6b7280', fontWeight: 600 }}
+                label={{ value: String(netCashYear), position: 'insideBottom', offset: -10, fontSize: 12, fill: '#6b7280', fontWeight: 600 }}
               />
               <YAxis
                 tickFormatter={fmtTick}
@@ -614,7 +627,7 @@ export default function PortfolioOverview() {
           </ResponsiveContainer>
         </KPICard>
 
-        <KPICard title="P&L performance" subtitle="Monthly revenue vs. interest expense and depreciation" headerRight={YearDropdown}>
+        <KPICard title="P&L performance" subtitle="Monthly revenue vs. interest expense and depreciation" headerRight={<YearDropdown value={pnlYear} onChange={setPnlYear} />}>
           {/* KPI tiles */}
           <div className="grid grid-cols-4 gap-2 mb-4">
             <div className="bg-gray-100 rounded-lg p-3">
@@ -666,7 +679,7 @@ export default function PortfolioOverview() {
                 axisLine={false}
                 tickLine={false}
                 interval={0}
-                label={{ value: String(CHART_YEAR), position: 'insideBottom', offset: -10, fontSize: 12, fill: '#6b7280', fontWeight: 600 }}
+                label={{ value: String(pnlYear), position: 'insideBottom', offset: -10, fontSize: 12, fill: '#6b7280', fontWeight: 600 }}
               />
               <YAxis
                 tickFormatter={fmtTick}
