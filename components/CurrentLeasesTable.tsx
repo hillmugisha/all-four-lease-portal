@@ -13,6 +13,7 @@ import ExportVehiclesModal from '@/components/ExportVehiclesModal'
 import ImportVehiclesModal from '@/components/ImportVehiclesModal'
 import { PORTFOLIO_EXPORT_GROUPS, PORTFOLIO_IMPORT_GROUPS } from '@/lib/portfolio-export-groups'
 import { ColKey, COLUMNS, DEFAULT_COLS_ACTIVE, buildCell, getCellTitle, STATUS_STYLES } from '@/lib/portfolio-columns'
+import { ActionsDropdown } from '@/components/ActionsDropdown'
 
 const PAGE_SIZE = 100
 
@@ -488,22 +489,27 @@ export default function CurrentLeasesTable({ leases, loading, initialFilters, on
           <button onClick={() => setExportModalOpen(true)} className="btn-secondary py-1.5 text-xs flex items-center gap-1.5" disabled={loading || filtered.length === 0}>
             <Download size={13} /> {someChecked ? `Export (${checkedIds.size})` : 'Export'}
           </button>
-          <button
-            onClick={() => { setOosError(null); setOosConfirmOpen(true) }}
-            disabled={!someChecked || markingOOS}
-            className="btn-primary py-1.5 text-xs flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <Wrench size={13} />
-            {someChecked ? `Mark Out of Service (${checkedIds.size})` : 'Mark Out of Service'}
-          </button>
-          <button
-            onClick={() => { setSoldError(null); setSoldConfirmOpen(true) }}
-            disabled={!someChecked || markingSold}
-            className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
-          >
-            <ShoppingCart size={13} />
-            {someChecked ? `Mark as Sold (${checkedIds.size})` : 'Mark as Sold'}
-          </button>
+          <ActionsDropdown
+            count={checkedIds.size}
+            actions={[
+              {
+                label: someChecked ? `Mark Out of Service (${checkedIds.size})` : 'Mark Out of Service',
+                icon: <Wrench size={13} />,
+                onClick: () => { setOosError(null); setOosConfirmOpen(true) },
+                disabled: !someChecked || markingOOS,
+                loading: markingOOS,
+                textClassName: 'text-red-600',
+              },
+              {
+                label: someChecked ? `Mark as Sold (${checkedIds.size})` : 'Mark as Sold',
+                icon: <ShoppingCart size={13} />,
+                onClick: () => { setSoldError(null); setSoldConfirmOpen(true) },
+                disabled: !someChecked || markingSold,
+                loading: markingSold,
+                textClassName: 'text-emerald-600',
+              },
+            ]}
+          />
         </div>
 
         {/* Loading skeleton */}

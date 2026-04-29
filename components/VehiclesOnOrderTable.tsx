@@ -5,6 +5,7 @@ import { usePersistedColumns } from '@/lib/usePersistedColumns'
 import { useRouter } from 'next/navigation'
 import { VehicleOnOrderRecord } from '@/lib/vehicles-on-order-types'
 import { Columns, X, Search, ChevronLeft, ChevronRight, Eye, Download, Upload, PlusCircle, AlertTriangle, Loader2, Wrench, ShoppingCart } from 'lucide-react'
+import { ActionsDropdown } from '@/components/ActionsDropdown'
 import MultiSelectFilter from '@/components/MultiSelectFilter'
 import OrganizeColumnsModal from '@/components/OrganizeColumnsModal'
 import ExportVehiclesModal, { ColGroup } from '@/components/ExportVehiclesModal'
@@ -230,62 +231,37 @@ const VOO_EXPORT_GROUPS: ColGroup<VehicleOnOrderRecord>[] = [
     ],
   },
   {
-    name: 'Order Info', required: false,
+    name: 'SHAED Tracking Data', required: false,
     bucketHeader: 'SHAED Tracking Data',
     cols: [
-      { label: 'OEM Order #',    key: 'oem_order_number'   },
-      { label: 'Order Date',     key: 'order_date'         },
-      { label: 'Tracking Type',  key: 'tracking_type'      },
-      { label: 'Body Code',      key: 'body_code'          },
-      { label: 'Color',          key: 'color'              },
-      { label: 'Ship To',        key: 'ship_to_location'   },
-      { label: 'Stage',          key: 'stage'              },
-      { label: 'Inventory Type', key: 'inventory_type'     },
-    ],
-  },
-  {
-    name: 'Production & Delivery', required: false,
-    cols: [
-      { label: 'Target Production Wk',  key: 'target_production_week'  },
-      { label: 'OEM Status',            key: 'oem_status'              },
-      { label: 'SHAED Status',          key: 'shaed_status'            },
-      { label: 'Chassis ETA',           key: 'chassis_eta'             },
-      { label: 'Expected Delivery',     key: 'expected_delivery_date'  },
-    ],
-  },
-  {
-    name: 'Customer / PO', required: false,
-    cols: [
-      { label: 'Customer Name',    key: 'customer_name'      },
-      { label: 'Sales Person',     key: 'sales_person'       },
-      { label: 'Customer PO #',    key: 'customer_po_number' },
-      { label: 'Customer PO Date', key: 'customer_po_date'   },
-    ],
-  },
-  {
-    name: 'Invoice', required: false,
-    cols: [
-      { label: 'Customer Invoice #', key: 'customer_invoice_number' },
-      { label: 'Invoice Amount',     key: 'invoice_amount'          },
-      { label: 'Invoice Date',       key: 'invoice_date'            },
-      { label: 'Invoice Due Date',   key: 'invoice_due_date'        },
-      { label: 'Payment Date',       key: 'payment_date'            },
-    ],
-  },
-  {
-    name: 'Upfit', required: false,
-    cols: [
+      { label: 'OEM Order #',             key: 'oem_order_number'                 },
+      { label: 'Order Date',              key: 'order_date'                       },
+      { label: 'Tracking Type',           key: 'tracking_type'                    },
+      { label: 'Body Code',               key: 'body_code'                        },
+      { label: 'Color',                   key: 'color'                            },
+      { label: 'Ship To',                 key: 'ship_to_location'                 },
+      { label: 'Stage',                   key: 'stage'                            },
+      { label: 'Inventory Type',          key: 'inventory_type'                   },
+      { label: 'Target Production Wk',    key: 'target_production_week'           },
+      { label: 'OEM Status',              key: 'oem_status'                       },
+      { label: 'SHAED Status',            key: 'shaed_status'                     },
+      { label: 'Chassis ETA',             key: 'chassis_eta'                      },
+      { label: 'Expected Delivery',       key: 'expected_delivery_date'           },
+      { label: 'Customer Name',           key: 'customer_name'                    },
+      { label: 'Sales Person',            key: 'sales_person'                     },
+      { label: 'Customer PO #',           key: 'customer_po_number'               },
+      { label: 'Customer PO Date',        key: 'customer_po_date'                 },
+      { label: 'Customer Invoice #',      key: 'customer_invoice_number'          },
+      { label: 'Invoice Amount',          key: 'invoice_amount'                   },
+      { label: 'Invoice Date',            key: 'invoice_date'                     },
+      { label: 'Invoice Due Date',        key: 'invoice_due_date'                 },
+      { label: 'Payment Date',            key: 'payment_date'                     },
       { label: 'Upfitter Name',           key: 'upfitter_name'                    },
       { label: 'Rcvd at Upfitter',        key: 'date_received_at_upfitter'        },
       { label: 'Upfit Status',            key: 'upfit_status'                     },
       { label: 'Est. Upfit Completion',   key: 'estimated_upfit_completion_date'  },
       { label: 'Actual Upfit Completion', key: 'actual_upfit_completion_date'     },
-    ],
-  },
-  {
-    name: 'Logistics', required: false,
-    cols: [
-      { label: 'Logistics Status', key: 'logistics_status' },
+      { label: 'Logistics Status',        key: 'logistics_status'                 },
     ],
   },
   {
@@ -683,22 +659,27 @@ const VehiclesOnOrderTable = forwardRef<
           <button onClick={() => setExportModalOpen(true)} className="btn-secondary py-1.5 text-xs flex items-center gap-1.5">
             <Download size={13} /> Export
           </button>
-          <button
-            onClick={() => { setDisposeError(null); setOosConfirmOpen(true) }}
-            disabled={!someChecked || disposeLoading}
-            className="btn-primary py-1.5 text-xs flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <Wrench size={13} />
-            {someChecked ? `Mark Out of Service (${checkedIds.size})` : 'Mark Out of Service'}
-          </button>
-          <button
-            onClick={() => { setDisposeError(null); setSoldConfirmOpen(true) }}
-            disabled={!someChecked || disposeLoading}
-            className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
-          >
-            <ShoppingCart size={13} />
-            {someChecked ? `Mark as Sold (${checkedIds.size})` : 'Mark as Sold'}
-          </button>
+          <ActionsDropdown
+            count={checkedIds.size}
+            actions={[
+              {
+                label: someChecked ? `Mark Out of Service (${checkedIds.size})` : 'Mark Out of Service',
+                icon: <Wrench size={13} />,
+                onClick: () => { setDisposeError(null); setOosConfirmOpen(true) },
+                disabled: !someChecked || disposeLoading,
+                loading: disposeLoading,
+                textClassName: 'text-red-600',
+              },
+              {
+                label: someChecked ? `Mark as Sold (${checkedIds.size})` : 'Mark as Sold',
+                icon: <ShoppingCart size={13} />,
+                onClick: () => { setDisposeError(null); setSoldConfirmOpen(true) },
+                disabled: !someChecked || disposeLoading,
+                loading: disposeLoading,
+                textClassName: 'text-emerald-600',
+              },
+            ]}
+          />
         </div>
 
         <div className="overflow-x-auto overflow-y-auto" style={{ maxHeight: 'calc(100vh - 500px)' }}>

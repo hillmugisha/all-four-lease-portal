@@ -5,6 +5,7 @@ import { usePersistedColumns } from '@/lib/usePersistedColumns'
 import { LeaseRecord } from '@/lib/types'
 import { fmt, fmtDate } from '@/lib/calculations'
 import { FileDown, Columns, Plus, Eye, X, Search, Trash2, AlertTriangle, Zap, Loader2, CheckCircle2, Pencil, Copy } from 'lucide-react'
+import { ActionsDropdown } from '@/components/ActionsDropdown'
 import MultiSelectFilter from '@/components/MultiSelectFilter'
 import Toast, { ToastState } from '@/components/Toast'
 import LeaseDocumentsSection from '@/components/LeaseDocumentsSection'
@@ -680,10 +681,11 @@ export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
   )
 
   // Activate is only meaningful for completed-but-not-yet-active leases
-  const hasActivatable = useMemo(
-    () => selectedLeases.some((l) => l.doc_status === 'completed' && !l.is_active),
+  const activatableCount = useMemo(
+    () => selectedLeases.filter((l) => l.doc_status === 'completed' && !l.is_active).length,
     [selectedLeases],
   )
+  const hasActivatable = activatableCount > 0
 
   // Unique sorted years and makes from loaded data
   const statuses = useMemo(() =>
@@ -766,21 +768,18 @@ export default function LeaseTable({ onCreateNew }: LeaseTableProps = {}) {
               {hasFilters ? `${filtered.length} of ${leases.length}` : leases.length} total
             </p>
           </div>
-          <button
-            onClick={() => setShowActivateModal(true)}
-            disabled={!hasActivatable}
-            className={clsx(
-              'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors',
-              hasActivatable
-                ? 'bg-green-600 text-white hover:bg-green-700'
-                : 'bg-gray-100 text-gray-400 cursor-not-allowed',
-            )}
-          >
-            <Zap size={13} />
-            {hasActivatable
-              ? `Activate (${selectedLeases.filter((l) => l.doc_status === 'completed' && !l.is_active).length})`
-              : 'Activate Leases'}
-          </button>
+          <ActionsDropdown
+            count={checkedIds.size}
+            actions={[
+              {
+                label: hasActivatable ? `Activate (${activatableCount})` : 'Activate Leases',
+                icon: <Zap size={13} />,
+                onClick: () => setShowActivateModal(true),
+                disabled: !hasActivatable,
+                textClassName: 'text-blue-600',
+              },
+            ]}
+          />
           <button onClick={() => setColumnsModalOpen(true)} className="btn-secondary py-1.5 text-xs flex items-center gap-1.5">
             <Columns size={13} /> Columns
           </button>

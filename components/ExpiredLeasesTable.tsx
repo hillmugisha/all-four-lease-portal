@@ -13,6 +13,7 @@ import { PORTFOLIO_EXPORT_GROUPS, PORTFOLIO_IMPORT_GROUPS } from '@/lib/portfoli
 import { fmtDate, fmtMoney, fmtMoneyOrText, DR, MS } from '@/lib/table-utils'
 import OrganizeColumnsModal from '@/components/OrganizeColumnsModal'
 import { ColKey, COLUMNS, DEFAULT_COLS_EXPIRED, buildCell, getCellTitle } from '@/lib/portfolio-columns'
+import { ActionsDropdown } from '@/components/ActionsDropdown'
 
 const PAGE_SIZE = 100
 
@@ -310,21 +311,26 @@ export default function ExpiredLeasesTable({ leases, loading, onSold }: TablePro
           <button onClick={() => setExportModalOpen(true)} className="btn-secondary py-1.5 text-xs flex items-center gap-1.5" disabled={loading || filtered.length === 0}>
             <Download size={13} /> {someChecked ? `Export (${checkedIds.size})` : 'Export'}
           </button>
-          <button
-            onClick={() => { setSoldError(null); setSoldConfirmOpen(true) }}
-            disabled={!someChecked || markingSold}
-            className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
-          >
-            <ShoppingCart size={13} />
-            {someChecked ? `Mark as Sold (${checkedIds.size})` : 'Mark as Sold'}
-          </button>
-          <button
-            disabled
-            className="btn-primary py-1.5 text-xs flex items-center gap-1.5 opacity-40 cursor-not-allowed"
-          >
-            <Zap size={13} />
-            Activate Lease
-          </button>
+          <ActionsDropdown
+            count={checkedIds.size}
+            actions={[
+              {
+                label: someChecked ? `Mark as Sold (${checkedIds.size})` : 'Mark as Sold',
+                icon: <ShoppingCart size={13} />,
+                onClick: () => { setSoldError(null); setSoldConfirmOpen(true) },
+                disabled: !someChecked || markingSold,
+                loading: markingSold,
+                textClassName: 'text-emerald-600',
+              },
+              {
+                label: 'Activate Lease',
+                icon: <Zap size={13} />,
+                onClick: () => {},
+                disabled: true,
+                textClassName: 'text-blue-600',
+              },
+            ]}
+          />
         </div>
 
         {loading && (
