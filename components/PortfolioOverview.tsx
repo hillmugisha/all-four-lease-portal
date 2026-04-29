@@ -11,6 +11,7 @@ import {
 } from 'recharts'
 import type { NetCashMonthlyPoint } from '@/app/api/portfolio/net-cash-monthly/route'
 import type { PnLMonthlyPoint } from '@/app/api/portfolio/pnl-monthly/route'
+import type { LenderLOC } from '@/app/api/portfolio/loc-summary/route'
 
 const POLL_INTERVAL = 60_000
 const CHART_YEAR = new Date().getFullYear()
@@ -90,6 +91,23 @@ function fmtKpi(k: number): string {
 function fmtAbs(k: number): string {
   const abs = Math.abs(k)
   return abs >= 1000 ? `$${(abs / 1000).toFixed(1)}M` : `$${Math.round(abs)}K`
+}
+
+function fmtLoc(m: number): string {
+  const sign = m < 0 ? '-' : ''
+  const abs = Math.abs(m)
+  return sign + (abs >= 1 ? `$${abs.toFixed(1)}M` : `$${Math.round(abs * 1000)}K`)
+}
+
+function locColor(pct: number, mode: 'total' | 'lender'): string {
+  if (mode === 'total') {
+    if (pct < 75) return '#0F6E56'
+    if (pct <= 85) return '#BA7517'
+    return '#A32D2D'
+  }
+  if (pct < 65) return '#0F6E56'
+  if (pct <= 77) return '#BA7517'
+  return '#A32D2D'
 }
 
 const fmtTick = (v: number) =>
@@ -208,32 +226,36 @@ export default function PortfolioOverview() {
   const [vehicles, setVehicles]         = useState<VehicleOnOrderRecord[]>([])
   const [netCashData, setNetCashData]   = useState<NetCashMonthlyPoint[]>([])
   const [pnlData, setPnlData]           = useState<PnLMonthlyPoint[]>([])
+  const [locData, setLocData]           = useState<LenderLOC[]>([])
   const [loading, setLoading]           = useState(true)
   const [error, setError]               = useState<string | null>(null)
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
     try {
-      const [activeRes, oosRes, vooRes, ncRes, pnlRes] = await Promise.all([
+      const [activeRes, oosRes, vooRes, ncRes, pnlRes, locRes] = await Promise.all([
         fetch('/api/current-leases'),
         fetch('/api/expired-leases'),
         fetch('/api/vehicles-on-order', { cache: 'no-store' }),
         fetch('/api/portfolio/net-cash-monthly'),
         fetch('/api/portfolio/pnl-monthly'),
+        fetch('/api/portfolio/loc-summary'),
       ])
-      if (!activeRes.ok || !oosRes.ok || !vooRes.ok || !ncRes.ok || !pnlRes.ok) throw new Error('Failed to fetch portfolio data')
-      const [activeData, oosData, vooData, ncData, pnlRaw] = await Promise.all([
+      if (!activeRes.ok || !oosRes.ok || !vooRes.ok || !ncRes.ok || !pnlRes.ok || !locRes.ok) throw new Error('Failed to fetch portfolio data')
+      const [activeData, oosData, vooData, ncData, pnlRaw, locRaw] = await Promise.all([
         activeRes.json(),
         oosRes.json(),
         vooRes.json(),
         ncRes.json(),
         pnlRes.json(),
+        locRes.json(),
       ])
       setActiveLeases(activeData)
       setOosLeases(oosData)
       setVehicles(vooData)
       setNetCashData(ncData)
       setPnlData(pnlRaw)
+      setLocData(locRaw)
       setError(null)
     } catch (e) {
       if (!silent) setError(String(e))
@@ -337,6 +359,34 @@ export default function PortfolioOverview() {
     return { totalMonthlyTax: total, taxExcludedValues: Array.from(excluded).sort() }
   }, [activeLeases])
 
+  // LOC totals and sorted per-lender rows (max 7; remainder → "Other lenders")
+  const { locRows, locTotalLimit, locTotalDeployed, locUtilPct } = useMemo(() => {
+    const sorted = [...locData].sort((a, b) => b.limit - a.limit)
+    const MAX_ROWS = 7
+    let rows: Array<{ lender_name: string; limit: number; deployed: number; utilPct: number }>
+    if (sorted.length <= MAX_ROWS) {
+      rows = sorted.map(r => ({ ...r, utilPct: r.limit > 0 ? (r.deployed / r.limit) * 100 : 0 }))
+    } else {
+      const top = sorted.slice(0, MAX_ROWS)
+      const rest = sorted.slice(MAX_ROWS)
+      const otherLimit    = rest.reduce((s, r) => s + r.limit, 0)
+      const otherDeployed = rest.reduce((s, r) => s + r.deployed, 0)
+      rows = [
+        ...top.map(r => ({ ...r, utilPct: r.limit > 0 ? (r.deployed / r.limit) * 100 : 0 })),
+        {
+          lender_name: `Other lenders (${rest.length})`,
+          limit: otherLimit,
+          deployed: otherDeployed,
+          utilPct: otherLimit > 0 ? (otherDeployed / otherLimit) * 100 : 0,
+        },
+      ]
+    }
+    const locTotalLimit    = locData.reduce((s, r) => s + r.limit, 0)
+    const locTotalDeployed = locData.reduce((s, r) => s + r.deployed, 0)
+    const locUtilPct       = locTotalLimit > 0 ? (locTotalDeployed / locTotalLimit) * 100 : 0
+    return { locRows: rows, locTotalLimit, locTotalDeployed, locUtilPct }
+  }, [locData])
+
   // Net cash chart data + YTD KPI tiles
   const netCashChartData = useMemo(() =>
     netCashData.map(d => ({
@@ -415,8 +465,8 @@ export default function PortfolioOverview() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {Array.from({ length: 2 }).map((_, i) => <SkeletonCard key={i} tall />)}
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {Array.from({ length: 2 }).map((_, i) => <SkeletonCard key={i} tall />)}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} tall />)}
         </div>
       </div>
     )
@@ -631,8 +681,89 @@ export default function PortfolioOverview() {
 
       </div>
 
-      {/* ── Row 3: Total Monthly Tax (left) + Upcoming Expirations (right) ── */}
+      {/* ── Row 3: LOC Availability (left) + Upcoming Expirations (right) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+        <KPICard title="Line of Credit Availability" subtitle="Snapshot of deployed capital vs. credit limits">
+          {locData.length === 0 ? (
+            <p className="text-xs text-gray-400 mt-2">No data available</p>
+          ) : (<>
+          {/* 4 KPI tiles */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+            <div className="bg-gray-100 rounded-lg p-3">
+              <p className="text-[13px] text-gray-500 mb-1.5">Total LOC limit</p>
+              <p className="text-[22px] font-medium text-gray-900">{fmtLoc(locTotalLimit)}</p>
+            </div>
+            <div className="bg-gray-100 rounded-lg p-3">
+              <p className="text-[13px] text-gray-500 mb-1.5">Deployed</p>
+              <p className="text-[22px] font-medium text-gray-900">{fmtLoc(locTotalDeployed)}</p>
+            </div>
+            <div className="bg-gray-100 rounded-lg p-3">
+              <p className="text-[13px] text-gray-500 mb-1.5">Available headroom</p>
+              <p className="text-[22px] font-medium" style={{ color: locColor(locUtilPct, 'total') }}>
+                {fmtLoc(locTotalLimit - locTotalDeployed)}
+              </p>
+            </div>
+            <div className="bg-gray-100 rounded-lg p-3">
+              <p className="text-[13px] text-gray-500 mb-1.5">Utilization</p>
+              <p className="text-[22px] font-medium" style={{ color: locColor(locUtilPct, 'total') }}>
+                {locUtilPct.toFixed(1)}%
+              </p>
+            </div>
+          </div>
+
+          {/* Per-lender bars */}
+          <p className="text-[14px] font-medium text-gray-900 mb-3">Current state by line of credit</p>
+          <div className="flex flex-col" style={{ gap: 14 }}>
+            {locRows.map((row) => {
+              const overLimit = row.deployed > row.limit
+              const barWidth  = Math.min(row.utilPct, 100)
+              return (
+                <div key={row.lender_name}>
+                  <div className="flex justify-between items-baseline mb-1.5">
+                    <span className="text-[13px] text-gray-900">{row.lender_name} · {fmtLoc(row.limit)} limit</span>
+                    <span className="text-[13px] text-gray-500 whitespace-nowrap ml-2">
+                      {fmtLoc(row.deployed)} deployed ·{' '}
+                      <span style={{ color: locColor(row.utilPct, 'lender') }}>
+                        {Math.round(row.utilPct)}% used{overLimit ? ' (over limit)' : ''}
+                      </span>
+                    </span>
+                  </div>
+                  <div className="w-full h-[14px] rounded-md bg-gray-100 overflow-hidden">
+                    <div
+                      className="h-full rounded-md"
+                      style={{ width: `${barWidth}%`, background: '#185FA5' }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+          </>)}
+        </KPICard>
+
+        <KPICard title="Upcoming Lease Expirations" subtitle="Active leases ending within 90 days">
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={upcomingData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+              <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} allowDecimals={false} />
+              <Tooltip content={<ChartTooltip />} cursor={{ fill: '#f3f4f6' }} />
+              <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey="count" position="top" style={{ fontSize: 11, fill: '#374151', fontWeight: 600 }} />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+          {noEndDateCount > 0 && (
+            <p className="mt-2 text-xs font-medium text-red-600 text-center">
+              {noEndDateCount} vehicle{noEndDateCount !== 1 ? 's have' : ' has'} no Lease End date
+            </p>
+          )}
+        </KPICard>
+
+      </div>
+
+      {/* ── Row 4: Total Monthly Tax + OOS by Company + Active by Customer Type ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
         <KPICard title="Total Monthly Tax" subtitle="Sum of all numeric monthly tax values">
           <div className="flex flex-col gap-4">
@@ -656,29 +787,6 @@ export default function PortfolioOverview() {
             )}
           </div>
         </KPICard>
-
-        <KPICard title="Upcoming Lease Expirations" subtitle="Active leases ending within 90 days">
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={upcomingData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-              <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} allowDecimals={false} />
-              <Tooltip content={<ChartTooltip />} cursor={{ fill: '#f3f4f6' }} />
-              <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                <LabelList dataKey="count" position="top" style={{ fontSize: 11, fill: '#374151', fontWeight: 600 }} />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-          {noEndDateCount > 0 && (
-            <p className="mt-2 text-xs font-medium text-red-600 text-center">
-              {noEndDateCount} vehicle{noEndDateCount !== 1 ? 's have' : ' has'} no Lease End date
-            </p>
-          )}
-        </KPICard>
-
-      </div>
-
-      {/* ── Row 4: OOS by Company (left) + Active Leases by Customer Type (right) ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
         <KPICard
           title="Out of Service by Company"
