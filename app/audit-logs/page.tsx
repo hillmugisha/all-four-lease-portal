@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState, useMemo, useRef } from 'react'
-import { createClient } from '@supabase/supabase-js'
 import { ClipboardList, ChevronDown, ChevronRight, X, Calendar, ChevronLeft } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -19,33 +18,39 @@ interface AuditLog {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const ACTION_LABELS: Record<string, string> = {
-  'lease.created':          'Lease Created',
-  'lease.updated':          'Lease Edited',
-  'lease.deleted':          'Lease Deleted',
-  'lease.sent_to_docusign': 'Sent to DocuSign',
-  'lease.activated':        'Lease Activated',
-  'document.uploaded':      'Document Uploaded',
-  'document.deleted':       'Document Deleted',
+  'lease.created':              'Lease Created',
+  'lease.updated':              'Lease Edited',
+  'lease.deleted':              'Lease Deleted',
+  'lease.sent_to_docusign':     'Sent to DocuSign',
+  'lease.activated':            'Lease Activated',
+  'lease.marked_sold':          'Marked as Sold',
+  'lease.marked_out_of_service': 'Marked Out of Service',
+  'document.uploaded':          'Document Uploaded',
+  'document.deleted':           'Document Deleted',
 }
 
 const ACTION_COLORS: Record<string, string> = {
-  'lease.created':          'bg-blue-500',
-  'lease.updated':          'bg-yellow-400',
-  'lease.deleted':          'bg-red-500',
-  'lease.sent_to_docusign': 'bg-purple-500',
-  'lease.activated':        'bg-green-500',
-  'document.uploaded':      'bg-amber-500',
-  'document.deleted':       'bg-orange-500',
+  'lease.created':               'bg-blue-500',
+  'lease.updated':               'bg-yellow-400',
+  'lease.deleted':               'bg-red-500',
+  'lease.sent_to_docusign':      'bg-purple-500',
+  'lease.activated':             'bg-green-500',
+  'lease.marked_sold':           'bg-teal-500',
+  'lease.marked_out_of_service': 'bg-slate-500',
+  'document.uploaded':           'bg-amber-500',
+  'document.deleted':            'bg-orange-500',
 }
 
 const ACTION_BADGE: Record<string, string> = {
-  'lease.created':          'bg-blue-50 text-blue-700 ring-blue-200',
-  'lease.updated':          'bg-yellow-50 text-yellow-700 ring-yellow-200',
-  'lease.deleted':          'bg-red-50 text-red-700 ring-red-200',
-  'lease.sent_to_docusign': 'bg-purple-50 text-purple-700 ring-purple-200',
-  'lease.activated':        'bg-green-50 text-green-700 ring-green-200',
-  'document.uploaded':      'bg-amber-50 text-amber-700 ring-amber-200',
-  'document.deleted':       'bg-orange-50 text-orange-700 ring-orange-200',
+  'lease.created':               'bg-blue-50 text-blue-700 ring-blue-200',
+  'lease.updated':               'bg-yellow-50 text-yellow-700 ring-yellow-200',
+  'lease.deleted':               'bg-red-50 text-red-700 ring-red-200',
+  'lease.sent_to_docusign':      'bg-purple-50 text-purple-700 ring-purple-200',
+  'lease.activated':             'bg-green-50 text-green-700 ring-green-200',
+  'lease.marked_sold':           'bg-teal-50 text-teal-700 ring-teal-200',
+  'lease.marked_out_of_service': 'bg-slate-50 text-slate-700 ring-slate-200',
+  'document.uploaded':           'bg-amber-50 text-amber-700 ring-amber-200',
+  'document.deleted':            'bg-orange-50 text-orange-700 ring-orange-200',
 }
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
@@ -102,6 +107,13 @@ function buildSummary(action: string, details: Record<string, unknown> | null): 
   if (action === 'lease.activated') {
     const count = details.count as number | undefined
     return count !== undefined ? `${count} lease${count !== 1 ? 's' : ''} activated` : ''
+  }
+  if (action === 'lease.marked_sold' || action === 'lease.marked_out_of_service') {
+    const leases = details.leases as Array<Record<string, unknown>> | undefined
+    if (leases && leases.length > 0) {
+      const names = leases.map((l) => l.customer_name ?? l.vehicle ?? l.id).filter(Boolean)
+      return names.length === 1 ? String(names[0]) : `${names.length} leases`
+    }
   }
   if (action === 'document.uploaded' || action === 'document.deleted') {
     return details.file_name ? String(details.file_name) : ''
@@ -419,13 +431,6 @@ function UserFilter({ users, value, onChange }: {
   )
 }
 
-// ─── Supabase client ──────────────────────────────────────────────────────────
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-)
-
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function AuditLogsPage() {
@@ -439,12 +444,13 @@ export default function AuditLogsPage() {
   const pickerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    supabase
-      .from('audit_logs')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(200)
-      .then(({ data }) => { setLogs((data as AuditLog[]) ?? []); setLoading(false) })
+    fetch('/api/audit-logs')
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setLogs(data as AuditLog[])
+        setLoading(false)
+      })
+      .catch((err) => { console.error('audit-logs fetch failed:', err); setLoading(false) })
   }, [])
 
   // Close date picker on outside click

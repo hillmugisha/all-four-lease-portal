@@ -2,11 +2,11 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { FileText, FolderOpen, Truck, FileSignature, CalendarX, ShoppingCart, ClipboardList, LogOut, History } from 'lucide-react'
+import { FileText, FolderOpen, Truck, FileSignature, CalendarX, ShoppingCart, ClipboardList, LogOut, History, Menu } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import clsx from 'clsx'
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, onToggle }: { isOpen: boolean; onToggle: () => void }) {
   const path     = usePathname()
   const router   = useRouter()
   const isLeasesPath =
@@ -36,16 +36,22 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="flex h-screen w-60 flex-col border-r border-neutral-800 bg-black fixed left-0 top-0">
+    <aside className={clsx('flex h-screen w-60 flex-col border-r border-neutral-800 bg-black fixed left-0 top-0 transition-transform duration-300', !isOpen && '-translate-x-full')}>
       {/* Logo / Brand */}
-      <div className="flex items-center gap-3 px-5 py-6 border-b border-neutral-800">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-white text-sm font-bold shrink-0">
+      <div className="flex items-center gap-3 px-4 py-4 border-b border-neutral-800">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-600 text-white font-bold text-lg select-none">
           A4
         </div>
-        <div>
-          <p className="text-sm font-semibold text-white leading-tight">All Four &amp; NIE Hub</p>
-          <p className="text-xs text-neutral-400 leading-tight">Portal</p>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-white leading-tight">All Four &amp; NIE</p>
         </div>
+        <button
+          onClick={onToggle}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/8 hover:text-white transition-colors"
+          aria-label="Close sidebar"
+        >
+          <Menu size={18} />
+        </button>
       </div>
 
       {/* Navigation */}

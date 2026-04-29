@@ -265,9 +265,16 @@ export async function POST(req: NextRequest) {
 
     const userEmail = getUserEmailFromRequest(req)
     await logAudit(userEmail, 'lease.activated', undefined, {
-      lease_ids: toActivate.map((l) => l.id),
-      count:     toActivate.length,
-      skipped:   leases.length - toActivate.length,
+      count:   toActivate.length,
+      skipped: leases.length - toActivate.length,
+      leases:  toActivate.map((l) => ({
+        id:                    l.id,
+        lessee_name:           l.lessee_name,
+        vehicle:               `${l.vehicle_year ?? ''} ${l.vehicle_make ?? ''} ${l.vehicle_model ?? ''}`.trim(),
+        vin:                   l.vehicle_vin,
+        total_monthly_payment: l.total_monthly_payment,
+        lessee_email:          l.lessee_email,
+      })),
     })
 
     return NextResponse.json({
