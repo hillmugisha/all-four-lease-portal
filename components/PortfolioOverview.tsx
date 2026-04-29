@@ -6,12 +6,14 @@ import { LeasePortfolioRecord } from '@/lib/lease-portfolio-types'
 import { VehicleOnOrderRecord } from '@/lib/vehicles-on-order-types'
 import { FolderOpen, CalendarX, Truck, Users } from 'lucide-react'
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList,
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LabelList,
   ComposedChart, Line,
 } from 'recharts'
 import type { NetCashMonthlyPoint } from '@/app/api/portfolio/net-cash-monthly/route'
+import type { PnLMonthlyPoint } from '@/app/api/portfolio/pnl-monthly/route'
 
 const POLL_INTERVAL = 60_000
+const CHART_YEAR = new Date().getFullYear()
 
 const PALETTE = ['#4f46e5', '#7c3aed', '#0891b2', '#059669', '#d97706', '#db2777', '#dc2626', '#65a30d']
 
@@ -21,6 +23,15 @@ const NET_CASH = {
   demo:     '#9FE1CB',
   outflows: '#D85A30',
   net:      '#042C53',
+}
+
+const PNL = {
+  active:      '#534AB7',
+  oos:         '#7F77DD',
+  demo:        '#AFA9EC',
+  interest:    '#D85A30',
+  depreciation:'#BA7517',
+  profit:      '#042C53',
 }
 
 const EXPIRY_COLORS: Record<string, string> = {
@@ -76,6 +87,11 @@ function fmtKpi(k: number): string {
     : `${sign}$${Math.round(abs)}K`
 }
 
+function fmtAbs(k: number): string {
+  const abs = Math.abs(k)
+  return abs >= 1000 ? `$${(abs / 1000).toFixed(1)}M` : `$${Math.round(abs)}K`
+}
+
 const fmtTick = (v: number) =>
   v === 0 ? '$0K' : (v < 0 ? '-' : '') + '$' + Math.abs(Math.round(v)) + 'K'
 
@@ -97,6 +113,39 @@ function NetCashTooltip({ active, payload, label }: any) {
       {sorted.map((p: any) => (
         <p key={p.dataKey} style={{ color: colors[p.dataKey] }} className="leading-5">
           {labels[p.dataKey]}: {fmtTick(p.value)}
+        </p>
+      ))}
+    </div>
+  )
+}
+
+function PnLTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null
+  const order = ['rev_active', 'rev_oos', 'rev_demo', 'interest', 'depreciation', 'profit']
+  const labels: Record<string, string> = {
+    rev_active:   'Revenue · Active',
+    rev_oos:      'Revenue · OOS',
+    rev_demo:     'Revenue · Demo',
+    interest:     'Interest expense',
+    depreciation: 'Depreciation',
+    profit:       'Profit',
+  }
+  const colors: Record<string, string> = {
+    rev_active:   PNL.active,
+    rev_oos:      PNL.oos,
+    rev_demo:     PNL.demo,
+    interest:     PNL.interest,
+    depreciation: PNL.depreciation,
+    profit:       PNL.profit,
+  }
+  const negatedKeys = new Set(['interest', 'depreciation'])
+  const sorted = [...payload].sort((a, b) => order.indexOf(a.dataKey) - order.indexOf(b.dataKey))
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-md text-xs">
+      <p className="font-medium text-gray-700 mb-1">{label}</p>
+      {sorted.map((p: any) => (
+        <p key={p.dataKey} style={{ color: colors[p.dataKey] }} className="leading-5">
+          {labels[p.dataKey]}: {negatedKeys.has(p.dataKey) ? fmtAbs(p.value) : fmtTick(p.value)}
         </p>
       ))}
     </div>
@@ -158,29 +207,33 @@ export default function PortfolioOverview() {
   const [oosLeases, setOosLeases]       = useState<LeasePortfolioRecord[]>([])
   const [vehicles, setVehicles]         = useState<VehicleOnOrderRecord[]>([])
   const [netCashData, setNetCashData]   = useState<NetCashMonthlyPoint[]>([])
+  const [pnlData, setPnlData]           = useState<PnLMonthlyPoint[]>([])
   const [loading, setLoading]           = useState(true)
   const [error, setError]               = useState<string | null>(null)
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
     try {
-      const [activeRes, oosRes, vooRes, ncRes] = await Promise.all([
+      const [activeRes, oosRes, vooRes, ncRes, pnlRes] = await Promise.all([
         fetch('/api/current-leases'),
         fetch('/api/expired-leases'),
         fetch('/api/vehicles-on-order', { cache: 'no-store' }),
         fetch('/api/portfolio/net-cash-monthly'),
+        fetch('/api/portfolio/pnl-monthly'),
       ])
-      if (!activeRes.ok || !oosRes.ok || !vooRes.ok || !ncRes.ok) throw new Error('Failed to fetch portfolio data')
-      const [activeData, oosData, vooData, ncData] = await Promise.all([
+      if (!activeRes.ok || !oosRes.ok || !vooRes.ok || !ncRes.ok || !pnlRes.ok) throw new Error('Failed to fetch portfolio data')
+      const [activeData, oosData, vooData, ncData, pnlRaw] = await Promise.all([
         activeRes.json(),
         oosRes.json(),
         vooRes.json(),
         ncRes.json(),
+        pnlRes.json(),
       ])
       setActiveLeases(activeData)
       setOosLeases(oosData)
       setVehicles(vooData)
       setNetCashData(ncData)
+      setPnlData(pnlRaw)
       setError(null)
     } catch (e) {
       if (!silent) setError(String(e))
@@ -246,7 +299,7 @@ export default function PortfolioOverview() {
       else                 buckets['90+ days']++
     }
     return {
-      upcomingData: Object.entries(buckets).map(([label, count]) => ({ label, count })),
+      upcomingData: Object.entries(buckets).map(([label, count]) => ({ label, count, fill: EXPIRY_COLORS[label] })),
       noEndDateCount: noDate,
     }
   }, [activeLeases, today])
@@ -263,7 +316,8 @@ export default function PortfolioOverview() {
     return {
       byTypeData: Object.entries(counts)
         .map(([name, value]) => ({ name, value }))
-        .sort((a, b) => b.value - a.value),
+        .sort((a, b) => b.value - a.value)
+        .map((d, i) => ({ ...d, fill: PALETTE[i % PALETTE.length] })),
       noTypeCount: missing,
     }
   }, [activeLeases])
@@ -304,6 +358,28 @@ export default function PortfolioOverview() {
     return { ytdInflowsK: inflows, ytdOutflowsK: outflows, ytdNetK: inflows - outflows }
   }, [netCashData])
 
+  const pnlChartData = useMemo(() =>
+    pnlData.map(d => ({
+      month:       d.month,
+      rev_active:  d.revenue_active,
+      rev_oos:     d.revenue_oos,
+      rev_demo:    d.revenue_demo,
+      interest:    -d.interest_expense,
+      depreciation:-d.depreciation,
+      profit:      d.revenue_active + d.revenue_oos + d.revenue_demo - d.interest_expense - d.depreciation,
+    })),
+  [pnlData])
+
+  const { ytdRevenueK, ytdInterestK, ytdDepreciationK, ytdProfitK } = useMemo(() => {
+    let rev = 0, interest = 0, dep = 0
+    for (const d of pnlData) {
+      rev      += d.revenue_active + d.revenue_oos + d.revenue_demo
+      interest += d.interest_expense
+      dep      += d.depreciation
+    }
+    return { ytdRevenueK: rev, ytdInterestK: interest, ytdDepreciationK: dep, ytdProfitK: rev - interest - dep }
+  }, [pnlData])
+
   // OOS leases grouped by company
   const { byCompanyData, noCompanyCount } = useMemo(() => {
     const counts: Record<string, number> = {}
@@ -316,7 +392,8 @@ export default function PortfolioOverview() {
     return {
       byCompanyData: Object.entries(counts)
         .map(([name, value]) => ({ name, value }))
-        .sort((a, b) => b.value - a.value),
+        .sort((a, b) => b.value - a.value)
+        .map((d, i) => ({ ...d, fill: PALETTE[i % PALETTE.length] })),
       noCompanyCount: missing,
     }
   }, [oosLeases])
@@ -331,6 +408,9 @@ export default function PortfolioOverview() {
       <div className="space-y-4">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {Array.from({ length: 2 }).map((_, i) => <SkeletonCard key={i} tall />)}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {Array.from({ length: 2 }).map((_, i) => <SkeletonCard key={i} tall />)}
@@ -394,7 +474,7 @@ export default function PortfolioOverview() {
         />
       </div>
 
-      {/* ── Row 2: Net Cash (left) + Total Monthly Tax (right) ── */}
+      {/* ── Row 2: Net Cash (left) + P&L Performance (right) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
         <KPICard title="Net cash" subtitle="Monthly lease inflows vs. financing outflows">
@@ -444,7 +524,7 @@ export default function PortfolioOverview() {
                 axisLine={false}
                 tickLine={false}
                 interval={0}
-                label={{ value: '2026', position: 'insideBottom', offset: -10, fontSize: 12, fill: '#6b7280', fontWeight: 600 }}
+                label={{ value: String(CHART_YEAR), position: 'insideBottom', offset: -10, fontSize: 12, fill: '#6b7280', fontWeight: 600 }}
               />
               <YAxis
                 tickFormatter={fmtTick}
@@ -470,6 +550,90 @@ export default function PortfolioOverview() {
           </ResponsiveContainer>
         </KPICard>
 
+        <KPICard title="P&L performance" subtitle="Monthly revenue vs. interest expense and depreciation">
+          {/* KPI tiles */}
+          <div className="grid grid-cols-4 gap-2 mb-4">
+            <div className="bg-gray-100 rounded-lg p-3">
+              <p className="text-[13px] text-gray-500 mb-1.5">Revenue (YTD)</p>
+              <p className="text-[22px] font-medium text-gray-900">{fmtAbs(ytdRevenueK)}</p>
+            </div>
+            <div className="bg-gray-100 rounded-lg p-3">
+              <p className="text-[13px] text-gray-500 mb-1.5">Interest expense (YTD)</p>
+              <p className="text-[22px] font-medium text-gray-900">{fmtAbs(ytdInterestK)}</p>
+            </div>
+            <div className="bg-gray-100 rounded-lg p-3">
+              <p className="text-[13px] text-gray-500 mb-1.5">Depreciation (YTD)</p>
+              <p className="text-[22px] font-medium text-gray-900">{fmtAbs(ytdDepreciationK)}</p>
+            </div>
+            <div className="bg-gray-100 rounded-lg p-3">
+              <p className="text-[13px] text-gray-500 mb-1.5">Profit (YTD)</p>
+              <p className="text-[22px] font-medium" style={{ color: ytdProfitK >= 0 ? '#0F6E56' : '#A32D2D' }}>
+                {fmtKpi(ytdProfitK)}
+              </p>
+            </div>
+          </div>
+
+          {/* Custom legend */}
+          <div className="flex flex-wrap gap-4 mb-3 text-xs text-gray-500">
+            {([
+              { key: 'rev_active',   label: 'Revenue · Active',   color: PNL.active,       type: 'square' },
+              { key: 'rev_oos',      label: 'Revenue · OOS',      color: PNL.oos,          type: 'square' },
+              { key: 'rev_demo',     label: 'Revenue · Demo',     color: PNL.demo,         type: 'square' },
+              { key: 'interest',     label: 'Interest expense',   color: PNL.interest,     type: 'square' },
+              { key: 'depreciation', label: 'Depreciation',       color: PNL.depreciation, type: 'square' },
+              { key: 'profit',       label: 'Profit',             color: PNL.profit,       type: 'line'   },
+            ] as const).map(item => (
+              <span key={item.key} className="flex items-center gap-1.5">
+                {item.type === 'square'
+                  ? <span style={{ width: 10, height: 10, borderRadius: 2, background: item.color, display: 'inline-block', flexShrink: 0 }} />
+                  : <span style={{ width: 18, height: 2, background: item.color, display: 'inline-block', flexShrink: 0 }} />
+                }
+                {item.label}
+              </span>
+            ))}
+          </div>
+
+          {/* Chart */}
+          <ResponsiveContainer width="100%" height={360}>
+            <ComposedChart data={pnlChartData} margin={{ top: 4, right: 8, left: -4, bottom: 20 }}>
+              <XAxis
+                dataKey="month"
+                tick={{ fontSize: 11, fill: '#888780' }}
+                axisLine={false}
+                tickLine={false}
+                interval={0}
+                label={{ value: String(CHART_YEAR), position: 'insideBottom', offset: -10, fontSize: 12, fill: '#6b7280', fontWeight: 600 }}
+              />
+              <YAxis
+                tickFormatter={fmtTick}
+                tick={{ fontSize: 11, fill: '#888780' }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <Tooltip content={<PnLTooltip />} cursor={{ fill: 'rgba(128,128,128,0.06)' }} />
+              <Bar dataKey="rev_active"    stackId="rev" fill={PNL.active}       isAnimationActive={false} />
+              <Bar dataKey="rev_oos"       stackId="rev" fill={PNL.oos}          isAnimationActive={false} />
+              <Bar dataKey="rev_demo"      stackId="rev" fill={PNL.demo}         isAnimationActive={false} />
+              <Bar dataKey="interest"      stackId="exp" fill={PNL.interest}     isAnimationActive={false} />
+              <Bar dataKey="depreciation"  stackId="exp" fill={PNL.depreciation} isAnimationActive={false} />
+              <Line
+                dataKey="profit"
+                stroke={PNL.profit}
+                strokeWidth={2}
+                dot={{ r: 3, fill: PNL.profit, strokeWidth: 0 }}
+                activeDot={{ r: 5 }}
+                type="monotone"
+                isAnimationActive={false}
+              />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </KPICard>
+
+      </div>
+
+      {/* ── Row 3: Total Monthly Tax (left) + Upcoming Expirations (right) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
         <KPICard title="Total Monthly Tax" subtitle="Sum of all numeric monthly tax values">
           <div className="flex flex-col gap-4">
             <div className="flex items-end gap-2">
@@ -493,11 +657,6 @@ export default function PortfolioOverview() {
           </div>
         </KPICard>
 
-      </div>
-
-      {/* ── Row 3: Upcoming Expirations + OOS by Company ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
         <KPICard title="Upcoming Lease Expirations" subtitle="Active leases ending within 90 days">
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={upcomingData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
@@ -505,9 +664,6 @@ export default function PortfolioOverview() {
               <YAxis tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} allowDecimals={false} />
               <Tooltip content={<ChartTooltip />} cursor={{ fill: '#f3f4f6' }} />
               <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                {upcomingData.map((entry) => (
-                  <Cell key={entry.label} fill={EXPIRY_COLORS[entry.label]} />
-                ))}
                 <LabelList dataKey="count" position="top" style={{ fontSize: 11, fill: '#374151', fontWeight: 600 }} />
               </Bar>
             </BarChart>
@@ -518,6 +674,11 @@ export default function PortfolioOverview() {
             </p>
           )}
         </KPICard>
+
+      </div>
+
+      {/* ── Row 4: OOS by Company (left) + Active Leases by Customer Type (right) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
         <KPICard
           title="Out of Service by Company"
@@ -533,7 +694,6 @@ export default function PortfolioOverview() {
                   <YAxis type="category" dataKey="name" tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} width={110} />
                   <Tooltip content={<ChartTooltip />} cursor={{ fill: '#f3f4f6' }} />
                   <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                    {byCompanyData.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
                     <LabelList dataKey="value" position="right" style={{ fontSize: 11, fill: '#374151', fontWeight: 600 }} />
                   </Bar>
                 </BarChart>
@@ -547,11 +707,6 @@ export default function PortfolioOverview() {
           )}
         </KPICard>
 
-      </div>
-
-      {/* ── Row 4: Active Leases by Customer Type ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
         <KPICard title="Active Leases by Customer Type" subtitle={`${byTypeData.length} type${byTypeData.length === 1 ? '' : 's'}`}>
           {byTypeData.length === 0 ? (
             <p className="text-xs text-gray-400 mt-2">No data available</p>
@@ -563,7 +718,6 @@ export default function PortfolioOverview() {
                   <YAxis type="category" dataKey="name" tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} width={140} />
                   <Tooltip content={<ChartTooltip />} cursor={{ fill: '#f3f4f6' }} />
                   <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                    {byTypeData.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
                     <LabelList dataKey="value" position="right" style={{ fontSize: 11, fill: '#374151', fontWeight: 600 }} />
                   </Bar>
                 </BarChart>
