@@ -14,7 +14,7 @@ import type { PnLMonthlyPoint } from '@/app/api/portfolio/pnl-monthly/route'
 import type { LenderLOC } from '@/app/api/portfolio/loc-summary/route'
 
 const POLL_INTERVAL = 60_000
-const CHART_YEAR = new Date().getFullYear()
+const CHART_YEAR = 2025
 
 const PALETTE = ['#4f46e5', '#7c3aed', '#0891b2', '#059669', '#d97706', '#db2777', '#dc2626', '#65a30d']
 
@@ -58,12 +58,26 @@ function addDays(d: Date, n: number): Date {
 
 // ─── Shared sub-components ────────────────────────────────────────────────────
 
-function KPICard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
+const YearDropdown = (
+  <select
+    defaultValue={2025}
+    className="text-xs text-gray-500 border border-gray-200 rounded-md px-2 py-1 bg-white focus:outline-none cursor-pointer"
+  >
+    <option value={2024}>2024</option>
+    <option value={2025}>2025</option>
+    <option value={2026}>2026</option>
+  </select>
+)
+
+function KPICard({ title, subtitle, children, headerRight }: { title: string; subtitle?: string; children: React.ReactNode; headerRight?: React.ReactNode }) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm flex flex-col">
-      <div className="mb-4">
-        <h3 className="text-sm font-bold uppercase tracking-wide text-gray-900">{title}</h3>
-        {subtitle && <p className="mt-0.5 text-xs text-gray-400">{subtitle}</p>}
+      <div className="mb-4 flex items-start justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-bold uppercase tracking-wide text-gray-900">{title}</h3>
+          {subtitle && <p className="mt-0.5 text-xs text-gray-400">{subtitle}</p>}
+        </div>
+        {headerRight}
       </div>
       {children}
     </div>
@@ -527,7 +541,7 @@ export default function PortfolioOverview() {
       {/* ── Row 2: Net Cash (left) + P&L Performance (right) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-        <KPICard title="Net cash" subtitle="Monthly lease inflows vs. financing outflows">
+        <KPICard title="Net cash" subtitle="Monthly lease inflows vs. financing outflows" headerRight={YearDropdown}>
           {/* KPI tiles */}
           <div className="grid grid-cols-3 gap-3 mb-4">
             <div className="bg-gray-100 rounded-lg p-4">
@@ -600,7 +614,7 @@ export default function PortfolioOverview() {
           </ResponsiveContainer>
         </KPICard>
 
-        <KPICard title="P&L performance" subtitle="Monthly revenue vs. interest expense and depreciation">
+        <KPICard title="P&L performance" subtitle="Monthly revenue vs. interest expense and depreciation" headerRight={YearDropdown}>
           {/* KPI tiles */}
           <div className="grid grid-cols-4 gap-2 mb-4">
             <div className="bg-gray-100 rounded-lg p-3">
