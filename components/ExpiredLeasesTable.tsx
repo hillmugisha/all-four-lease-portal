@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useMemo, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { usePersistedColumns } from '@/lib/usePersistedColumns'
 import { LeasePortfolioRecord } from '@/lib/lease-portfolio-types'
 import { Eye, X, Search, ChevronLeft, ChevronRight, Download, Upload, Columns, ShoppingCart, Loader2, AlertTriangle, Zap } from 'lucide-react'
@@ -181,6 +182,7 @@ const EMPTY_FILTERS: Filters = { name: '', make: [], company: [], customerType: 
 interface TableProps { leases: LeasePortfolioRecord[]; loading: boolean; onSold?: (ids: string[]) => void }
 
 export default function ExpiredLeasesTable({ leases, loading, onSold }: TableProps) {
+  const router = useRouter()
   const [selected, setSelected]           = useState<LeasePortfolioRecord | null>(null)
   const [filters, setFilters]             = useState<Filters>(EMPTY_FILTERS)
   const [page, setPage]                   = useState(1)
@@ -217,6 +219,20 @@ export default function ExpiredLeasesTable({ leases, loading, onSold }: TablePro
   function toggleAll() { setCheckedIds(allChecked ? new Set() : new Set(filtered.map((l) => l.id))) }
   function toggleId(id: string) { setCheckedIds((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next }) }
   const exportRecords = someChecked ? filtered.filter((l) => checkedIds.has(l.id)) : filtered
+
+  function handleActivateLease() {
+    const first = filtered.find((l) => checkedIds.has(l.id))
+    if (!first) return
+    sessionStorage.setItem('vooPreload', JSON.stringify({
+      vin:       first.vin        ?? '',
+      year:      first.model_year  ?? '',
+      make:      first.make        ?? '',
+      model:     first.model       ?? '',
+      odometer:  first.odometer    ?? null,
+      condition: 'USED',
+    }))
+    router.push('/new-lease')
+  }
 
   async function handleMarkAsSoldConfirmed() {
     const ids = Array.from(checkedIds)
@@ -323,10 +339,10 @@ export default function ExpiredLeasesTable({ leases, loading, onSold }: TablePro
                 textClassName: 'text-emerald-600',
               },
               {
-                label: 'Activate Lease',
+                label: someChecked ? `Activate Lease (${checkedIds.size})` : 'Activate Lease',
                 icon: <Zap size={13} />,
-                onClick: () => {},
-                disabled: true,
+                onClick: handleActivateLease,
+                disabled: !someChecked,
                 textClassName: 'text-blue-600',
               },
             ]}

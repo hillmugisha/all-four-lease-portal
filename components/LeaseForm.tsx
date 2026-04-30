@@ -181,6 +181,8 @@ interface VehiclePrefill {
   model: string
   vooStockNumber?: string | null
   appData?: Record<string, unknown> | null
+  odometer?: number | string | null
+  condition?: 'NEW' | 'USED'
 }
 
 // Map VOO app_data fields to LeaseFormData field names for pre-population
@@ -237,6 +239,8 @@ export default function LeaseForm({
         year:  vehiclePrefill.year,
         make:  vehiclePrefill.make,
         model: vehiclePrefill.model,
+        ...(vehiclePrefill.odometer != null ? { odometer: String(vehiclePrefill.odometer) } : {}),
+        ...(vehiclePrefill.condition ? { condition: vehiclePrefill.condition } : {}),
         ...(vehiclePrefill.appData ? appDataToFormFields(vehiclePrefill.appData) : {}),
       } : {}),
       ...(isMasterLease ? {

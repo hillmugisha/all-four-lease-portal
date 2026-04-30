@@ -20,6 +20,8 @@ interface VooPrefill {
   model: string
   vooStockNumber?: string | null
   appData?: Record<string, unknown> | null
+  odometer?: number | string | null
+  condition?: 'NEW' | 'USED'
 }
 
 function NewLeaseContent() {
@@ -39,7 +41,8 @@ function NewLeaseContent() {
       if (raw) {
         const parsed = JSON.parse(raw) as {
           stock_number?: string; vin?: string; year?: string;
-          make?: string; model?: string; app_data?: Record<string, unknown>
+          make?: string; model?: string; app_data?: Record<string, unknown>;
+          odometer?: number | string | null; condition?: 'NEW' | 'USED';
         }
         sessionStorage.removeItem('vooPreload')
         setVooPrefill({
@@ -49,6 +52,8 @@ function NewLeaseContent() {
           model:          parsed.model ?? '',
           vooStockNumber: parsed.stock_number ?? null,
           appData:        parsed.app_data ?? null,
+          odometer:       parsed.odometer ?? null,
+          condition:      parsed.condition,
         })
       }
     } catch {
