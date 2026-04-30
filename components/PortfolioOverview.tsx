@@ -246,8 +246,8 @@ export default function PortfolioOverview() {
   const [locData, setLocData]           = useState<LenderLOC[]>([])
   const [loading, setLoading]           = useState(true)
   const [error, setError]               = useState<string | null>(null)
-  const [netCashYear, setNetCashYear] = useState(2025)
-  const [pnlYear, setPnlYear]         = useState(2025)
+  const [netCashYear, setNetCashYear] = useState(2026)
+  const [pnlYear, setPnlYear]         = useState(2026)
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
@@ -557,15 +557,15 @@ export default function PortfolioOverview() {
         <KPICard title="Net cash" subtitle="Monthly lease inflows vs. financing outflows" headerRight={<YearDropdown value={netCashYear} onChange={setNetCashYear} />}>
           {/* KPI tiles */}
           <div className="grid grid-cols-3 gap-3 mb-4">
-            <div className="bg-gray-100 rounded-lg p-4">
+            <div className="bg-[var(--color-bg-secondary)] rounded-lg p-4">
               <p className="text-[13px] text-gray-500 mb-1.5">Lease inflows (YTD)</p>
               <p className="text-2xl font-medium text-gray-900">{fmtKpi(ytdInflowsK)}</p>
             </div>
-            <div className="bg-gray-100 rounded-lg p-4">
+            <div className="bg-[var(--color-bg-secondary)] rounded-lg p-4">
               <p className="text-[13px] text-gray-500 mb-1.5">Financing outflows (YTD)</p>
               <p className="text-2xl font-medium text-gray-900">{fmtKpi(ytdOutflowsK)}</p>
             </div>
-            <div className="bg-gray-100 rounded-lg p-4">
+            <div className="bg-[var(--color-bg-secondary)] rounded-lg p-4">
               <p className="text-[13px] text-gray-500 mb-1.5">Net cash (YTD)</p>
               <p className="text-2xl font-medium" style={{ color: ytdNetK >= 0 ? '#0F6E56' : '#A32D2D' }}>
                 {fmtKpi(ytdNetK)}
@@ -630,19 +630,19 @@ export default function PortfolioOverview() {
         <KPICard title="P&L performance" subtitle="Monthly revenue vs. interest expense and depreciation" headerRight={<YearDropdown value={pnlYear} onChange={setPnlYear} />}>
           {/* KPI tiles */}
           <div className="grid grid-cols-4 gap-2 mb-4">
-            <div className="bg-gray-100 rounded-lg p-3">
+            <div className="bg-[var(--color-bg-secondary)] rounded-lg p-3">
               <p className="text-[13px] text-gray-500 mb-1.5">Revenue (YTD)</p>
               <p className="text-[22px] font-medium text-gray-900">{fmtAbs(ytdRevenueK)}</p>
             </div>
-            <div className="bg-gray-100 rounded-lg p-3">
+            <div className="bg-[var(--color-bg-secondary)] rounded-lg p-3">
               <p className="text-[13px] text-gray-500 mb-1.5">Interest expense (YTD)</p>
               <p className="text-[22px] font-medium text-gray-900">{fmtAbs(ytdInterestK)}</p>
             </div>
-            <div className="bg-gray-100 rounded-lg p-3">
+            <div className="bg-[var(--color-bg-secondary)] rounded-lg p-3">
               <p className="text-[13px] text-gray-500 mb-1.5">Depreciation (YTD)</p>
               <p className="text-[22px] font-medium text-gray-900">{fmtAbs(ytdDepreciationK)}</p>
             </div>
-            <div className="bg-gray-100 rounded-lg p-3">
+            <div className="bg-[var(--color-bg-secondary)] rounded-lg p-3">
               <p className="text-[13px] text-gray-500 mb-1.5">Profit (YTD)</p>
               <p className="text-[22px] font-medium" style={{ color: ytdProfitK >= 0 ? '#0F6E56' : '#A32D2D' }}>
                 {fmtKpi(ytdProfitK)}
@@ -717,21 +717,21 @@ export default function PortfolioOverview() {
           ) : (<>
           {/* 4 KPI tiles */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-            <div className="bg-gray-100 rounded-lg p-3">
+            <div className="bg-[var(--color-bg-secondary)] rounded-lg p-3">
               <p className="text-[13px] text-gray-500 mb-1.5">Total LOC limit</p>
               <p className="text-[22px] font-medium text-gray-900">{fmtLoc(locTotalLimit)}</p>
             </div>
-            <div className="bg-gray-100 rounded-lg p-3">
+            <div className="bg-[var(--color-bg-secondary)] rounded-lg p-3">
               <p className="text-[13px] text-gray-500 mb-1.5">Deployed</p>
               <p className="text-[22px] font-medium text-gray-900">{fmtLoc(locTotalDeployed)}</p>
             </div>
-            <div className="bg-gray-100 rounded-lg p-3">
+            <div className="bg-[var(--color-bg-secondary)] rounded-lg p-3">
               <p className="text-[13px] text-gray-500 mb-1.5">Available headroom</p>
               <p className="text-[22px] font-medium" style={{ color: locColor(locUtilPct, 'total') }}>
                 {fmtLoc(locTotalLimit - locTotalDeployed)}
               </p>
             </div>
-            <div className="bg-gray-100 rounded-lg p-3">
+            <div className="bg-[var(--color-bg-secondary)] rounded-lg p-3">
               <p className="text-[13px] text-gray-500 mb-1.5">Utilization</p>
               <p className="text-[22px] font-medium" style={{ color: locColor(locUtilPct, 'total') }}>
                 {locUtilPct.toFixed(1)}%
